@@ -52,6 +52,11 @@ The dataset has 16 columns per row:
 | Chinese (zh) | 30 | person_name, alias, company_name, address, passport_no |
 | **Total** | **112** | |
 
+### Test dataset
+`data/test_dataset.csv`
+
+A separate 100-case test dataset used to evaluate pipeline generalisation on held-out examples not used during development. It shares the same 16-column schema. Composition: 20 cases per language (Arabic, Greek, Japanese, Russian/Ukrainian, Chinese), covering all field types.
+
 ---
 
 ## 3. Case Types
@@ -211,7 +216,101 @@ TRANSLATE_ANALYST is 0% — this treatment category is not yet implemented. Thes
 
 ---
 
-## 7. Failing Cases — Root Cause Analysis
+## 7. Test Dataset Performance Results
+
+*Measured on 20 March 2026, pipeline v2, model gpt-4o, temperature=0. 100 held-out cases from `data/test_dataset.csv`.*
+
+### Overall accuracy
+**89.0% — 89 correct out of 100 cases**
+
+---
+
+### By language
+
+| Language | Correct | Total | Accuracy |
+|---|---|---|---|
+| Arabic (ar) | 18 | 20 | **90.0%** |
+| Greek (el) | 20 | 20 | **100.0%** |
+| Japanese (ja) | 17 | 20 | **85.0%** |
+| Russian/Ukrainian (ru) | 16 | 20 | **80.0%** |
+| Chinese (zh) | 18 | 20 | **90.0%** |
+
+---
+
+### By processing method (expected treatment)
+
+| Treatment | Correct | Total | Accuracy |
+|---|---|---|---|
+| PRESERVE | 6 | 6 | **100.0%** |
+| TRANSLITERATE | 67 | 72 | **93.1%** |
+| TRANSLATE_NORMALISE | 16 | 22 | **72.7%** |
+
+PRESERVE achieves 100% as expected. TRANSLITERATE achieves 93.1%. TRANSLATE_NORMALISE achieves 72.7% — failures are concentrated in address formatting and a small number of name transliteration variants.
+
+---
+
+### By language × field type
+
+| Language | Field type | Correct | Total | Accuracy |
+|---|---|---|---|---|
+| ar | address | 3 | 3 | 100.0% |
+| ar | alias | 2 | 2 | 100.0% |
+| ar | company_name | 1 | 1 | 100.0% |
+| ar | passport_no | 1 | 1 | 100.0% |
+| ar | person_name | 11 | 13 | 84.6% |
+| el | address | 4 | 4 | 100.0% |
+| el | company_name | 2 | 2 | 100.0% |
+| el | email | 1 | 1 | 100.0% |
+| el | passport_no | 1 | 1 | 100.0% |
+| el | person_name | 12 | 12 | 100.0% |
+| ja | address | 0 | 2 | 0.0% |
+| ja | company_name | 2 | 2 | 100.0% |
+| ja | passport_no | 1 | 1 | 100.0% |
+| ja | person_name | 14 | 15 | 93.3% |
+| ru | address | 0 | 2 | 0.0% |
+| ru | company_name | 1 | 1 | 100.0% |
+| ru | passport_no | 1 | 1 | 100.0% |
+| ru | person_name | 14 | 16 | 87.5% |
+| zh | address | 1 | 3 | 33.3% |
+| zh | company_name | 3 | 3 | 100.0% |
+| zh | passport_no | 1 | 1 | 100.0% |
+| zh | person_name | 13 | 13 | 100.0% |
+
+---
+
+### Failing cases (11)
+
+| Case ID | Language | Field | Expected | Got | Root cause |
+|---|---|---|---|---|---|
+| AR012 | ar | person_name | NIHAD IBRAHIM ELSAYED ALNAGGAR | NIHAD IBRAHIM AL-SAYYID AL-NAJJAR | LLM applied classical Arabic romanisation (Al-Sayyid Al-Najjar) rather than the Egyptian compound rendering (Elsayed Alnaggar) |
+| AR014 | ar | person_name | MUHAMMAD BIN RASHID AL MAKTOUM | MUHAMMAD BIN RASHID AL-MAKTUM | LLM produced short form Al-Maktum; expected form is the official UAE romanisation Al Maktoum |
+| JA006 | ja | address | TOKYO SHINJUKU | TOKYO, SHINJUKU-KU | LLM preserved the ward suffix -ku and added punctuation; expected form drops both |
+| JA013 | ja | address | DOGENZAKA SHIBUYA TOKYO | DOGENZAKA, SHIBUYA-KU, TOKYO, JAPAN | Same pattern: -ku suffix retained and JAPAN appended |
+| JA019 | ja | person_name | HASHIMOTO DAIKI | HASHIMOTO DAI | Kanji 大輝 has multiple readings; LLM read 大 as DAI (single syllable) instead of merging to DAIKI |
+| RU006 | ru | address | LENINA STREET 10 MOSCOW | 10 LENINA ST, MOSCOW | Address number placed first; ST abbreviation used instead of STREET; comma separator added |
+| RU007 | ru | person_name | YURII GAGARIN | JURIJ GAGARIN | `transliterate` library rendering Ю→JU / Й→J instead of BGN/PCGN YU / Y |
+| RU011 | ru | address | NEVSKY PROSPEKT 20 SAINT PETERSBURG | NEVSKY PROSPECT 20, SAINT PETERSBURG | PROSPEKT vs PROSPECT (minor spelling) and comma formatting |
+| RU016 | ru | person_name | MIKHAIL ZAKHAROV | MIHAIL ZAHAROV | Library renders МИХ→MIH and ЗАХ→ZAH; BGN/PCGN standard is MIKH and ZAKH |
+| ZH013 | zh | address | LUJIAZUI FINANCE AND TRADE ZONE PUDONG NEW AREA SHANGHAI | LUJIAZUI FINANCIAL AND TRADE ZONE, PUDONG NEW DISTRICT, SHANGHAI CITY | FINANCIAL vs FINANCE; NEW DISTRICT vs NEW AREA; SHANGHAI CITY suffix added |
+| ZH020 | zh | address | SCIENCE PARK NANSHAN DISTRICT SHENZHEN GUANGDONG | NANSHAN DISTRICT, SCIENCE AND TECHNOLOGY PARK, SHENZHEN, GUANGDONG PROVINCE | Word order reversed; AND TECHNOLOGY inserted; PROVINCE suffix added |
+
+### Pattern analysis of failures
+
+**Russian Ja/Ju library convention (3 cases: RU007, RU016, and partly RU011)**
+The same `transliterate` library issue seen in the golden dataset — Ю→JU/JURIJ instead of YU/YURII, and МИХ→MIH instead of MIKH. Fix: post-process `ru` output with `str.replace("Ja", "Ya").replace("Ju", "Yu")` and extend to handle additional consonant cluster patterns.
+
+**Address formatting artefacts (5 cases: JA006, JA013, RU006, ZH013, ZH020)**
+Two sub-patterns: (a) word-order and suffix retention (Japanese -ku, Chinese CITY/PROVINCE, Russian number-first placement); (b) minor wording differences (FINANCIAL vs FINANCE, PROSPEKT vs PROSPECT). The address lenient matcher partially mitigates these — the token-set match catches number order; the remaining failures involve inserted words not present in the expected form. Fix: tighten address normalisation in the prompt and extend the lenient matcher to strip common administrative suffixes.
+
+**Arabic classical vs Egyptian romanisation (2 cases: AR012, AR014)**
+The LLM applies the classically correct romanisation but the expected form uses the locally conventional Egyptian/Emirati spelling. These are inherently ambiguous without country-of-document context being injected into the prompt. Fix: pass `country` into the Arabic name prompt system message so LLM can apply country-specific conventions.
+
+**Kanji reading ambiguity (1 case: JA019)**
+Kanji with multiple valid readings where the full compound reading (DAIKI) is standard but the LLM parsed incrementally (DAI). Fix: add more compound-kanji given-name examples to the Japanese person name handling.
+
+---
+
+## 8. Failing Cases — Root Cause Analysis (Golden Dataset)
 
 The 13 failing cases as of the current evaluation run, with root cause:
 
@@ -250,7 +349,7 @@ LLM added "DISTRICT" and "CITY" administrative suffixes that the expected form o
 
 ---
 
-## 8. Image-Based Cases
+## 9. Image-Based Cases
 
 In addition to text-only cases, the dataset supports image-based cases where `image_path` points to a scanned document. These exercise the full pipeline including the OCR extraction layer:
 
@@ -264,7 +363,7 @@ Image cases are identified by a populated `image_path` column. They exercise the
 
 ---
 
-## 9. Test Suite
+## 10. Test Suite
 
 In addition to the golden dataset evaluation, the repository includes a pytest suite (`tests/`) that provides fast, API-free regression tests:
 
@@ -284,7 +383,7 @@ All tests are API-free — no OpenAI key is required. LLM-routed cases are teste
 
 ---
 
-## 10. Output Artefacts
+## 11. Output Artefacts
 
 Each evaluation run saves two files to `data/output/`:
 
@@ -313,17 +412,20 @@ Spreadsheet-friendly format of the same data. Suitable for pivot-table analysis 
 
 ---
 
-## 11. Performance Targets and Roadmap
+## 12. Performance Targets and Roadmap
 
-| Target | Current | Gap | Planned fix |
-|---|---|---|---|
-| Overall accuracy ≥ 93% | 88.4% | −4.6pp | Fixes B (aliases) + C (Russian Ja→Ya) |
-| Russian/Ukrainian ≥ 90% | 83.3% | −6.7pp | Post-process Ja→Ya/Ju→Yu |
-| Chinese ≥ 90% | 80.0% | −10pp | Brand name table + alias prompt update |
-| TRANSLATE_NORMALISE ≥ 85% | 72.4% | −12.6pp | Alias phrases + company brand names |
-| TRANSLATE_ANALYST ≥ 0% | 0.0% | N/A | New descriptor-phrase handling |
-| Theoretical ceiling (all known fixes) | ~98% | | All remaining 8 fixable cases corrected |
+Targets apply to both the golden dataset and the test dataset.
+
+| Target | Golden dataset | Test dataset | Gap (test) | Planned fix |
+|---|---|---|---|---|
+| Overall accuracy ≥ 93% | 88.4% | 89.0% | −4.0pp | Russian Ja→Ya fix + address normalisation |
+| Russian/Ukrainian ≥ 90% | 83.3% | 80.0% | −10pp | Post-process Ja→Ya/Ju→Yu/MIKH/ZAKH |
+| Chinese ≥ 90% | 80.0% | 90.0% | on target (test) | Brand name table (golden only) |
+| Greek ≥ 95% | 88.9% | 100.0% | on target (test) | Company/alias prompt (golden only) |
+| Japanese ≥ 90% | 96.0% | 85.0% | −5pp | Address -ku suffix stripping; compound kanji |
+| TRANSLATE_NORMALISE ≥ 85% | 72.4% | 72.7% | −12.3pp | Address formatting + alias phrases |
+| Theoretical ceiling (all known fixes) | ~98% | ~97% | | All identified fixable patterns corrected |
 
 ---
 
-*Last updated: March 2026. Evaluation run: 20 March 2026, 112 cases, model gpt-4o.*
+*Last updated: March 2026. Golden dataset evaluation: 20 March 2026, 112 cases. Test dataset evaluation: 20 March 2026, 100 cases. Model: gpt-4o.*
