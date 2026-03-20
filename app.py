@@ -59,6 +59,11 @@ st.set_page_config(
     page_title="KYC Identity Normalisation",
     page_icon="🔍",
     layout="wide",
+    initial_sidebar_state="collapsed",
+)
+st.markdown(
+    "<style>[data-testid='stSidebar']{display:none}[data-testid='collapsedControl']{display:none}</style>",
+    unsafe_allow_html=True,
 )
 
 st.title("🔍 KYC Identity Normalisation")
@@ -169,20 +174,6 @@ def _show_field_reference(expanded: bool = False) -> None:
             st.table(lang_rows)
 
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.header("Settings")
-    default_field = st.selectbox("Default field type", _KYC_FIELD_TYPES, index=0)
-    default_lang_label = st.selectbox("Default language", list(LANGUAGE_OPTIONS.keys()), index=0)
-    st.divider()
-    st.markdown(
-        "**Processing methods**\n"
-        "- `RULE` — preserve as-is (dates, IDs)\n"
-        "- `TRANSLIT` — deterministic transliteration\n"
-        "- `LLM` — GPT-4o normalisation\n"
-    )
-    _show_field_reference(expanded=False)
-
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 tab_single, tab_docs, tab_batch = st.tabs(
     ["🆔 KYC Normalise", "📄 Documents", "📊 Batch CSV"]
@@ -206,10 +197,8 @@ with tab_single:
             key="single_text",
         )
     with col2:
-        field_type_single = st.selectbox("Field type", _KYC_FIELD_TYPES, key="single_ft",
-                                         index=_KYC_FIELD_TYPES.index(default_field))
-        lang_label_single = st.selectbox("Language", list(LANGUAGE_OPTIONS.keys()), key="single_lang",
-                                         index=list(LANGUAGE_OPTIONS.keys()).index(default_lang_label))
+        field_type_single = st.selectbox("Field type", _KYC_FIELD_TYPES, key="single_ft", index=0)
+        lang_label_single = st.selectbox("Language", list(LANGUAGE_OPTIONS.keys()), key="single_lang", index=0)
 
     if st.button("Normalise", type="primary", use_container_width=True, key="btn_single"):
         if not text_input.strip():
@@ -252,6 +241,8 @@ with tab_docs:
         "For scanned PDFs without embedded text, the first page will be sent to GPT-4o vision."
     )
 
+    _DOC_MAX_MB = 10
+    st.caption(f"Max file size: {_DOC_MAX_MB} MB")
     uploaded_doc = st.file_uploader(
         "Upload document",
         type=ACCEPTED_DOC_EXTENSIONS,
@@ -263,7 +254,9 @@ with tab_docs:
         fname = uploaded_doc.name.lower()
         ext = fname.rsplit(".", 1)[-1] if "." in fname else ""
 
-        if ext not in ACCEPTED_DOC_EXTENSIONS:
+        if len(file_bytes) > _DOC_MAX_MB * 1024 * 1024:
+            st.error(f"File exceeds the {_DOC_MAX_MB} MB limit. Please upload a smaller file.")
+        elif ext not in ACCEPTED_DOC_EXTENSIONS:
             st.error(
                 f"Unsupported format `.{ext}`. "
                 f"Accepted: {', '.join(ACCEPTED_DOC_EXTENSIONS)}"
@@ -271,7 +264,7 @@ with tab_docs:
         else:
             # Show image preview
             if ext in ("jpg", "jpeg", "png"):
-                st.image(file_bytes, caption=uploaded_doc.name, use_container_width=True)
+                st.image(file_bytes, caption=uploaded_doc.name, width=320)
 
             if st.button("Extract & Normalise Fields", type="primary",
                          use_container_width=True, key="btn_doc"):
@@ -399,10 +392,18 @@ with tab_batch:
         mime="text/csv",
     )
 
+    _CSV_MAX_MB = 5
+    st.caption(f"Max file size: {_CSV_MAX_MB} MB")
     uploaded_csv = st.file_uploader("Upload CSV", type=["csv"], key="batch_csv")
 
     if uploaded_csv is not None:
-        content = uploaded_csv.read().decode("utf-8")
+        raw_bytes = uploaded_csv.read()
+        if len(raw_bytes) > _CSV_MAX_MB * 1024 * 1024:
+            st.error(f"File exceeds the {_CSV_MAX_MB} MB limit. Please upload a smaller CSV.")
+            uploaded_csv = None
+        content = raw_bytes.decode("utf-8") if uploaded_csv is not None else None
+
+    if uploaded_csv is not None and content is not None:
         reader = csv.DictReader(io.StringIO(content))
         input_rows = list(reader)
         fieldnames = list(reader.fieldnames or [])
@@ -446,7 +447,7 @@ with tab_batch:
 
                 for i, row in enumerate(input_rows):
                     if not row.get("language"):
-                        row["language"] = LANGUAGE_OPTIONS.get(default_lang_label, "")
+                        row["language"] = ""
                     try:
                         out = process_field(row)
                     except Exception as exc:
