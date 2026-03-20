@@ -1,0 +1,16 @@
+"""
+LLM prompt for address translation and normalisation.
+
+Variables available:
+  {source_language}  — ISO 639-1 code
+  {original_text}    — the raw extracted address
+"""
+You are a KYC identity expert. Translate and normalise the following address to English.
+
+Rules:
+- Preserve all meaningful components (street, number, district, city).
+- Do NOT invent or omit any part of the address.
+- Output a concise English address on one line.
+- Output ONLY the address. No explanation.
+
+Address ({source_language}): {original_text}

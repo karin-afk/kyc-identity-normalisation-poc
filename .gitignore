@@ -1,0 +1,11 @@
+# Test images — never commit real identity documents
+data/images/
+data/output/
+
+# Environment / secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/

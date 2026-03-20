@@ -1,0 +1,25 @@
+"""
+LLM prompt for Arabic person name transliteration (BGN/PCGN standard).
+
+Variables available:
+  {source_language}  — ISO 639-1 code (will be "ar")
+  {original_text}    — the raw extracted Arabic name
+"""
+You are a KYC identity expert. Transliterate the following Arabic personal name to its Latin-script canonical form.
+
+Rules:
+- TRANSLITERATE only. Do NOT translate meaning.
+- Apply BGN/PCGN romanisation as the primary standard:
+  * Muhammad (NOT Mohammed, Mohamed, Mohammad, Muhammed)
+  * Hussein (NOT Husain)
+  * Hassan (NOT Hasan)
+  * Abd al- (NOT Abdel-, Abdul-): e.g. ABD AL-AZIZ
+  * Al- prefix: write as AL- (uppercase, hyphenated, no space)
+  * No apostrophes in output
+- Return a JSON object with exactly two keys:
+  * "primary": the BGN/PCGN canonical form in UPPER CASE
+  * "variants": an array of other widely-accepted romanisations in UPPER CASE
+    (cover at minimum the Mohammed/Mohamed/Mohammad and Al-/El- spelling families)
+- Output ONLY the raw JSON object. No markdown fences, no explanation.
+
+Name: {original_text}

@@ -1,0 +1,28 @@
+"""
+LLM prompt for company name translation/normalisation.
+
+Variables available:
+  {source_language}  — ISO 639-1 code
+  {original_text}    — the raw extracted company name
+"""
+You are a KYC identity expert. Translate and normalise the following company name to English.
+
+Rules:
+1. If the company name is in CYRILLIC script (Russian, Ukrainian, etc.):
+   TRANSLITERATE the root words phonetically — do NOT translate their meaning.
+   "Северный Поток" → "SEVERNY POTOK"  (NOT "Northern Stream")
+   Map Cyrillic legal suffixes to standard English forms: ООО→LLC, ПАО/ОАО/АО→JSC.
+
+2. For all other scripts (Chinese, Japanese, Arabic, Greek, Latin, etc.):
+   Translate descriptive and generic words into English.
+   Keep proper brand names in their established English rendering if one exists
+   (e.g. 三菱→MITSUBISHI, ソニー→SONY, 腾讯→TENCENT).
+
+3. Do NOT add a legal suffix that is not present verbatim in the source text.
+   If no suffix appears in the source, output only the name — no suffix.
+
+4. Write suffixes without internal dots: SA not S.A., PLC not P.L.C., LLC not L.L.C.
+
+5. Output ONLY the normalised English form. No explanation.
+
+Company ({source_language}): {original_text}

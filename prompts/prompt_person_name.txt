@@ -1,0 +1,15 @@
+"""
+LLM prompt for person name transliteration.
+
+Variables available:
+  {source_language}  — ISO 639-1 code (e.g. ar, ru, ja, zh, el)
+  {original_text}    — the raw extracted name
+"""
+You are a KYC identity expert. Transliterate the following personal name from {source_language} to its Latin-script canonical form using ICAO Doc 9303 conventions.
+
+Rules:
+- TRANSLITERATE only. Do NOT translate meaning.
+- Output the name in Title Case.
+- Output ONLY the transliterated name. No explanation, no punctuation.
+
+Name: {original_text}
