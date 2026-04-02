@@ -349,7 +349,161 @@ LLM added "DISTRICT" and "CITY" administrative suffixes that the expected form o
 
 ---
 
-## 9. Image-Based Cases
+## 9. Copilot LLM Output Evaluation
+
+An additional benchmark evaluates how well a general-purpose LLM (without access to the KYC pipeline's rule engine, kanji lookup table, or transliteration library) performs on the same 212 cases when given only the `original_text` and a detailed linguistic prompt.
+
+The test file (`data/copilot_test.csv`) presents each case with only `case_id` and `original_text`; all other columns (`language`, `script`, `field_type`, `treatment`, `transliteration`, `variants`, `english`, `normalised`) are left blank for the LLM to complete. The evaluator (`evaluate_copilot_output.py`) scores the completed `normalised` column against the ground-truth expected values, using the same 6-pass matching logic as the pipeline evaluator.
+
+*Evaluated on 20 March 2026, 212 cases (112 golden + 100 test), gpt-4o, prompt: `data/copilot_test_prompt.md`.*
+
+### Overall accuracy
+**88.2% — 187 correct out of 212 cases**
+
+---
+
+### By source dataset
+
+| Dataset | Correct | Total | Accuracy |
+|---|---|---|---|
+| Golden dataset | 95 | 112 | **84.8%** |
+| Test dataset | 92 | 100 | **92.0%** |
+
+---
+
+### By language
+
+| Language | Correct | Total | Accuracy |
+|---|---|---|---|
+| Arabic (ar) | 35 | 39 | **89.7%** |
+| Greek (el) | 37 | 38 | **97.4%** |
+| English (en) | 2 | 2 | **100.0%** |
+| Japanese (ja) | 43 | 45 | **95.6%** |
+| Russian/Ukrainian (ru) | 30 | 38 | **78.9%** |
+| Chinese (zh) | 40 | 50 | **80.0%** |
+
+---
+
+### By processing method
+
+| Treatment | Correct | Total | Accuracy |
+|---|---|---|---|
+| PRESERVE | 19 | 19 | **100.0%** |
+| TRANSLATE_ANALYST | 3 | 3 | **100.0%** |
+| TRANSLITERATE | 132 | 139 | **95.0%** |
+| TRANSLATE_NORMALISE | 33 | 51 | **64.7%** |
+
+Notable: the LLM achieves 100% on `TRANSLATE_ANALYST` alias phrases — it correctly translates descriptive text like "по прозвищу" and "又名" — which is a category where the automated pipeline scores 0%.
+
+---
+
+### By language × field type
+
+| Language | Field type | Correct | Total | Accuracy |
+|---|---|---|---|---|
+| ar | address | 5 | 6 | 83.3% |
+| ar | alias | 4 | 4 | 100.0% |
+| ar | company_name | 2 | 2 | 100.0% |
+| ar | passport_no | 3 | 3 | 100.0% |
+| ar | person_name | 21 | 24 | 87.5% |
+| el | address | 9 | 9 | 100.0% |
+| el | alias | 1 | 1 | 100.0% |
+| el | company_name | 3 | 4 | 75.0% |
+| el | email | 2 | 2 | 100.0% |
+| el | passport_no | 2 | 2 | 100.0% |
+| el | person_name | 20 | 20 | 100.0% |
+| en | email | 1 | 1 | 100.0% |
+| en | passport_no | 1 | 1 | 100.0% |
+| ja | address | 5 | 6 | 83.3% |
+| ja | alias | 1 | 1 | 100.0% |
+| ja | company_name | 3 | 4 | 75.0% |
+| ja | passport_no | 6 | 6 | 100.0% |
+| ja | person_name | 28 | 28 | 100.0% |
+| ru | address | 1 | 5 | 20.0% |
+| ru | alias | 1 | 1 | 100.0% |
+| ru | company_name | 1 | 2 | 50.0% |
+| ru | passport_no | 2 | 2 | 100.0% |
+| ru | person_name | 25 | 28 | 89.3% |
+| zh | address | 0 | 8 | 0.0% |
+| zh | alias | 1 | 1 | 100.0% |
+| zh | company_name | 5 | 7 | 71.4% |
+| zh | passport_no | 2 | 2 | 100.0% |
+| zh | person_name | 32 | 32 | 100.0% |
+
+---
+
+### Failing cases (25)
+
+| Case ID | Language | Field | Expected | Got | Root cause |
+|---|---|---|---|---|---|
+| AR012 | ar | person_name | NIHAD IBRAHIM ELSAYED ALNAGGAR | NIHAD IBRAHIM ALSAYYID AL NAJJAR | Classical Arabic form Al-Sayyid Al-Najjar vs Egyptian compound Elsayed Alnaggar |
+| AR018 | ar | person_name | YUSUF ABD AL RAHMAN AL KUWAITI | YUSUF ABDULRAHMAN AL KUWAITI | Fused form ABDULRAHMAN vs spaced ABD AL RAHMAN |
+| IMG005 | ru | address | YANGITAU HAMLET | YANGITAU | LLM omitted the locality type ("Hamlet" / "Хутор") |
+| IMG014 | el | company_name | DEI | PUBLIC POWER CORPORATION | LLM expanded the acronym ΔΕΗ to its full English name; expected screening form is the acronym DEI |
+| KYC008 | ja | company_name | TOYOTA CO LTD | TOYOTA MOTOR CORPORATION | LLM used the full official English name; dataset expects the short screener form |
+| KYC011 | ru | person_name | EKATERINA SERGEEVNA IVANOVA | YEKATERINA SERGEEVNA IVANOVA | LLM rendered Е as YE word-initially (Yekaterina); expected BGN/PCGN form is Ekaterina |
+| KYC015 | ru | address | LENINA STREET 10 MOSCOW | 10 LENIN STREET MOSCOW | Number placed first; LENINA vs LENINA/LENIN (genitive vs nominative) |
+| KYC018 | zh | company_name | BEIJING VISION TECHNOLOGY CO LTD | BEIJING ENVISION TECHNOLOGY CO LTD | 远景 rendered as ENVISION (plausible) vs VISION expected |
+| KYC019 | zh | address | 88 JIANGUO ROAD CHAOYANG BEIJING | 88 JIANGUO ROAD BEIJING | District name CHAOYANG dropped |
+| KYC030 | ru | person_name | DMITRII IVANOV | DMITRIY IVANOV | ii vs iy ending variant for Дмитрий |
+| KYC033 | ar | person_name | YUSUF ABDELAZIZ MAHMOUD | YUSUF ABDULAZIZ MAHMOUD | ABDELAZIZ vs ABDULAZIZ — vowel variant in ABD prefix |
+| KYC036 | ar | address | BLOCK 3 STREET 12 KUWAIT CITY | BLOCK 3 STREET 12 KUWAIT | "CITY" dropped from Kuwait City |
+| KYC044 | ja | address | OSAKA KITA WARD | KITA OSAKA | Word order reversed; WARD omitted |
+| KYC055 | ru | company_name | SEVERNY POTOK LLC | NORD STREAM LLC | LLM used the internationally-known brand name Nord Stream; dataset expects literal translation Severny Potok |
+| KYC057 | ru | person_name | ANDREI YURYEVICH KOVALEV | ANDREY YURYEVICH KOVALEV | ei vs ey ending for Андрей |
+| KYC064 | zh | address | 100 CENTURY AVENUE PUDONG SHANGHAI | 100 CENTURY AVENUE SHANGHAI | District name PUDONG dropped |
+| KYC069 | zh | address | 18 TIYU EAST ROAD TIANHE GUANGZHOU | 18 TIYU EAST ROAD GUANGZHOU | District name TIANHE dropped |
+| KYC089 | zh | address | 100 SONGREN ROAD XINYI TAIPEI | 100 SONGREN ROAD TAIPEI | District name XINYI dropped |
+| KYC090 | zh | address | 27 ZHONGGUANCUN STREET HAIDIAN BEIJING | 27 ZHONGGUANCUN STREET BEIJING | District name HAIDIAN dropped |
+| RU006 | ru | address | LENINA STREET 10 MOSCOW | 10 LENIN STREET MOSCOW | Number first; LENINA vs LENINA genitive |
+| RU011 | ru | address | NEVSKY PROSPEKT 20 SAINT PETERSBURG | 20 NEVSKY AVENUE SAINT PETERSBURG | Number first; PROSPEKT vs AVENUE; NEVSKY PROSPEKT is the conventional transliterated form |
+| ZH005 | zh | company_name | BEIJING VISION TECHNOLOGY CO LTD | BEIJING ENVISION TECHNOLOGY CO LTD | Same 远景→ENVISION vs VISION issue |
+| ZH006 | zh | address | 88 JIANGUO ROAD CHAOYANG DISTRICT BEIJING | 88 JIANGUO ROAD BEIJING | District name dropped |
+| ZH013 | zh | address | LUJIAZUI FINANCE AND TRADE ZONE PUDONG NEW AREA SHANGHAI | LUJIAZUI SHANGHAI | Heavy truncation — zone and district both dropped |
+| ZH020 | zh | address | SCIENCE PARK NANSHAN DISTRICT SHENZHEN GUANGDONG | NANSHAN SHENZHEN | Zone name and province both dropped |
+
+### Pattern analysis of failures
+
+**Chinese address district/zone truncation (9 cases)**
+The LLM consistently drops Chinese administrative sub-units (区 = district, 新区 = new area, 经济区 = zone) from the normalised form. The expected screener forms retain these for disambiguation. Fix: the prompt should state explicitly that `区`, `新区` and named zones must be preserved in the `normalised` field.
+
+**Russian address number-first ordering (3 cases: KYC015, RU006, RU011)**
+The LLM places the street number before the street name (10 LENINA STREET) whereas the expected form places it after (LENINA STREET 10). The address lenient token-set matcher in the pipeline handles this — the LLM omission is a prompt precision gap.
+
+**Russian person name transliteration variants (3 cases: KYC011, KYC030, KYC057)**
+Minor ending differences: Yekaterina vs Ekaterina (Е word-initial), Dmitriy vs Dmitrii (final ий), Andrey vs Andrei (final ей). These are all within the accepted variant family but the LLM chose a form not in the expected variants list.
+
+**Screener form vs brand form conflict (3 cases: KYC008, KYC055, IMG014)**
+The LLM used the internationally recognised long-form name (Toyota Motor Corporation, Nord Stream, Public Power Corporation) where the dataset expects a shorter screener form (Toyota Co Ltd, Severny Potok LLC, DEI). Indicates a tension between "natural English" and "screener normalised" that the prompt needs to resolve more forcefully.
+
+**Chinese 远景 mapping (2 cases: KYC018, ZH005)**
+ENVISION is a valid translation of 远景 (yuǎnjǐng = "vision/prospect"), but the expected form is VISION. The LLM chose a different but reasonable English equivalent.
+
+---
+
+### Comparative summary — pipeline vs copilot LLM
+
+| Metric | Pipeline (golden) | Pipeline (test) | Copilot LLM (golden) | Copilot LLM (test) |
+|---|---|---|---|---|
+| Overall accuracy | 88.4% | 89.0% | 84.8% | 92.0% |
+| PRESERVE | 100.0% | 100.0% | 100.0% | 100.0% |
+| TRANSLITERATE | 97.0% | 93.1% | 95.0% | (combined) |
+| TRANSLATE_NORMALISE | 72.4% | 72.7% | 64.7% | (combined) |
+| TRANSLATE_ANALYST | 0.0% | n/a | **100.0%** | (combined) |
+| Russian/Ukrainian | 83.3% | 80.0% | 78.9% | (combined) |
+| Chinese | 80.0% | 90.0% | 80.0% | (combined) |
+| Greek | 88.9% | 100.0% | 97.4% | (combined) |
+| Japanese | 96.0% | 85.0% | 95.6% | (combined) |
+
+Key observations:
+- The copilot LLM outperforms the pipeline on the **test dataset** (92.0% vs 89.0%), suggesting good generalisation on held-out cases.
+- The pipeline outperforms on the **golden dataset** (88.4% vs 84.8%) — the pipeline's deterministic rules give it an edge on cases that were implicitly calibrated against.
+- The copilot LLM achieves **100% on TRANSLATE_ANALYST** (descriptive alias phrases) — a known zero-score category for the pipeline — demonstrating the LLM's semantic translation capability.
+- Both approaches share the same weakness on **TRANSLATE_NORMALISE addresses** (~65–72%) — the LLM prompt precision and the pipeline's address LLM handling suffer from similar issues.
+
+---
+
+## 10. Image-Based Cases
 
 In addition to text-only cases, the dataset supports image-based cases where `image_path` points to a scanned document. These exercise the full pipeline including the OCR extraction layer:
 
@@ -363,7 +517,7 @@ Image cases are identified by a populated `image_path` column. They exercise the
 
 ---
 
-## 10. Test Suite
+## 11. Test Suite
 
 In addition to the golden dataset evaluation, the repository includes a pytest suite (`tests/`) that provides fast, API-free regression tests:
 
@@ -383,7 +537,7 @@ All tests are API-free — no OpenAI key is required. LLM-routed cases are teste
 
 ---
 
-## 11. Output Artefacts
+## 12. Output Artefacts
 
 Each evaluation run saves two files to `data/output/`:
 
@@ -412,7 +566,7 @@ Spreadsheet-friendly format of the same data. Suitable for pivot-table analysis 
 
 ---
 
-## 12. Performance Targets and Roadmap
+## 13. Performance Targets and Roadmap
 
 Targets apply to both the golden dataset and the test dataset.
 
