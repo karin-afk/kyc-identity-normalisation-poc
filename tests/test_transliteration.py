@@ -513,3 +513,54 @@ def test_wade_giles_variant_for_tw():
     # 建 (jian) → chian in Wade-Giles; 志 (zhi) → chih
     # At minimum a variant distinct from Pinyin should exist for TW
     assert len(result["allowed_variants"]) > 0
+
+
+# ---------------------------------------------------------------------------
+# Section 7: Belarusian handler
+# ---------------------------------------------------------------------------
+
+from utils.script_detection import detect_belarusian  # noqa: E402
+
+
+def test_detect_belarusian_false_no_u_short():
+    """У (regular Ukrainian/Belarusian u) does not trigger Belarusian detection."""
+    assert detect_belarusian("Уладзімір") is False
+
+
+def test_detect_belarusian_false_plain_cyrillic():
+    """Sentence without any Belarusian-exclusive characters."""
+    assert detect_belarusian("Зянон Пазьняк") is False
+
+
+def test_detect_belarusian_true_with_u_short():
+    """Ў is exclusive to Belarusian → detection returns True."""
+    assert detect_belarusian("Аляксандр Ў") is True
+
+
+def test_detect_belarusian_true_lowercase_u_short():
+    """Lowercase ў also triggers detection."""
+    assert detect_belarusian("ўдзел") is True
+
+
+def test_belarusian_explicit_language_review_required():
+    """language='be' → _transliterate_belarusian(), review_required=True."""
+    row = {"language": "be", "field_type": "person_name"}
+    result = transliterate("Мікалай", row)
+    assert result["review_required"] is True
+    assert result["processing_method"] == "TRANSLITERATE"
+
+
+def test_belarusian_u_short_auto_detected_from_ru():
+    """language='ru' + Ў in text → auto-promoted to Belarusian, review_required=True."""
+    row = {"language": "ru", "field_type": "person_name"}
+    result = transliterate("Ўладзімір Каваленка", row)
+    assert result["review_required"] is True
+    assert "Belarusian" in (result.get("review_reason") or "")
+
+
+def test_russian_without_u_short_not_promoted():
+    """language='ru' without Ў stays Russian mode — not flagged as Belarusian."""
+    row = {"language": "ru", "field_type": "person_name"}
+    result = transliterate("Николай Петров", row)
+    assert not result["review_required"] or "Belarusian" not in (result.get("review_reason") or "")
+

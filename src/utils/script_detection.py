@@ -20,3 +20,29 @@ def detect_script(text: str) -> str:
     if not any(counts.values()):
         return "Latin"
     return max(counts, key=lambda s: counts[s])
+
+
+# ---------------------------------------------------------------------------
+# Belarusian detection
+# ---------------------------------------------------------------------------
+
+# Characters exclusive to (or mandatory in) Belarusian Cyrillic.
+# Ў (U+040E / U+045E) does not appear in Russian or Ukrainian.
+BELARUSIAN_EXCLUSIVE_CHARS: frozenset[str] = frozenset({"Ў", "ў", "Ё", "ё"})
+
+
+def detect_belarusian(text: str) -> bool:
+    """Return True if ``text`` contains a definitive Belarusian Cyrillic marker.
+
+    Ў / ў (Short U, U+040E / U+045E) is exclusive to Belarusian and does not
+    appear in Russian or Ukrainian. Its presence is a definitive indicator that
+    the text uses the Belarusian Cyrillic script.
+
+    Args:
+        text: Input string to inspect.
+
+    Returns:
+        ``True`` if Ў or ў is found; ``False`` otherwise.
+    """
+    return any(ch in ("Ў", "ў") for ch in text)
+

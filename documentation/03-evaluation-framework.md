@@ -892,3 +892,43 @@ A 30-entry `CANTONESE_SURNAME_MAP` enables automatic generation of Cantonese (Jy
 - `test_wade_giles_variant_for_tw` — 陳建志 (TW) → Wade-Giles variant exists
 
 **Test results:** 106 passed, 0 failed (2 pre-existing API-call tests excluded)
+
+---
+
+### Section 7 — Belarusian Transliteration Handler (2 April 2026)
+
+**Branch:** `feature/section-7-belarusian` → merged to `main`
+
+**Files changed:**
+- `src/utils/script_detection.py` — added `BELARUSIAN_EXCLUSIVE_CHARS`, `detect_belarusian()`
+- `src/pipeline/transliteration_engine.py` — added `BELARUSIAN_CHAR_MAP`, `_transliterate_belarusian()`, updated `transliterate()` dispatcher
+
+**What was implemented:**
+
+Dedicated Belarusian Cyrillic → Latin transliteration handler with automatic script detection.
+
+| Component | Purpose |
+|---|---|
+| `BELARUSIAN_EXCLUSIVE_CHARS` | Frozenset of `{Ў, ў, Ё, ё}` — characters exclusive to Belarusian |
+| `detect_belarusian(text)` | Returns `True` if any `BELARUSIAN_EXCLUSIVE_CHARS` character is present |
+| `BELARUSIAN_CHAR_MAP` | Char-level remapping applied before the library: Ў→W, ў→w, Г→H, г→h, І→I, і→i |
+| `_transliterate_belarusian()` | Pre-process → `transliterate` lib in "ru" mode → BGN/PCGN corrections; always `review_required=True` |
+| Dispatcher auto-detection | When `language` ∈ {ru, uk, bg, be} and `detect_belarusian(text)` returns `True`, `language` is promoted to `"be"` |
+
+**Design decisions:**
+- The `transliterate` library has no Belarusian language support; Russian mode is used as the base with `BELARUSIAN_CHAR_MAP` pre-substitutions to handle the three key character divergences (Ў/г/І).
+- `review_required=True` is unconditional because automated Belarusian romanisation remains approximate.
+- The raw Russian-mode transliteration (without Belarusian pre-processing) is stored as `allowed_variants[0]` when it differs from the primary form, supporting legacy records with incorrect `language="ru"` coding.
+- Auto-detection overrides `language` codes ru/uk/bg/be when Ў is present, catching documents mis-classified as Ukrainian or Bulgarian.
+
+**Tests added** (`tests/test_transliteration.py`, 7 new tests):
+- `test_detect_belarusian_false_no_u_short` — У (not Ў) → `False`
+- `test_detect_belarusian_false_plain_cyrillic` — no exclusive chars → `False`
+- `test_detect_belarusian_true_with_u_short` — Ў present → `True`
+- `test_detect_belarusian_true_lowercase_u_short` — ў present → `True`
+- `test_belarusian_explicit_language_review_required` — `language="be"` → `review_required=True`, `TRANSLITERATE` method
+- `test_belarusian_u_short_auto_detected_from_ru` — `language="ru"` + Ў → auto-promoted, `review_required=True`, "Belarusian" in reason
+- `test_russian_without_u_short_not_promoted` — `language="ru"` no Ў → not flagged as Belarusian
+
+**Test results:** 113 passed, 0 failed (2 pre-existing API-call tests excluded)
+
