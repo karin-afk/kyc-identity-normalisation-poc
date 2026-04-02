@@ -778,3 +778,44 @@ Japanese era-year dates (e.g. 昭和五十三年四月三日) are now detected a
 - `test_japanese_era_date_field_date_type` — transliterate() routing for date
 
 **Test results:** 64 passed, 0 failed
+
+---
+
+### Section 4 — TRANSLATE_ANALYST Handler (2 April 2026)
+
+**Branch:** `feature/section-4-translate-analyst` → merged to `main`
+
+**Files changed:**
+- `src/pipeline/analyst_handler.py` ← **new file**
+- `src/pipeline/pipeline.py` — added `TRANSLATE_ANALYST` routing
+
+**What was implemented:**
+
+The `TRANSLATE_ANALYST` treatment routes alias fields containing natural-language descriptor phrases to a dedicated handler instead of the generic LLM layer.
+
+| Component | Purpose |
+|---|---|
+| `ALIAS_TRIGGERS` | Dict of regex trigger patterns per language (11 languages: en, ar, ru, el, zh, ja, de, fr, es, it, ko) |
+| `extract_name_and_alias(text, language)` | Splits text into primary + alias on first pattern match; returns split_method=`"trigger"` or `"no_split"` |
+| `_normalise_part(...)` | Normalises a text fragment using transliterate or LLM based on language |
+| `process_analyst_field(...)` | End-to-end processing: split → normalise each part → combine as `"{PRIMARY} ALSO KNOWN AS {ALIAS}"` |
+
+**Pipeline routing change:** Previously composite aliases went to `enrich_with_llm()`. Now they go to `process_analyst_field()`, which:
+1. Extracts the primary name and alias substrings
+2. Calls the transliteration engine on each part
+3. Combines with "ALSO KNOWN AS" separator
+4. Sets `review_required=True` and `processing_method="TRANSLITERATE+ANALYST"` (or `"LLM+ANALYST"` for Arabic)
+
+**Always sets `review_required=True`** because alias phrase splitting is heuristic.
+
+**Tests added** (`tests/test_pipeline.py`, 12 new tests):
+- `test_extract_russian_alias_trigger` — по прозвищу splits Александр / Саша
+- `test_extract_english_also_known_as` — "Wang Qiang also known as ..." splits correctly
+- `test_extract_no_trigger_treated_as_primary` — no trigger → no split
+- `test_alias_trigger_fires_for_each_language` (parametrised × 9) — ar, el, zh, ja, de, fr, es, it, ko all fire
+- `test_russian_composite_alias_via_process_field` — end-to-end ALSO KNOWN AS structure
+- `test_greek_composite_alias_via_process_field` — Νίκος extracted and transliterated
+- `test_english_composite_alias_combines_correctly` — "ALSO KNOWN AS" in normalised
+- `test_no_trigger_alias_treated_as_whole` — plain alias → standard TRANSLITERATE
+
+**Test results:** 86 passed, 0 failed
