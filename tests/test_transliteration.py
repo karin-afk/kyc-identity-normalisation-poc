@@ -1,5 +1,6 @@
 import pytest
 from pipeline.transliteration_engine import transliterate
+from pipeline.field_classifier import is_composite_alias
 
 
 # ── Japanese Katakana (KYC007) — deterministic, should be accurate ──────────
@@ -93,3 +94,87 @@ def test_result_schema():
     result = transliterate("\u0410\u043b\u0435\u043a\u0441\u0435\u0439", row)
     for key in required_keys:
         assert key in result, f"Missing key: {key}"
+
+
+# ── TRANSLATE_COMPOSITE: is_composite_alias detection ────────────────────
+@pytest.mark.parametrize("text,expected", [
+    # English descriptors
+    ("Wang Qiang also known as Wang Xiaoqiang", True),
+    ("John Smith AKA Johnny", True),
+    ("Muhammad nicknamed Abu Bakr", True),
+    ("Mary known as Molly", True),
+    # Russian
+    ("Александр по прозвищу Саша", True),
+    ("Иван известный как Ваня", True),
+    # Chinese
+    ("王强又名王小强", True),
+    ("陈明别名陈大明", True),
+    # Greek
+    ("Σπύρος Αντωνίου γνωστός ως Σπύρος ο Μεγάλος", True),
+    # Non-composite — should return False
+    ("Wang Qiang", False),
+    ("Александр Иванов", False),
+    ("Jane Marie Smith", False),
+    ("محمد علي حسن", False),
+])
+def test_is_composite_alias(text: str, expected: bool):
+    assert is_composite_alias(text) is expected
+
+
+# ── TRANSLATE_COMPOSITE: LLM routing uses normalised field ───────────────
+def test_composite_alias_uses_normalised_field(monkeypatch):
+    """LLM response for composite alias must use parsed['normalised'],
+    not parsed['primary']."""
+    from unittest.mock import MagicMock, patch
+    import json
+
+    mock_response = MagicMock()
+    mock_response.choices[0].message.content = json.dumps({
+        "primary": "WANG QIANG",
+        "normalised": "WANG QIANG ALSO KNOWN AS WANG XIAOQIANG",
+        "variants": ["WANG QIANG AKA WANG XIAOQIANG"],
+    })
+
+    with patch("openai.OpenAI") as MockClient:
+        instance = MockClient.return_value
+        instance.chat.completions.create.return_value = mock_response
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key-composite")
+
+        from pipeline import llm_layer
+        # Force re-read env var inside module
+        llm_layer.OPENAI_API_KEY = "test-key-composite"
+
+        row = {"field_type": "alias", "language": "zh", "original_text": "王强又名王小强"}
+        result = llm_layer.enrich_with_llm("王强又名王小强", row)
+
+    assert result["normalised_form"] == "WANG QIANG ALSO KNOWN AS WANG XIAOQIANG"
+    assert result["processing_method"] == "LLM/COMPOSITE"
+
+
+# ── TRANSLATE_COMPOSITE: non-composite alias uses primary field ───────────
+def test_non_composite_alias_uses_primary_field(monkeypatch):
+    """LLM response for a non-composite alias must use parsed['primary']."""
+    from unittest.mock import MagicMock, patch
+    import json
+
+    mock_response = MagicMock()
+    mock_response.choices[0].message.content = json.dumps({
+        "primary": "JEAN LUC MOREAU",
+        "normalised": "JEAN LUC MOREAU ALSO KNOWN AS JL",
+        "variants": ["JEAN-LUC MOREAU"],
+    })
+
+    # Use Arabic name path (also uses primary) to verify non-composite behaviour
+    with patch("openai.OpenAI") as MockClient:
+        instance = MockClient.return_value
+        instance.chat.completions.create.return_value = mock_response
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key-noncomposite")
+
+        from pipeline import llm_layer
+        llm_layer.OPENAI_API_KEY = "test-key-noncomposite"
+
+        # Arabic person_name: is_arabic_name=True, is_composite=False
+        row = {"field_type": "person_name", "language": "ar", "original_text": "جان لوك"}
+        result = llm_layer.enrich_with_llm("جان لوك", row)
+
+    assert result["normalised_form"] == "JEAN LUC MOREAU"
