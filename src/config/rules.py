@@ -19,7 +19,11 @@ CONFIDENCE_THRESHOLD = 0.75
 # Conflict resolution priority
 LAYER_PRIORITY = ["RULE", "TRANSLITERATE", "LLM"]
 
-# Maps field_type → treatment label used by field_classifier
+# Maps field_type → treatment label used by field_classifier.
+# Note: alias fields that contain a descriptor phrase (e.g. "also known as",
+# "по прозвищу") are dynamically reclassified to TRANSLATE_COMPOSITE by
+# field_classifier.is_composite_alias() — they are not listed here because
+# the classification depends on the text content, not just the field type.
 TREATMENT_MAP: dict[str, str] = {
     "passport_no": "PRESERVE",
     "id_no": "PRESERVE",

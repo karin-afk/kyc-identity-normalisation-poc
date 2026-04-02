@@ -31,7 +31,7 @@ The dataset has 16 columns per row:
 | `document_type` | string | `passport`, `proof_of_address`, `corporate_registry`, `sanctions_profile`, etc. |
 | `field_type` | string | `person_name`, `alias`, `company_name`, `address`, `passport_no`, `id_no`, `email` |
 | `original_text` | string | The raw non-Latin text as it appears on the document |
-| `expected_treatment` | string | `PRESERVE`, `TRANSLITERATE`, `TRANSLATE_NORMALISE`, `TRANSLATE_ANALYST` |
+| `expected_treatment` | string | `PRESERVE`, `TRANSLITERATE`, `TRANSLATE_NORMALISE`, `TRANSLATE_COMPOSITE` |
 | `expected_transliteration` | string | Correct BGN/PCGN or standard romanised form (primary) |
 | `expected_allowed_variants` | string | Pipe-separated (`\|`) list of other accepted forms |
 | `expected_english` | string | Natural English rendering (may differ from screener form) |
@@ -67,8 +67,8 @@ The majority of cases are **standard positive cases**: the pipeline should produ
 ### Negative cases (`is_negative_case = true`)
 Negative cases test that the pipeline **does not produce a false positive**: the pipeline output should *not* match the `expected_normalised` value. For example, KYC014 (Алексей Смирнов, Russian) is flagged as a negative case to verify that it does not match a different Aleksei Smirnov identity listed elsewhere in the dataset.
 
-### TRANSLATE_ANALYST cases
-A small number of cases are tagged `expected_treatment=TRANSLATE_ANALYST`. These represent alias entries containing descriptive phrases mixed with identity text (e.g. "ALEXANDER NICKNAMED SASHA"). These require an analyst to interpret the semantics of the phrase — they are not currently handled by the automated pipeline and are tracked as a known gap.
+### TRANSLATE_COMPOSITE cases
+A small number of cases are tagged `expected_treatment=TRANSLATE_COMPOSITE`. These represent alias entries that contain both a name token and a natural-language descriptor phrase (e.g. "по прозвищу САША", "又名 王小强", "γνωστός ως ΝΙΚΟΣ"). The descriptor must be *translated* to its English screener form (ALSO KNOWN AS / NICKNAMED / KNOWN AS) while the name tokens are transliterated. These are handled by the LLM layer, routed via `is_composite_alias()` detection in `field_classifier.py`.
 
 ---
 
@@ -169,7 +169,7 @@ The pipeline runs in stub mode. LLM fields receive `confidence=0.0` and `process
 | PRESERVE | 13 | 13 | **100.0%** |
 | TRANSLITERATE | 65 | 67 | **97.0%** |
 | TRANSLATE_NORMALISE | 21 | 29 | **72.4%** |
-| TRANSLATE_ANALYST | 0 | 3 | **0.0%** |
+| TRANSLATE_COMPOSITE | 0 | 3 | **0.0%** |
 
 PRESERVE achieves 100% as expected — these are pass-through fields with no transformation risk.
 
@@ -177,7 +177,7 @@ TRANSLITERATE achieves 97% — the two failures are known `Ja→Ya` library issu
 
 TRANSLATE_NORMALISE achieves 72.4% — failures are concentrated in company name translation where LLM brand-name knowledge is incomplete.
 
-TRANSLATE_ANALYST is 0% — this treatment category is not yet implemented. These are alias fields with mixed descriptive phrases that require semantic parsing beyond current scope.
+TRANSLATE_COMPOSITE is 0% on this baseline run — the `is_composite_alias()` detector and LLM routing are implemented in `feature/translate-composite` and not yet merged. These are alias fields containing both a name and a descriptor phrase that requires translation.
 
 ---
 
@@ -321,7 +321,7 @@ The 13 failing cases as of the current evaluation run, with root cause:
 | KYC045 | ja | company_name | MITSUBISHI CORPORATION | MITSUBISHI SHOJI KK | LLM rendered 商事 (Shoji = commercial trading division) instead of the established English brand MITSUBISHI CORPORATION |
 | KYC051 | ru | person_name | NATALYA VIKTOROVNA ORLOVA | NATALJA VIKTOROVNA ORLOVA | `transliterate` library uses `Ja` where BGN/PCGN mandates `Ya` for Я |
 | KYC057 | ru | person_name | ANDREI YURYEVICH KOVALEV | ANDREJ JUREVICH KOVALEV | Same `Ju→Yu` and `J→Y` library convention difference |
-| KYC060 | ru | alias | ALEXANDER NICKNAMED SASHA | ALEKSANDR PO PROZVISCHU SASHA | Descriptive phrase "по прозвищу" (meaning "nicknamed") not translated — TRANSLATE_ANALYST case |
+| KYC060 | ru | alias | ALEXANDER NICKNAMED SASHA | ALEKSANDR PO PROZVISCHU SASHA | Descriptive phrase "по прозвищу" (meaning "nicknamed") not translated — TRANSLATE_COMPOSITE case |
 | KYC065 | zh | company_name | SHENZHEN HUAXING ELECTRONICS CO LTD | SHENZHEN HUA XING DIANZI CO LTD | LLM transliterated 华兴电子 instead of resolving to known brand; Pinyin fallback |
 | KYC069 | zh | address | 18 TIYU EAST ROAD TIANHE GUANGZHOU | 18 TIYU EAST ROAD, TIANHE DISTRICT, GUANGZHOU CITY | LLM added "DISTRICT" and "CITY" suffixes; expected form omits them — close miss |
 | KYC070 | zh | alias | WANG QIANG ALSO KNOWN AS WANG XIAOQIANG | WANG QIANG YOU MING WANG XIAO QIANG | 又名 (yòu míng = "also known as") was transliterated rather than translated |
@@ -389,11 +389,11 @@ The test file (`data/copilot_test.csv`) presents each case with only `case_id` a
 | Treatment | Correct | Total | Accuracy |
 |---|---|---|---|
 | PRESERVE | 19 | 19 | **100.0%** |
-| TRANSLATE_ANALYST | 3 | 3 | **100.0%** |
+| TRANSLATE_COMPOSITE | 3 | 3 | **100.0%** |
 | TRANSLITERATE | 132 | 139 | **95.0%** |
 | TRANSLATE_NORMALISE | 33 | 51 | **64.7%** |
 
-Notable: the LLM achieves 100% on `TRANSLATE_ANALYST` alias phrases — it correctly translates descriptive text like "по прозвищу" and "又名" — which is a category where the automated pipeline scores 0%.
+Notable: the LLM achieves 100% on `TRANSLATE_COMPOSITE` alias phrases — it correctly translates descriptive text like "по прозвищу" and "又名" — which is a category where the automated pipeline (without the composite routing) scores 0%.
 
 ---
 
@@ -489,7 +489,7 @@ ENVISION is a valid translation of 远景 (yuǎnjǐng = "vision/prospect"), but 
 | PRESERVE | 100.0% | 100.0% | 100.0% | 100.0% |
 | TRANSLITERATE | 97.0% | 93.1% | 95.0% | (combined) |
 | TRANSLATE_NORMALISE | 72.4% | 72.7% | 64.7% | (combined) |
-| TRANSLATE_ANALYST | 0.0% | n/a | **100.0%** | (combined) |
+| TRANSLATE_COMPOSITE | 0.0% | n/a | **100.0%** | (combined) |
 | Russian/Ukrainian | 83.3% | 80.0% | 78.9% | (combined) |
 | Chinese | 80.0% | 90.0% | 80.0% | (combined) |
 | Greek | 88.9% | 100.0% | 97.4% | (combined) |
@@ -498,7 +498,7 @@ ENVISION is a valid translation of 远景 (yuǎnjǐng = "vision/prospect"), but 
 Key observations:
 - The copilot LLM outperforms the pipeline on the **test dataset** (92.0% vs 89.0%), suggesting good generalisation on held-out cases.
 - The pipeline outperforms on the **golden dataset** (88.4% vs 84.8%) — the pipeline's deterministic rules give it an edge on cases that were implicitly calibrated against.
-- The copilot LLM achieves **100% on TRANSLATE_ANALYST** (descriptive alias phrases) — a known zero-score category for the pipeline — demonstrating the LLM's semantic translation capability.
+- The copilot LLM achieves **100% on TRANSLATE_COMPOSITE** (composite alias phrases with descriptor + name tokens) — a known zero-score category for the unmodified pipeline — demonstrating the LLM's semantic translation capability.
 - Both approaches share the same weakness on **TRANSLATE_NORMALISE addresses** (~65–72%) — the LLM prompt precision and the pipeline's address LLM handling suffer from similar issues.
 
 ---
