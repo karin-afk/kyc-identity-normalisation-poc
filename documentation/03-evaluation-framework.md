@@ -652,3 +652,39 @@ Targets apply to both the golden dataset and the test dataset.
 ---
 
 *Last updated: March 2026. Golden dataset evaluation: 20 March 2026, 112 cases. Test dataset evaluation: 20 March 2026, 100 cases. Model: gpt-4o.*
+
+---
+
+## 14. Implementation Log
+
+### Section 1 — BGN/PCGN Russian/Ukrainian Post-Processing (2 April 2026)
+
+**Branch:** `feature/section-1-bgn-pcgn` → merged to `main`
+
+**File changed:** `src/pipeline/transliteration_engine.py`
+
+**What was implemented:**
+
+The `transliterate` library's output for Russian and Ukrainian diverges from the BGN/PCGN romanisation standard in several systematic patterns. A new `_apply_bgn_pcgn_corrections(text: str) -> str` function was added that applies the following ordered substitutions:
+
+| Library output | BGN/PCGN correct form | Character |
+|---|---|---|
+| `Sch` / `sch` | `Shch` / `shch` | Щ |
+| `Shh` / `shh` | `Shch` / `shch` | Щ (alternate library output) |
+| `Ja` / `ja` | `Ya` / `ya` | Я |
+| `Ju` / `ju` | `Yu` / `yu` | Ю |
+| `Je` / `je` | `Ye` / `ye` | Е (Je form) |
+| `\bE` (word-initial) | `Ye` | Е (E form at word boundary) |
+
+The function is applied inside `_transliterate_cyrillic()` **only for `ru` and `uk`**. Bulgarian (`bg`) is intentionally excluded — Bulgarian BGN/PCGN conventions differ.
+
+**Tests added** (`tests/test_transliteration.py`):
+- `test_bgn_pcgn_corrections_unit` — unit tests for the function with known inputs
+- `test_russian_bgn_pcgn_in_transliteration` (parametrised × 5) — integration tests: Наталья→NATALYA, Юрий→YURIJ, Екатерина→YEKATERINA, Татьяна→TATYANA, Щукин→SHCHUKIN
+- `test_bulgarian_not_affected_by_bgn_pcgn` — regression guard ensuring Bulgarian is untouched
+
+**Expected impact on previous failures (from Section 8):**
+- KYC051 (NATALJA → NATALYA) ✓ resolved
+- KYC057 (ANDREJ JUREVICH → ANDREI YURYEVICH) ✓ resolved  
+- RU007 (JURIJ → YURIJ; YURII from BGN is a distinct suffix variant) ≈ partial
+- RU016 — МИХ→MIH, ЗАХ→ZAH: require additional `кх`→`kh` consonant pattern work, not in scope of this section
