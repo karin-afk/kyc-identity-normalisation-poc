@@ -1,6 +1,7 @@
 import pytest
 from pipeline.transliteration_engine import transliterate, _apply_bgn_pcgn_corrections
 from pipeline.field_classifier import is_composite_alias
+from utils.calendar_utils import kanji_numeral_to_int, detect_and_convert_japanese_era
 
 
 # ── Japanese Katakana (KYC007) — deterministic, should be accurate ──────────
@@ -217,3 +218,75 @@ def test_bulgarian_not_affected_by_bgn_pcgn():
     # Key assertion: the result was processed and has content (not empty)
     assert result["normalised_form"] != ""
     assert result["processing_method"] == "TRANSLITERATE"
+
+
+# ---------------------------------------------------------------------------
+# Section 3: kanji_numeral_to_int
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("text,expected", [
+    ("五十三", 53),
+    ("二〇〇五", 2005),
+    ("十二", 12),
+    ("三", 3),
+    ("二十", 20),
+    ("元", 1),
+    ("六十四", 64),
+])
+def test_kanji_numeral_to_int(text: str, expected: int):
+    assert kanji_numeral_to_int(text) == expected
+
+
+# ---------------------------------------------------------------------------
+# Section 3: detect_and_convert_japanese_era (unit)
+# ---------------------------------------------------------------------------
+
+def test_showa_era_conversion():
+    """昭和五十三年四月三日 → 1978-04-03, era=Showa, review=True."""
+    result = detect_and_convert_japanese_era("昭和五十三年四月三日")
+    assert result["normalised"] == "1978-04-03"
+    assert result["era_detected"] == "Showa"
+    assert result["review_required"] is True
+    assert "Showa" in result["review_reason"]
+
+
+def test_heisei_first_year():
+    """平成元年一月八日 → 1989-01-08 (元年 = year 1)."""
+    result = detect_and_convert_japanese_era("平成元年一月八日")
+    assert result["normalised"] == "1989-01-08"
+    assert result["era_detected"] == "Heisei"
+    assert result["review_required"] is True
+
+
+def test_reiwa_era_conversion():
+    """令和三年一月五日 → 2021-01-05."""
+    result = detect_and_convert_japanese_era("令和三年一月五日")
+    assert result["normalised"] == "2021-01-05"
+    assert result["era_detected"] == "Reiwa"
+
+
+def test_kanji_gregorian_no_era():
+    """二〇〇五年十二月一日 → 2005-12-01, no era, review=False."""
+    result = detect_and_convert_japanese_era("二〇〇五年十二月一日")
+    assert result["normalised"] == "2005-12-01"
+    assert result["era_detected"] is None
+    assert result["review_required"] is False
+
+
+# ---------------------------------------------------------------------------
+# Section 3: transliterate() routing for Japanese date fields
+# ---------------------------------------------------------------------------
+
+def test_japanese_era_date_via_transliterate():
+    """transliterate() converts Japanese era date for ja+birth_date field."""
+    row = {"language": "ja", "field_type": "birth_date"}
+    result = transliterate("昭和五十三年四月三日", row)
+    assert result["normalised_form"] == "1978-04-03"
+    assert result["review_required"] is True
+
+
+def test_japanese_era_date_field_date_type():
+    """transliterate() converts Japanese date for ja+date field."""
+    row = {"language": "ja", "field_type": "date"}
+    result = transliterate("令和三年一月五日", row)
+    assert result["normalised_form"] == "2021-01-05"

@@ -163,6 +163,14 @@ def normalise_date_field(date_str: str, language: str = "") -> dict:
     review_reason: Optional[str] = None
 
     if calendar == "unknown":
+        if language == "ja":
+            era_result = detect_and_convert_japanese_era(ascii_date)
+            return {
+                "normalised": era_result["normalised"],
+                "original_calendar": "japanese_era" if era_result["era_detected"] else "unknown",
+                "review_required": era_result["review_required"],
+                "review_reason": era_result["review_reason"],
+            }
         return {
             "normalised": ascii_date,
             "original_calendar": "unknown",
@@ -239,3 +247,177 @@ def _parse_gregorian(date_str: str, parts: list[str]) -> str:
         return date_str
 
     return f"{year:04d}-{month:02d}-{day:02d}"
+
+
+# ---------------------------------------------------------------------------
+# Section 3 — Japanese era-year conversion
+# ---------------------------------------------------------------------------
+
+JAPANESE_ERAS: dict[str, dict] = {
+    # Kanji forms
+    "明治": {"romaji": "Meiji",  "start_gregorian": 1868},
+    "大正": {"romaji": "Taisho", "start_gregorian": 1912},
+    "昭和": {"romaji": "Showa",  "start_gregorian": 1926},
+    "平成": {"romaji": "Heisei", "start_gregorian": 1989},
+    "令和": {"romaji": "Reiwa",  "start_gregorian": 2019},
+    # Romanised forms (for partially-romanised input)
+    "Meiji":  {"romaji": "Meiji",  "start_gregorian": 1868},
+    "Taisho": {"romaji": "Taisho", "start_gregorian": 1912},
+    "Showa":  {"romaji": "Showa",  "start_gregorian": 1926},
+    "Heisei": {"romaji": "Heisei", "start_gregorian": 1989},
+    "Reiwa":  {"romaji": "Reiwa",  "start_gregorian": 2019},
+}
+
+# Kanji digit characters
+_KANJI_DIGIT_MAP: dict[str, int] = {
+    "〇": 0, "零": 0,
+    "一": 1, "二": 2, "三": 3, "四": 4, "五": 5,
+    "六": 6, "七": 7, "八": 8, "九": 9,
+    "十": 10, "百": 100, "千": 1000,
+}
+
+# Match an era name (kanji or romaji) followed by a numeral and 年
+_ERA_YEAR_RE = re.compile(
+    r"(明治|大正|昭和|平成|令和|Meiji|Taisho|Showa|Heisei|Reiwa)"
+    r"(元|[〇零一二三四五六七八九十百千\d]+)"
+    r"年"
+    r"(?:(元|[〇零一二三四五六七八九十\d]+)月)?"
+    r"(?:(元|[〇零一二三四五六七八九十\d]+)日)?"
+)
+
+# Match a pure-Kanji year in positional notation (e.g. 二〇〇五年)
+_KANJI_YEAR_RE = re.compile(
+    r"([〇零一二三四五六七八九]{4})年"
+    r"(?:([〇零一二三四五六七八九十\d]+)月)?"
+    r"(?:([〇零一二三四五六七八九十\d]+)日)?"
+)
+
+
+def kanji_numeral_to_int(text: str) -> int:
+    """Convert a Japanese Kanji numeral string to an integer.
+
+    Handles two modes:
+    - **Positional mode** (modern dates): ``"二〇〇五"`` → 2005.
+      Triggered when the string is 4 characters and contains 〇/零.
+    - **Classical mode**: ``"五十三"`` → 53, ``"十二"`` → 12, ``"三"`` → 3.
+
+    Special value ``"元"`` (meaning "first year of an era") returns 1.
+
+    Args:
+        text: Kanji numeral string (may also contain ASCII digits mixed in).
+
+    Returns:
+        Integer value of the numeral.
+
+    Raises:
+        ValueError: If the string cannot be parsed.
+    """
+    if text == "元":
+        return 1
+
+    # Positional mode: 4-char string like 二〇〇五 (modern style)
+    if len(text) == 4 and any(c in "〇零" for c in text):
+        result = 0
+        for ch in text:
+            if ch.isdigit():
+                result = result * 10 + int(ch)
+            elif ch in _KANJI_DIGIT_MAP:
+                result = result * 10 + _KANJI_DIGIT_MAP[ch]
+            else:
+                raise ValueError(f"Unexpected character in positional kanji: {ch!r}")
+        return result
+
+    # Classical mode: 五十三 → 53
+    result = 0
+    current = 0
+    for ch in text:
+        if ch.isdigit():
+            current = current * 10 + int(ch)
+        elif ch in _KANJI_DIGIT_MAP:
+            val = _KANJI_DIGIT_MAP[ch]
+            if val >= 10:
+                # multiplier
+                result += (current if current > 0 else 1) * val
+                current = 0
+            else:
+                current = current * 10 + val
+        else:
+            raise ValueError(f"Unexpected character in kanji numeral: {ch!r}")
+    result += current
+    return result
+
+
+def detect_and_convert_japanese_era(date_str: str) -> dict:
+    """Detect a Japanese era-year date string and convert it to ISO 8601.
+
+    Handles:
+    - Era + Kanji year: ``"昭和五十三年四月三日"`` → ``"1978-04-03"``
+    - Era + first year (元年): ``"平成元年一月八日"`` → ``"1989-01-08"``
+    - Kanji positional Gregorian year: ``"二〇〇五年十二月一日"`` → ``"2005-12-01"``
+    - Romanised era + ASCII year: ``"Heisei 3年1月5日"`` → ``"1991-01-05"``
+
+    Era conversions always set ``review_required=True`` because the calculated
+    year depends on which month in the era-start year the event falls (an
+    approximation that may be off by 1 year near era boundaries).
+
+    Args:
+        date_str: A date string that may contain a Japanese era name.
+
+    Returns:
+        A dict with keys:
+        - ``normalised``: ISO 8601 string, or original on parse failure.
+        - ``era_detected``: Romaji era name (e.g. ``"Showa"``), or ``None``.
+        - ``gregorian_year``: Integer Gregorian year, or ``None``.
+        - ``review_required``: ``bool``
+        - ``review_reason``: ``str | None``
+    """
+    m = _ERA_YEAR_RE.search(date_str)
+    if m:
+        era_key, era_year_str, month_str, day_str = m.groups()
+        era_info = JAPANESE_ERAS[era_key]
+        try:
+            era_year = kanji_numeral_to_int(era_year_str) if era_year_str else 1
+            gregorian_year = era_info["start_gregorian"] + era_year - 1
+            month = kanji_numeral_to_int(month_str) if month_str else 1
+            day = kanji_numeral_to_int(day_str) if day_str else 1
+            romaji = era_info["romaji"]
+            normalised = f"{gregorian_year:04d}-{month:02d}-{day:02d}"
+            return {
+                "normalised": normalised,
+                "era_detected": romaji,
+                "gregorian_year": gregorian_year,
+                "review_required": True,
+                "review_reason": (
+                    f"Japanese era date converted — verify year: "
+                    f"{romaji} {era_year} = {gregorian_year}"
+                ),
+            }
+        except (ValueError, KeyError):
+            pass
+
+    # Kanji positional Gregorian year (no era prefix, e.g. 二〇〇五年四月一日)
+    m2 = _KANJI_YEAR_RE.search(date_str)
+    if m2:
+        year_str, month_str, day_str = m2.groups()
+        try:
+            year = kanji_numeral_to_int(year_str)
+            month = kanji_numeral_to_int(month_str) if month_str else 1
+            day = kanji_numeral_to_int(day_str) if day_str else 1
+            normalised = f"{year:04d}-{month:02d}-{day:02d}"
+            return {
+                "normalised": normalised,
+                "era_detected": None,
+                "gregorian_year": year,
+                "review_required": False,
+                "review_reason": None,
+            }
+        except ValueError:
+            pass
+
+    return {
+        "normalised": date_str,
+        "era_detected": None,
+        "gregorian_year": None,
+        "review_required": True,
+        "review_reason": "Japanese date could not be parsed",
+    }
