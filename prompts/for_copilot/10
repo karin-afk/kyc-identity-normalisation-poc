@@ -1,0 +1,93 @@
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 10 — GOVERNANCE: Automated regression gate
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+File to create: src/evaluation/regression_gate.py
+File to create: .github/workflows/regression.yml
+
+In regression_gate.py, implement:
+
+  ACCURACY_THRESHOLDS = {
+    # Overall pipeline must not drop below these values
+    "overall":            0.85,
+    # Per-language minimums
+    "ar":                 0.90,
+    "ru":                 0.80,
+    "zh":                 0.78,
+    "ja":                 0.93,
+    "el":                 0.85,
+    "de":                 0.90,
+    "fr":                 0.90,
+    "es":                 0.90,
+    "it":                 0.90,
+    "ko":                 0.88,
+    "en":                 0.95,
+    # Per-method minimums
+    "PRESERVE":           1.00,
+    "TRANSLITERATE":      0.93,
+    "TRANSLATE_NORMALISE": 0.70,
+    "TRANSLATE_ANALYST":  0.50,   # reflects new partial implementation
+  }
+
+  class RegressionGateFailure(Exception):
+    """Raised when accuracy drops below threshold."""
+    pass
+
+  def run_regression_gate(
+      results: list[dict],
+      golden_dataset_path: str,
+      thresholds: dict = ACCURACY_THRESHOLDS,
+      strict: bool = True
+  ) -> dict:
+    """
+    Runs the full evaluation against the golden dataset and checks all thresholds.
+    Parameters:
+      results: list of pipeline output dicts
+      golden_dataset_path: path to data/golden_dataset.csv
+      thresholds: accuracy threshold dict
+      strict: if True, raises RegressionGateFailure on any threshold breach;
+              if False, returns report without raising
+    Returns a report dict:
+      {
+        "passed": bool,
+        "overall_accuracy": float,
+        "per_language": dict[str, float],
+        "per_method": dict[str, float],
+        "breaches": list[str],   # human-readable descriptions of failures
+        "timestamp": str,        # ISO 8601
+        "total_cases": int,
+        "passed_cases": int,
+      }
+    If strict=True and any threshold is breached, raise RegressionGateFailure
+    with the report dict as the exception's .report attribute.
+    """
+
+  def save_regression_report(report: dict, output_dir: str = "data/output") -> str:
+    """
+    Saves the regression report as a JSON file named:
+      regression_report_{timestamp}.json
+    Returns the file path.
+    """
+
+In .github/workflows/regression.yml, create a GitHub Actions workflow:
+  - Triggers on: push to main, pull_request to main
+  - Steps:
+    1. Checkout code
+    2. Set up Python 3.11
+    3. Install dependencies from requirements.txt
+    4. Run: PYTHONPATH=src python src/main.py --regression-gate
+       (add --regression-gate flag to src/main.py that runs the gate
+       and exits with code 1 if RegressionGateFailure is raised)
+    5. Upload regression report as a GitHub Actions artifact
+  - Environment variable: OPENAI_API_KEY (from GitHub Secrets)
+  - On failure: add a step that posts the breach list as a PR comment
+
+In src/main.py, add the --regression-gate CLI flag.
+
+Tests to write in tests/test_evaluator.py:
+  - Simulate results above all thresholds → gate passes
+  - Simulate overall accuracy of 0.80 → gate raises RegressionGateFailure
+  - Simulate PRESERVE accuracy of 0.99 → gate raises (below 1.00 threshold)
+  - Report dict contains all required keys
+  - save_regression_report creates a valid JSON file

@@ -26,7 +26,7 @@ from pathlib import Path
 
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(override=True)
 except ImportError:
     pass
 
@@ -92,10 +92,11 @@ def enrich_with_llm(text: str, row: dict) -> dict:
         "Translate and normalise this {field_type} to English. "
         "Output only the result, no explanation.\n{original_text}"
     )
-    prompt = template.format(
-        source_language=row.get("language", ""),
-        original_text=text,
-        field_type=field_type,
+    prompt = (
+        template
+        .replace("{source_language}", row.get("language", ""))
+        .replace("{original_text}", text)
+        .replace("{field_type}", field_type)
     )
 
     # Arabic name and composite alias prompts return JSON — structured output
@@ -120,11 +121,15 @@ def enrich_with_llm(text: str, row: dict) -> dict:
     if is_arabic_name or is_composite:
         try:
             parsed = _json.loads(raw)
-            primary = str(parsed.get("primary", raw)).upper()
             allowed_variants = [
                 str(v).upper() for v in parsed.get("variants", []) if v
             ]
-            result_text = primary
+            if is_composite:
+                # Use the full normalised form (e.g. "WANG QIANG ALSO KNOWN AS WANG XIAOQIANG")
+                result_text = str(parsed.get("normalised", raw)).upper()
+            else:
+                # Arabic name: just the primary transliteration
+                result_text = str(parsed.get("primary", raw)).upper()
         except (_json.JSONDecodeError, AttributeError):
             # Fallback: treat raw text as the primary form
             result_text = raw.upper()

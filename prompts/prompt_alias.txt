@@ -18,7 +18,7 @@ Your task:
    - "primary": the primary name in Latin script, all uppercase
    - "descriptor": the English descriptor phrase (ALSO KNOWN AS / NICKNAMED / KNOWN AS)
    - "alias_name": the alias name in Latin script, all uppercase
-   - "normalised": the full normalised form — "${primary} ${descriptor} ${alias_name}", all uppercase
+   - "normalised": the full normalised form — "{primary} {descriptor} {alias_name}", all uppercase
    - "variants": array of alternative acceptable forms (different romanisations of either name), may be empty
 
 Output ONLY the JSON object, no explanation.
