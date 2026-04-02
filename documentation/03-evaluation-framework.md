@@ -651,11 +651,71 @@ Targets apply to both the golden dataset and the test dataset.
 
 ---
 
-*Last updated: March 2026. Golden dataset evaluation: 20 March 2026, 112 cases. Test dataset evaluation: 20 March 2026, 100 cases. Model: gpt-4o.*
+## 14. Regression Gate
+
+The regression gate (`src/evaluation/regression_gate.py`) provides automated threshold enforcement for CI/CD pipelines. It is intended to run on every push to `main` and every pull request, preventing a merge that would degrade accuracy below defined thresholds.
+
+### Accuracy thresholds
+
+The `ACCURACY_THRESHOLDS` dictionary defines the minimum acceptable accuracy for each tracked category:
+
+| Category | Threshold | Rationale |
+|---|---|---|
+| `overall` | 0.85 | Minimum pipeline-wide floor |
+| `ar` (Arabic) | 0.90 | High-risk language — LLM performance must remain consistent |
+| `ru` (Russian/Ukrainian) | 0.80 | Known library issues create a realistic ceiling |
+| `zh` (Chinese) | 0.78 | Brand-name resolution limits current ceiling |
+| `ja` (Japanese) | 0.93 | Largely deterministic; high threshold justified |
+| `el` (Greek) | 0.85 | Consistent performance expected |
+| `de`, `fr`, `es`, `it`, `ko`, `en` | 0.88–0.95 | Set at evaluated baseline or slightly above |
+| `PRESERVE` | **1.00** | Zero tolerance — any PRESERVE failure is a critical regression |
+| `TRANSLITERATE` | 0.93 | Deterministic layer; high threshold |
+| `TRANSLATE_NORMALISE` | 0.70 | LLM layer; currently operating near this floor |
+| `TRANSLATE_ANALYST` | 0.50 | Partially implemented; lenient threshold |
+
+### RegressionGateFailure exception
+
+When `strict=True` (the default in CI), the gate raises `RegressionGateFailure` if any threshold is breached. The exception carries a `.report` attribute containing the full accuracy breakdown and a human-readable `breaches` list. The GitHub Actions workflow is configured to block merge when this exception propagates (`exit code 1`).
+
+```python
+try:
+    report = run_regression_gate(results, golden_dataset_path, strict=True)
+except RegressionGateFailure as e:
+    print(e.report["breaches"])
+    sys.exit(1)
+```
+
+### CI/CD integration
+
+The `.github/workflows/regression.yml` workflow:
+1. Runs on every push and pull request to `main`.
+2. Executes `PYTHONPATH=src python src/main.py --regression-gate`
+3. Saves the regression report JSON as a GitHub Actions artefact.
+4. Posts a PR comment summarising breaches when the gate fails.
+
+This ensures that no code change degrading accuracy can be merged without an explicit decision to revise the thresholds.
 
 ---
 
-## 14. Implementation Log
+## 15. Evaluation Results Version History
+
+This table records the pipeline accuracy at each significant milestone. All measurements use the 112-case golden dataset, model gpt-4o, temperature=0.
+
+| Version | Date | Sections merged | Overall | ar | ru | zh | ja | el |
+|---|---|---|---|---|---|---|---|---|
+| v1 | Feb 2026 | Baseline (Arabic + Japanese) | 72.3% | 89.5% | 72.2% | 60.0% | 92.0% | 55.6% |
+| v2 | Mar 2026 | Sections 1–6 (all languages + composite aliases + HK Cantonese) | 88.4% | 94.7% | 83.3% | 80.0% | 96.0% | 88.9% |
+| v3 | Apr 2026 | Sections 7 (Belarusian) | 88.4% | 94.7% | 83.3% | 80.0% | 96.0% | 88.9% |
+
+> **Note**: v3 accuracy is identical to v2 — the Belarusian handler adds new language coverage but there are no Belarusian cases in the current 112-case golden dataset. Accuracy impact will be measurable once Belarusian cases are added to the dataset.
+
+---
+
+*Last updated: April 2026. Golden dataset evaluation: 20 March 2026, 112 cases. Test dataset evaluation: 20 March 2026, 100 cases. Model: gpt-4o.*
+
+---
+
+## 16. Implementation Log
 
 ### Section 1 — BGN/PCGN Russian/Ukrainian Post-Processing (2 April 2026)
 
