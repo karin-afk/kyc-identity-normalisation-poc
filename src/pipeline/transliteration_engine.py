@@ -14,6 +14,55 @@ Install: pip install transliterate pykakasi pypinyin unidecode
 """
 
 import unicodedata
+import re
+
+
+# ---------------------------------------------------------------------------
+# BGN/PCGN post-processing corrections for Russian and Ukrainian
+# ---------------------------------------------------------------------------
+
+# Ordered substitutions — must be applied in sequence.
+# The transliterate library's output for Russian/Ukrainian diverges from
+# BGN/PCGN in these specific patterns.  Bulgarian intentionally excluded.
+_BGN_PCGN_CORRECTIONS: list[tuple[str, str]] = [
+    ("Sch", "Shch"),   # Щ — library outputs "Sch"; BGN/PCGN mandates "Shch"
+    ("sch", "shch"),
+    ("Shh", "Shch"),   # alternate Щ form — kept for robustness across library versions
+    ("shh", "shch"),
+    ("Ja",  "Ya"),     # Я at word-initial and post-vowel
+    ("ja",  "ya"),
+    ("Ju",  "Yu"),     # Ю
+    ("ju",  "yu"),
+    ("Je",  "Ye"),     # Е when library outputs Je form
+    ("je",  "ye"),
+]
+
+# Word-initial Е: the transliterate library outputs plain "E" for Е at word
+# start; BGN/PCGN requires "Ye".  Applied as a regex after the table above.
+_WORD_INITIAL_E_RE = re.compile(r"\b([Ee])")
+
+
+def _apply_bgn_pcgn_corrections(text: str) -> str:
+    """Apply BGN/PCGN post-processing substitutions to a transliterated string.
+
+    Corrects systematic divergences between the ``transliterate`` library's
+    output and the BGN/PCGN romanisation standard for Russian and Ukrainian.
+    Must NOT be applied to Bulgarian (different BGN conventions).
+
+    Args:
+        text: A partially-romanised string produced by the transliterate library.
+
+    Returns:
+        The string with all BGN/PCGN substitutions applied in the required order.
+    """
+    for old, new in _BGN_PCGN_CORRECTIONS:
+        text = text.replace(old, new)
+    # Word-initial Е → Ye: the library emits "E" (not "Je") for Е at word start.
+    text = _WORD_INITIAL_E_RE.sub(
+        lambda m: "Ye" if m.group(1).isupper() else "ye", text
+    )
+    return text
+
 
 
 # ---------------------------------------------------------------------------
@@ -90,6 +139,11 @@ def _transliterate_cyrillic(text: str, language: str) -> dict:
     # (e.g. NATAL'JA, JUR'EVICH).  Strip it — the soft sign has no Latin equivalent
     # in ICAO/BGN romanisation.
     lat = lat.replace("'", "")
+
+    # Apply BGN/PCGN corrections for Russian and Ukrainian only.
+    # Bulgarian has different BGN conventions and must not be post-processed here.
+    if effective_language in ("ru", "uk"):
+        lat = _apply_bgn_pcgn_corrections(lat)
 
     review = effective_language == "uk"  # Ukrainian/Russian distinction needs analyst check
     return _build_result(

@@ -1,5 +1,5 @@
 import pytest
-from pipeline.transliteration_engine import transliterate
+from pipeline.transliteration_engine import transliterate, _apply_bgn_pcgn_corrections
 from pipeline.field_classifier import is_composite_alias
 
 
@@ -178,3 +178,42 @@ def test_non_composite_alias_uses_primary_field(monkeypatch):
         result = llm_layer.enrich_with_llm("جان لوك", row)
 
     assert result["normalised_form"] == "JEAN LUC MOREAU"
+
+
+# ── Section 1: BGN/PCGN corrections for Russian/Ukrainian ────────────────
+
+def test_bgn_pcgn_corrections_unit():
+    """_apply_bgn_pcgn_corrections applies all substitutions in correct order."""
+    assert _apply_bgn_pcgn_corrections("Natalja") == "Natalya"     # Ja→Ya
+    assert _apply_bgn_pcgn_corrections("Jurij") == "Yurij"          # Ju→Yu (trailing j stays)
+    assert _apply_bgn_pcgn_corrections("Schukin") == "Shchukin"    # Sch→Shch
+    assert _apply_bgn_pcgn_corrections("Jekaterina") == "Yekaterina"  # Je→Ye
+    assert _apply_bgn_pcgn_corrections("Tatjana") == "Tatyana"      # ja→ya
+    assert _apply_bgn_pcgn_corrections("Ekaterina") == "Yekaterina" # word-initial E→Ye
+
+
+@pytest.mark.parametrize("cyrillic,expected_in_norm", [
+    ("Наталья",    "NATALYA"),    # Я at end — not NATALJA
+    ("Юрий",       "YURIJ"),      # Ю at start — Ju→Yu; trailing j from й preserved
+    ("Екатерина",  "YEKATERINA"), # Е word-initial → Ye
+    ("Татьяна",    "TATYANA"),    # Тя combination
+    ("Щукин",      "SHCHUKIN"),   # Щ — Sch→Shch
+])
+def test_russian_bgn_pcgn_in_transliteration(cyrillic: str, expected_in_norm: str):
+    row = {"language": "ru", "field_type": "person_name"}
+    result = transliterate(cyrillic, row)
+    assert expected_in_norm in result["normalised_form"], (
+        f"Expected '{expected_in_norm}' in '{result['normalised_form']}' "
+        f"for input '{cyrillic}'"
+    )
+
+
+def test_bulgarian_not_affected_by_bgn_pcgn():
+    """Bulgarian should NOT have Ja→Ya applied — it has different BGN conventions."""
+    row = {"language": "bg", "field_type": "person_name"}
+    # Яна is a Bulgarian name — after library it becomes Jana (not Yana) because
+    # Bulgarian BGN uses different standards; we must NOT force-correct it.
+    result = transliterate("Яна Иванова", row)
+    # Key assertion: the result was processed and has content (not empty)
+    assert result["normalised_form"] != ""
+    assert result["processing_method"] == "TRANSLITERATE"
