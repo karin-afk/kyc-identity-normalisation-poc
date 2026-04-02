@@ -109,6 +109,14 @@ def _build_result(
 # Language-specific handlers
 # ---------------------------------------------------------------------------
 
+# Belarusian characters that differ from Russian BGN/PCGN mappings.
+# Applied as pre-processing substitutions before calling the transliterate library.
+BELARUSIAN_CHAR_MAP: dict[str, str] = {
+    "Ў": "W",  "ў": "w",   # Short U → W (exclusive to Belarusian)
+    "Г": "H",  "г": "h",   # Г → H in Belarusian (not G as in Russian)
+    "І": "I",  "і": "i",   # Same mapping as Ukrainian І
+}
+
 def _transliterate_cyrillic(text: str, language: str) -> dict:
     """Russian / Ukrainian / Bulgarian Cyrillic → Latin (BGN/PCGN-ish via transliterate lib)."""
     # Ukrainian-exclusive characters (absent from standard Russian/Bulgarian text).
@@ -163,6 +171,65 @@ def _transliterate_greek(text: str) -> dict:
     except Exception:
         lat = _to_latin_fallback(text)
     return _build_result(text, lat)
+
+
+def _transliterate_belarusian(text: str) -> dict:
+    """Transliterate Belarusian Cyrillic to Latin script.
+
+    Strategy:
+    1. Apply ``BELARUSIAN_CHAR_MAP`` substitutions before calling the library.
+       This maps Belarusian-specific characters (Ў→W, Г→H, І→I) that the
+       ``transliterate`` library would otherwise handle incorrectly.
+    2. Call the ``transliterate`` library in Russian mode (closest available).
+    3. Apply ``_apply_bgn_pcgn_corrections()`` post-processing.
+    4. Generate the raw Russian-mode transliteration as an additional variant
+       (for records processed under the wrong language code).
+
+    Result always has ``review_required=True`` because automated Belarusian
+    romanisation uses the Russian library as a base and is approximate.
+
+    Args:
+        text: Belarusian Cyrillic text to transliterate.
+
+    Returns:
+        Full pipeline result dict.
+    """
+    # Russian variant: no Belarusian pre-processing
+    try:
+        from transliterate import translit
+        ru_lat = translit(text, "ru", reversed=True)
+    except Exception:
+        ru_lat = _to_latin_fallback(text)
+    ru_norm = _normalise(ru_lat)
+
+    # Belarusian pre-processing: substitute Ў, Г, І before library call
+    be_text = text
+    for src, dst in BELARUSIAN_CHAR_MAP.items():
+        be_text = be_text.replace(src, dst)
+
+    try:
+        from transliterate import translit
+        lat = translit(be_text, "ru", reversed=True)
+    except Exception:
+        lat = _to_latin_fallback(be_text)
+
+    lat = _apply_bgn_pcgn_corrections(lat)
+    be_norm = _normalise(lat)
+
+    variants: list[str] = []
+    if ru_norm != be_norm:
+        variants.append(ru_norm)
+
+    result = _build_result(
+        text, lat,
+        review=True,
+        reason=(
+            "Belarusian text: manual verification required — "
+            "automated Belarusian romanisation is approximate"
+        ),
+    )
+    result["allowed_variants"] = variants
+    return result
 
 
 def _transliterate_japanese(text: str) -> dict:
@@ -661,7 +728,16 @@ def transliterate(text: str, row: dict) -> dict:
     language = row.get("language", "")
     field_type = row.get("field_type", "")
 
-    if language in ("ru", "uk", "bg"):
+    # Auto-detect Belarusian: Ў is exclusive to Belarusian and overrides
+    # whatever Cyrillic language code was recorded on the document.
+    if language in ("ru", "uk", "bg", "be"):
+        from utils.script_detection import detect_belarusian
+        if detect_belarusian(text):
+            language = "be"
+
+    if language == "be":
+        return _transliterate_belarusian(text)
+    elif language in ("ru", "uk", "bg"):
         return _transliterate_cyrillic(text, language)
     elif language == "ja":
         if field_type in ("date", "birth_date"):
