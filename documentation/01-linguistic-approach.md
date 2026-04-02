@@ -46,6 +46,12 @@ The LLM prompt instructs the model to:
 - **Romanisation families**: At least two major romanisation systems are in common use (BGN/PCGN and the older British transliteration). Generated variants cover both.
 - **Tashkeel (diacritics)**: When present, diacritical marks resolve short-vowel ambiguity. The pipeline passes these through to the LLM unmodified, which improves accuracy when they are present.
 
+### Egyptian and country-specific conventions
+Egyptian Arabic names are frequently romanised using compound, hyphen-free forms that differ from the classical BGN/PCGN rendering. For example, the surname السيد (Al-Sayyid in classical BGN/PCGN) is rendered as **Elsayed** in Egyptian passport practice; النجار becomes **Alnaggar** rather than Al-Najjar. The UAE uses similarly fused forms (Al Maktoum rather than Al-Maktum). The pipeline passes the document `country` field into the Arabic name LLM system prompt, enabling the model to apply the country-specific romanisation convention rather than always defaulting to the classical standard. This is particularly important for documents from Egypt (EG), the UAE (AE), and Saudi Arabia (SA).
+
+### Ayin (ع) variant generation
+The Arabic letter ع (ʿayn) poses a specific romanisation challenge. ICAO Doc 9303 and most modern Latin-script watchlists omit the ayin marker entirely in romanised output. However, older records and some specialist databases represent it as an ASCII apostrophe (`'`) or the Unicode letter modifier ʿ (U+02BF). The pipeline's primary output follows ICAO convention — ayin is omitted. Where a name contains ع, the `allowed_variants` list is extended with forms that include an apostrophe in the ayin position, ensuring that a match is not missed against a database built to an older convention (e.g. ABD AL AZIZ and ABD AL-`A'ZIZ being recognised as the same name).
+
 ---
 
 ## 3. Russian (ru) — Script: Cyrillic
@@ -146,6 +152,21 @@ All kanji-containing results are flagged `review_required=True` with the reason 
 | っ (double consonant) | Doubled by library (e.g. Katta) | Hepburn standard |
 | ん before vowel | Rendered as n' in some systems → stripped apostrophe | Screeners do not consistently handle the apostrophe |
 
+### Era-year (gengo) conversion
+Japanese official documents — including date of birth fields on residence cards and company registration documents — frequently express years in the traditional **era-year (元号, gengo)** system rather than the Gregorian calendar. For example, 令和5年7月3日 means year 5 of the Reiwa era, which is **2023-07-03**.
+
+The pipeline (`src/utils/calendar_utils.py`) detects and converts all five modern eras:
+
+| Era (Kanji) | Era (Romaji) | Gregorian start | Notes |
+|---|---|---|---|
+| 明治 | Meiji | 1868 | Documents from this era are rare in modern KYC |
+| 大正 | Taisho | 1912 | |
+| 昭和 | Showa | 1926 | Most common era year on older documents |
+| 平成 | Heisei | 1989 | Common on mid-career documents |
+| 令和 | Reiwa | 2019 | Current era |
+
+The converter accepts both kanji era names (令和5年) and partially romanised forms (Reiwa 5年), and handles kanji numerals (令和五年). The output is always in ISO 8601 Gregorian format (YYYY-MM-DD or YYYY where month and day are absent). A `calendar_conversion` metadata field records the original era name and year for traceability.
+
 ### Known ambiguities
 - **Kanji surname readings**: Even common surnames like 佐藤 (Sato) look straightforward but field instructions could plausibly require SATOU or SA TO depending on the database. Variants cover the main cases.
 - **Name order inversion**: Japanese passports place family name before given name. Western sanctions lists sometimes invert this. Both orderings are provided.
@@ -212,7 +233,174 @@ Greek is handled entirely by the deterministic `transliterate` library. One post
 
 ---
 
-## 9. Preserve Fields — No Normalisation Required
+## 9. German (de) — Script: Latin
+
+### Writing system
+German is written in Latin script with four additional characters: three umlaut vowels (Ä, Ö, Ü) and the ligature ß (eszett / sharp-s). These characters do not exist in ASCII and are handled inconsistently across databases and legacy systems.
+
+### Standard applied
+**Umlaut expansion** (Ä→AE, Ö→OE, Ü→UE, ß→SS) is the primary standard used in German passports prior to 2013 and remains the most common form on watchlists and screening databases. A secondary **umlaut-drop** form (Ä→A, Ö→O, Ü→U, ß→S) is generated as a variant to match databases that applied a simpler ASCII reduction.
+
+### Transliteration strategy
+German names are Latin-script and require **normalisation** rather than transliteration. The pipeline applies deterministic character mapping via `config.language_normalisation_tables.GERMAN_UMLAUT_EXPANSIONS` and `GERMAN_UMLAUT_DROPS`. No LLM is required.
+
+### Key linguistic decisions
+| Feature | Decision | Reason |
+|---|---|---|
+| Ä/Ö/Ü | Primary: AE/OE/UE; variant: A/O/U | Passport standard is expansion; legacy databases often use drop |
+| ß | Primary: SS; variant: S | German government standard since 2013 is SS |
+| Hyphenated given names | Primary: hyphen retained; variant: space-separated | Screening tools split on either delimiter |
+| Noble particles (von/van/zu) | Preserved in primary; capitalised variant generated | German convention: particle lowercase unless leading the name |
+
+### Known ambiguities
+- **Database inconsistency**: Pre-2013 German passports issued by different federal states applied different conventions. Both expansion (MUELLER) and drop (MULLER) forms are generated as variants.
+- **Swiss/Austrian names**: Switzerland and Austria use the same umlaut conventions but may include additional characters. The same handler applies to all German-language documents.
+
+---
+
+## 10. French (fr) — Script: Latin
+
+### Writing system
+French uses Latin script with extensive diacritic marks (accents): acute (é), grave (è, à, ù), circumflex (â, ê, î, ô, û), cedilla (ç), and diaeresis (ë, ï, ü). Two ligatures (œ, æ) also appear. French names also use typographic apostrophes for elision (d', l').
+
+### Standard applied
+**Accent stripping** to bare ASCII is the standard for KYC screening contexts. All diacritics are removed; ligatures are expanded (œ→OE, æ→AE). This follows the ICAO Doc 9303 standard and matches how French names appear on watchlists.
+
+### Transliteration strategy
+French is handled by the deterministic `_normalise_french()` function using `config.language_normalisation_tables.FRENCH_ACCENT_STRIP`. No LLM is required.
+
+### Key linguistic decisions
+| Feature | Decision | Reason |
+|---|---|---|
+| é/è/ê/ë → E | All forms stripped to E | ICAO and watchlist standard |
+| ç → C | Cedilla stripped | Standard ASCII reduction |
+| œ → OE, æ → AE | Ligature expansion | ISO/ICAO standard |
+| d' / l' (elision) | Primary: apostrophe retained as space (D AVIGNON); variants include fused (DAVIGNON) and space forms | Screening databases use both forms inconsistently |
+| de / du / de la / des | Preserved in primary; particle-dropped variant generated | Noble particles may be omitted in some databases |
+| Hyphenated names | Primary: hyphen retained; variant: space-separated | Standard variant generation |
+
+### Known ambiguities
+- **Particle capitalisation**: When a French particle (de, du) begins the name in a record, it may be capitalised (De Gaulle vs de Gaulle). Both forms are in `allowed_variants`.
+
+---
+
+## 11. Spanish (es) — Script: Latin
+
+### Writing system
+Spanish uses Latin script with five accented vowel forms (á, é, í, ó, ú), the tilde letter ñ, and less commonly diaeresis ü. The inverted punctuation marks (¡, ¿) do not appear in personal names.
+
+### Standard applied
+**Accent stripping** to bare ASCII, with ñ mapped to N in the primary form. The ñ→NY variant is also generated because some romanisation systems and historical Spanish documents use the NY digraph (Señor → SENYOR / SENOR). ü is stripped to U.
+
+### Transliteration strategy
+Spanish is handled by the deterministic `_normalise_spanish()` function. No LLM is required.
+
+### Key linguistic decisions
+| Feature | Decision | Reason |
+|---|---|---|
+| á/é/í/ó/ú → A/E/I/O/U | Accent stripped | ICAO/watchlist standard |
+| ñ → N | Primary form | Least-ambiguous ASCII reduction |
+| ñ → NY | Variant | Older Spanish system; some watchlists use this form |
+| Two-surname system | Both names preserved in full primary | Spanish naming convention; first surname (paternal) is the primary family identifier |
+| de / del / de la / de los / de las | Preserved in primary; particle-dropped variant generated | Spanish noble/place-of-origin particles may be omitted in databases |
+
+### Known ambiguities
+- **Two-surname ordering**: Some databases store only the first (paternal) surname; others retain both. The `allowed_variants` list includes single-surname forms for cases where only one surname was indexed.
+
+---
+
+## 12. Italian (it) — Script: Latin
+
+### Writing system
+Italian uses Latin script with grave accents on certain vowels (à, è, ì, ò, ù) — primarily word-finally (città, perché) and in certain names. Apostrophe particles (D', Dell', L') are common in southern Italian surnames.
+
+### Standard applied
+**Grave accent stripping** to bare ASCII. Apostrophe handling follows Italian passport practice: the apostrophe is retained as a space in the primary form (D'Angelo → D ANGELO), with fused (DANGELO) and particle-dropped (ANGELO) variants.
+
+### Transliteration strategy
+Italian is handled by the deterministic `_normalise_italian()` function using `config.language_normalisation_tables.ITALIAN_ACCENT_STRIP`. No LLM is required.
+
+### Key linguistic decisions
+| Feature | Decision | Reason |
+|---|---|---|
+| à/è/ì/ò/ù → A/E/I/O/U | Grave accent stripped | Standard ASCII reduction |
+| D'/Dell'/Dall'/L'/De'/Degli' | Primary: space (D ANGELO); variants: fused (DANGELO) and dropped (ANGELO) | Italian passport practice; databases use all three forms |
+| Double consonants | Preserved exactly | Linguistically meaningful: Bianchi ≠ Bianci; Conti ≠ Contt |
+
+### Known ambiguities
+- **Southern Italian particles**: D', De', Di (without apostrophe) are common and treated differently. Di is retained as a word (DI STEFANO); D'/De' use the apostrophe stripping rule.
+
+---
+
+## 13. Korean (ko) — Script: Hangul (한글)
+
+### Writing system
+Korean uses Hangul, a featural alphabet developed in the 15th century. Hangul syllable blocks are composed of consonant and vowel jamo characters. Each syllable block is written as a single typographic unit (e.g. 한 = H+A+N), making it structurally different from European alphabets.
+
+### Standard applied
+**Revised Romanisation of Korea (RR)** — the official South Korean government standard (2000), used in passports since 2000 and on international databases. The pipeline implements RR via the `config.language_normalisation_tables.romanise_hangul()` function as a built-in fallback, with the `korean-romanizer` library used when available.
+
+**McCune–Reischauer (MR)** variants are generated where surnames have documented MR forms, because older databases and North Korean documents use the MR system.
+
+### Surname variant table
+Korean has a small number of very common surnames, each with multiple documented romanisation variants across different systems and historical practice. The pipeline's `KOREAN_SURNAME_VARIANTS` lookup covers the most frequent:
+
+| Hangul | RR (primary) | Documented variants |
+|---|---|---|
+| 이 | I | Yi, Lee, Rhee, Ri, Rhie |
+| 박 | Bak | Park, Pak |
+| 최 | Choe | Choi, Ch'oe |
+| 류 | Ryu | Yu, Yoo, Lyu |
+| 유 | Yu | Yoo, Ryu |
+| 정 | Jeong | Jung, Chung, Chŏng |
+| 권 | Gwon | Kwon, Kwŏn |
+| 윤 | Yun | Yoon |
+| 임 | Im | Lim |
+| 조 | Jo | Cho |
+| 신 | Sin | Shin |
+| 노 | No | Roh |
+
+All surname variants are added to `allowed_variants` to ensure matching against databases that use any of the documented forms.
+
+### Name order
+Korean names follow surname-first convention (e.g. 박지훈 = BAK JIHUN where BAK is the surname). The primary output follows Korean convention; `allowed_variants` includes the western given-name-first form (JIHUN BAK).
+
+### Review requirement
+All Korean results are flagged `review_required=True` because surname romanisation ambiguity is inherent and non-trivial. An analyst should confirm the specific romanisation form used in the source document.
+
+### Key linguistic decisions
+| Feature | Decision | Reason |
+|---|---|---|
+| RR as primary | Matches current South Korean passport standard | |
+| Surname variant table | Hard-coded, not AI-generated | Variants are documented, finite, and well-established |
+| Given name: fused vs hyphenated | Both variants generated | Korean passports fuse given names (JIHUN); some databases hyphenate (JI-HUN) |
+| North Korean documents | MR forms included in variants where documented | Databases may use older MR forms for DPRK nationals |
+
+---
+
+## 14. English (en) — Script: Latin
+
+### Writing system
+Modern English uses the basic 26-letter Latin alphabet with no diacritics in standard usage. Relevant edge cases for KYC normalisation include: apostrophes in surnames (O'Brien, D'Souza), Mac/Mc prefix variants, St/Saint abbreviation pairs, and hyphenated given names.
+
+### Standard applied
+**Minimal normalisation** — uppercase conversion and NFKC Unicode normalisation. All meaningful characters are preserved. The processing layer is Layer 1 (RULE) for PRESERVE fields and Layer 2 (TRANSLITERATE / normalise) for person names and aliases.
+
+### Transliteration strategy
+English names are handled by the deterministic `_normalise_english()` function. No LLM is required.
+
+### Key linguistic decisions
+| Feature | Decision | Reason |
+|---|---|---|
+| Apostrophe (O'Brien) | Primary: retained (O'BRIEN); variants: O BRIEN, OBRIEN | All three forms appear on watchlists |
+| Mac/Mc prefix | Both-case variants generated (MACDONALD, MCDONALD) | Historic databases use both forms inconsistently |
+| Saint / St | Both forms generated as variants (ST JAMES, SAINT JAMES) | Addresses and surnames use both |
+| Hyphens | Primary: hyphen retained; variants: space and fused | Jean-Pierre may appear as JEAN PIERRE or JEANPIERRE |
+| Full-width characters | NFKC normalisation applied | Japanese/Chinese documents sometimes use full-width ASCII in name fields |
+
+---
+
+## 15. Preserve Fields — No Normalisation Required
 
 Certain field types carry structured identifiers that must not be modified. These are handled by the rules engine and returned verbatim:
 
@@ -224,7 +412,7 @@ Certain field types carry structured identifiers that must not be modified. Thes
 
 ---
 
-## 10. Addressing and Name Order — Cross-Language Notes
+## 16. Addressing and Name Order — Cross-Language Notes
 
 ### Name order conventions
 
@@ -246,10 +434,10 @@ The address LLM prompt explicitly prohibits the model from inventing or omitting
 
 ---
 
-## 11. Script Auto-Detection
+## 17. Script Auto-Detection
 
 When the `language` field is absent from an input row, the pipeline falls back to unidecode-based Latin conversion as a last resort. For optimal results, the language code should always be supplied. If a document carries only a script type (e.g. "Cyrillic") without a specific language, the pipeline's Ukrainian-character detection heuristic can distinguish Russian from Ukrainian.
 
 ---
 
-*Last updated: March 2026. Pipeline version: v2 (Streamlit frontend + LLM Arabic + Kanji lookup).*
+*Last updated: April 2026. Pipeline version: v3 (expanded language support: de, fr, es, it, ko, en; Belarusian handler; Japanese era-year conversion; HK Cantonese surname variants).*
