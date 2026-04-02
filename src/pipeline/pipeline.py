@@ -2,13 +2,14 @@ from pipeline.rules_engine import apply_rules
 from pipeline.transliteration_engine import transliterate
 from pipeline.llm_layer import enrich_with_llm
 from pipeline.field_classifier import is_composite_alias
+from pipeline.analyst_handler import process_analyst_field
 
 
 def process_field(row: dict) -> dict:
     field_type = row["field_type"]
     text = row["original_text"]
 
-    # Step 1: Deterministic rules — handles PRESERVE fields
+    # Step 1: Deterministic rules — handles PRESERVE and NORMALISE_NUMERIC fields
     result = apply_rules(field_type, text)
     if result is not None:
         return result
@@ -19,12 +20,18 @@ def process_field(row: dict) -> dict:
     #      the consonant-only map produces unusable output.
     #   b) Composite aliases: the alias text contains a natural-language
     #      descriptor phrase (e.g. "nicknamed", "also known as", "по прозвищу")
-    #      that must be *translated*, not transliterated.
+    #      that must be *translated*, not transliterated — routed to ANALYST.
     if field_type in ("person_name", "alias"):
-        if row.get("language") == "ar" or (
-            field_type == "alias" and is_composite_alias(text)
-        ):
+        if row.get("language") == "ar":
             return enrich_with_llm(text, row)
+        if field_type == "alias" and is_composite_alias(text):
+            return process_analyst_field(
+                text,
+                language=row.get("language", ""),
+                transliterate_fn=transliterate,
+                llm_fn=enrich_with_llm,
+                row=row,
+            )
         return transliterate(text, row)
 
     # Step 3: LLM — addresses and company names
