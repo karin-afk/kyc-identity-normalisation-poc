@@ -318,10 +318,19 @@ def transliterate(text: str, row: dict) -> dict:
     `row` must contain a 'language' key (ISO 639-1 code).
     """
     language = row.get("language", "")
+    field_type = row.get("field_type", "")
 
     if language in ("ru", "uk", "bg"):
         return _transliterate_cyrillic(text, language)
     elif language == "ja":
+        if field_type in ("date", "birth_date"):
+            from utils.calendar_utils import detect_and_convert_japanese_era
+            era_result = detect_and_convert_japanese_era(text)
+            return _build_result(
+                text, era_result["normalised"],
+                review=era_result["review_required"],
+                reason=era_result["review_reason"],
+            )
         return _transliterate_japanese(text)
     elif language == "zh":
         return _transliterate_chinese(text, row.get("field_type", ""))

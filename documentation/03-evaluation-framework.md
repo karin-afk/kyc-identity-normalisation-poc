@@ -739,3 +739,42 @@ A new deterministic Layer 1 date normalisation module (`calendar_utils.py`) hand
 - `test_date_field_type_handled` — confirms `date` is routed by RULE
 
 **Test results:** 51 passed, 0 failed (1 DeprecationWarning from deprecated `hijri-converter` — harmless)
+
+---
+
+### Section 3 — Japanese Era-Year Conversion (2 April 2026)
+
+**Branch:** `feature/section-3-japanese-era` → merged to `main`
+
+**Files changed:**
+- `src/utils/calendar_utils.py` — added `JAPANESE_ERAS`, `kanji_numeral_to_int()`, `detect_and_convert_japanese_era()`, updated `normalise_date_field()`
+- `src/pipeline/transliteration_engine.py` — added era-date routing in `transliterate()`
+
+**What was implemented:**
+
+Japanese era-year dates (e.g. 昭和五十三年四月三日) are now detected and converted to ISO 8601 via two integration points:
+1. **`normalise_date_field(language="ja")`** — when `detect_calendar_system()` returns `"unknown"` and language is `"ja"`, delegates to `detect_and_convert_japanese_era()`
+2. **`transliterate()`** — when `language=="ja"` and `field_type` is `"date"` or `"birth_date"`, calls `detect_and_convert_japanese_era()` and returns the ISO date instead of routing to pykakasi
+
+| Constant/Function | Purpose |
+|---|---|
+| `JAPANESE_ERAS` | Dict mapping kanji and romanised era names to start year and romaji |
+| `kanji_numeral_to_int(text)` | Converts classical (五十三→53) and positional (二〇〇五→2005) Kanji numerals |
+| `detect_and_convert_japanese_era(date_str)` | Full era detection + Gregorian conversion; returns normalised, era_detected, gregorian_year, review_required, review_reason |
+
+**Supported eras:** 明治 (Meiji, 1868), 大正 (Taisho, 1912), 昭和 (Showa, 1926), 平成 (Heisei, 1989), 令和 (Reiwa, 2019). Both Kanji and romanised forms accepted.
+
+**Special value:** 元年 (gangen / first year) is correctly parsed as year 1.
+
+**Review policy:** Era-year conversions always set `review_required=True` with reason `"Japanese era date converted — verify year: {era} {era_year} = {gregorian_year}"`. Pure Kanji Gregorian dates (no era prefix) set `review_required=False`.
+
+**Tests added** (`tests/test_transliteration.py`, 13 new tests):
+- `test_kanji_numeral_to_int` (parametrised × 7): 五十三→53, 二〇〇五→2005, 十二→12, 三→3, 二十→20, 元→1, 六十四→64
+- `test_showa_era_conversion` — 昭和五十三年四月三日 → 1978-04-03, review=True
+- `test_heisei_first_year` — 平成元年一月八日 → 1989-01-08
+- `test_reiwa_era_conversion` — 令和三年一月五日 → 2021-01-05
+- `test_kanji_gregorian_no_era` — 二〇〇五年十二月一日 → 2005-12-01, review=False
+- `test_japanese_era_date_via_transliterate` — transliterate() routing for birth_date
+- `test_japanese_era_date_field_date_type` — transliterate() routing for date
+
+**Test results:** 64 passed, 0 failed
