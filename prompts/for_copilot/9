@@ -1,0 +1,72 @@
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9 — GOVERNANCE: Calibrated confidence scores
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+File to create: src/pipeline/confidence_calibrator.py
+File to modify: src/pipeline/llm_layer.py
+File to modify: src/pipeline/transliteration_engine.py
+
+In confidence_calibrator.py, implement:
+
+  def calibrate_llm_confidence(
+      primary: str,
+      variants: list[str],
+      field_type: str,
+      language: str
+  ) -> float:
+    """
+    Returns a calibrated confidence score for LLM results.
+    Replaces the fixed 0.85 value.
+
+    Scoring rules (apply all, take the minimum):
+
+    Base score: 0.90
+
+    Deductions:
+      - len(variants) >= 5:  -0.10  (high ambiguity)
+      - len(variants) >= 3:  -0.05  (moderate ambiguity)
+      - len(variants) == 0:  -0.05  (suspiciously low — model may have failed)
+      - field_type == "alias": -0.05  (aliases are inherently less certain)
+      - language == "ar" and field_type == "person_name": -0.05
+        (Arabic vowel ambiguity always present)
+      - primary contains "AL-" or "EL-" or "ABU" or "IBN" or "BIN": -0.05
+        (compound Arabic names have higher variant risk)
+      - len(primary.split()) > 4: -0.05  (very long names are harder to normalise)
+
+    Floor: 0.60 (never return below this)
+    Ceiling: 0.95 (never return above this for LLM results)
+    """
+
+  def calibrate_transliteration_confidence(
+      result: dict,
+      language: str,
+      field_type: str,
+      review_required: bool
+  ) -> float:
+    """
+    Returns a calibrated confidence score for transliteration (Layer 2) results.
+
+    Rules:
+      - Base: 0.95
+      - review_required=True: 0.75
+      - language in ["ko"]: -0.05  (surname variant lookup adds uncertainty)
+      - language in ["ja"] and "Kanji" in result.get("review_reason", ""):
+          score = 0.70  (Kanji reading ambiguity)
+      - language in ["zh"] and country == "HK": -0.05 (Cantonese variant risk)
+      - Floor: 0.65
+    """
+
+Update llm_layer.py to call calibrate_llm_confidence() instead of using 
+the fixed 0.85 value.
+
+Update transliteration_engine.py to call calibrate_transliteration_confidence()
+instead of using fixed 0.9/0.7 values.
+
+Tests to write in tests/test_pipeline.py:
+  - LLM result with 6 variants → confidence <= 0.80
+  - LLM result with 1 variant → confidence >= 0.88
+  - Transliteration with review_required=True → confidence <= 0.80
+  - Kanji result → confidence <= 0.75
+  - All confidence scores are in [0.60, 0.95] for LLM
+  - All confidence scores are in [0.65, 0.95] for transliteration

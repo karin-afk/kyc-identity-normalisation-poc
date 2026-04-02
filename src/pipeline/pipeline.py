@@ -1,6 +1,7 @@
 from pipeline.rules_engine import apply_rules
 from pipeline.transliteration_engine import transliterate
 from pipeline.llm_layer import enrich_with_llm
+from pipeline.field_classifier import is_composite_alias
 
 
 def process_field(row: dict) -> dict:
@@ -13,10 +14,16 @@ def process_field(row: dict) -> dict:
         return result
 
     # Step 2: Transliteration — names and aliases
-    # Arabic names are routed to the LLM because short vowels are not written
-    # in standard Arabic text; the consonant-only map produces unusable output.
+    # Routing exceptions that go to the LLM instead:
+    #   a) Arabic names: short vowels are not written in standard Arabic text;
+    #      the consonant-only map produces unusable output.
+    #   b) Composite aliases: the alias text contains a natural-language
+    #      descriptor phrase (e.g. "nicknamed", "also known as", "по прозвищу")
+    #      that must be *translated*, not transliterated.
     if field_type in ("person_name", "alias"):
-        if row.get("language") == "ar":
+        if row.get("language") == "ar" or (
+            field_type == "alias" and is_composite_alias(text)
+        ):
             return enrich_with_llm(text, row)
         return transliterate(text, row)
 
