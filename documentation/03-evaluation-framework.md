@@ -819,3 +819,42 @@ The `TRANSLATE_ANALYST` treatment routes alias fields containing natural-languag
 - `test_no_trigger_alias_treated_as_whole` — plain alias → standard TRANSLITERATE
 
 **Test results:** 86 passed, 0 failed
+
+---
+
+### Section 5 — New Language Handlers: de, fr, es, it, ko, en (2 April 2026)
+
+**Branch:** `feature/section-5-new-language-handlers` → merged to `main`
+
+**Files changed:**
+- `src/config/language_normalisation_tables.py` ← **new file**
+- `src/pipeline/transliteration_engine.py` — added 6 new handlers + dispatch routing
+- `requirements.txt` — added `korean-romanizer` (optional)
+
+**What was implemented:**
+
+All six languages are now handled deterministically at Layer 2. None require the LLM for person name normalisation.
+
+| Language | Handler | Key behaviour |
+|---|---|---|
+| German (`de`) | `_normalise_german()` | Umlaut expansion (Ä→AE, ß→SS) as primary; drop forms (Ä→A) as variants; hyphen→space variant; von/van/zu capitalisation variant |
+| French (`fr`) | `_normalise_french()` | Accent strip (é→e, ç→c, œ→oe, etc.); apostrophe elision strip; fused variant; particle-dropped variant |
+| Spanish (`es`) | `_normalise_spanish()` | Accent strip; ñ→n primary with NY variant; de/del/de la particle-dropped variant |
+| Italian (`it`) | `_normalise_italian()` | Accent strip; apostrophe particle (D', Dell', etc.) space-replaced in primary; fused + dropped variants; double consonants preserved |
+| Korean (`ko`) | `_normalise_korean()` | Built-in Hangul → Revised Romanisation (RR) jamo decomposer; `KOREAN_SURNAME_VARIANTS` lookup; surname-first primary + given-name-first and all surname variant forms |
+| English (`en`) | `_normalise_english()` | NFKC normalisation; apostrophe O'/Mac variants; St/Saint swap variant; hyphen→space variant |
+
+**Korean romanisation:** The `korean-romanizer` library is not compatible with Python 3.13. A built-in jamo decomposition romaniser (`romanise_hangul()`) is implemented directly in `language_normalisation_tables.py` using the official Revised Romanisation syllable decomposition algorithm. The library is still listed in `requirements.txt` as an optional upgrade path.
+
+**Tables in `language_normalisation_tables.py`:**
+`GERMAN_UMLAUT_EXPANSIONS`, `GERMAN_UMLAUT_DROPS`, `FRENCH_ACCENT_STRIP`, `SPANISH_ACCENT_STRIP`, `SPANISH_N_TILDE_VARIANTS`, `ITALIAN_ACCENT_STRIP`, `KOREAN_SURNAME_VARIANTS` (15 surnames), `_KR_CHOSEONG/JUNGSEONG/JONGSEONG` (RR jamo tables), `hangul_syllable_to_roman()`, `romanise_hangul()`
+
+**Tests added** (`tests/test_transliteration.py`, 18 new tests):
+- German (4): umlaut expansion, eszett, hyphenated name, noble particle
+- French (3): accent strip, hyphenated name, apostrophe elision
+- Spanish (3): accent strip, ñ variant, particle variant
+- Italian (2): apostrophe particle, double consonant preserved
+- Korean (3): surname variants (박→Park, 이→Lee, 류→Ryu/Yoo)
+- English (3): apostrophe, Mac variant, Saint variant
+
+**Test results:** 102 passed, 0 failed (2 pre-existing API-call tests skipped in offline run)

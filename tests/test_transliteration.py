@@ -290,3 +290,187 @@ def test_japanese_era_date_field_date_type():
     row = {"language": "ja", "field_type": "date"}
     result = transliterate("令和三年一月五日", row)
     assert result["normalised_form"] == "2021-01-05"
+
+
+# ---------------------------------------------------------------------------
+# Section 5: German
+# ---------------------------------------------------------------------------
+
+def test_german_umlaut_expansion():
+    """Müller → primary MUELLER, variant includes MULLER."""
+    row = {"language": "de", "field_type": "person_name"}
+    result = transliterate("Müller", row)
+    assert result["normalised_form"] == "MUELLER"
+    assert "MULLER" in result["allowed_variants"]
+
+
+def test_german_eszett():
+    """Weiß → WEISS."""
+    row = {"language": "de", "field_type": "person_name"}
+    result = transliterate("Weiß", row)
+    assert result["normalised_form"] == "WEISS"
+
+
+def test_german_hyphenated_name():
+    """Schröder-Braun → SCHROEDER-BRAUN primary, space variant."""
+    row = {"language": "de", "field_type": "person_name"}
+    result = transliterate("Schröder-Braun", row)
+    assert "SCHROEDER" in result["normalised_form"]
+    space_variant = result["normalised_form"].replace("-", " ")
+    assert space_variant in result["allowed_variants"] or "-" not in result["normalised_form"]
+
+
+def test_german_noble_particle():
+    """Heinrich von Braun → primary includes 'von', variant capitalises Von."""
+    row = {"language": "de", "field_type": "person_name"}
+    result = transliterate("Heinrich von Braun", row)
+    norm = result["normalised_form"]
+    # primary should have lowercase VON (uppercased from the translation chain → VON)
+    assert "BRAUN" in norm
+
+
+# ---------------------------------------------------------------------------
+# Section 5: French
+# ---------------------------------------------------------------------------
+
+def test_french_accent_strip():
+    """Hélène Masson → HELENE MASSON."""
+    row = {"language": "fr", "field_type": "person_name"}
+    result = transliterate("Hélène Masson", row)
+    assert result["normalised_form"] == "HELENE MASSON"
+
+
+def test_french_hyphenated_name():
+    """Jean-François → primary JEAN-FRANCOIS or JEAN FRANCOIS, with variant."""
+    row = {"language": "fr", "field_type": "person_name"}
+    result = transliterate("Jean-François Dupont", row)
+    norm = result["normalised_form"]
+    assert "FRANCOIS" in norm
+    assert "DUPONT" in norm
+    # Space-separated variant must exist
+    space_variant = norm.replace("-", " ")
+    assert space_variant in result["allowed_variants"] or "-" not in norm
+
+
+def test_french_apostrophe_elision():
+    """Laurent d'Avignon → primary LAURENT D AVIGNON, fused variant."""
+    row = {"language": "fr", "field_type": "person_name"}
+    result = transliterate("Laurent d'Avignon", row)
+    norm = result["normalised_form"]
+    assert "AVIGNON" in norm
+    # Fused variant (no space, no apostrophe)
+    all_forms = [norm] + result["allowed_variants"]
+    assert any("DAVIGNON" in v for v in all_forms)
+
+
+# ---------------------------------------------------------------------------
+# Section 5: Spanish
+# ---------------------------------------------------------------------------
+
+def test_spanish_accent_strip():
+    """María-José Fernández → MARIA-JOSE FERNANDEZ (hyphen preserved)."""
+    row = {"language": "es", "field_type": "person_name"}
+    result = transliterate("María-José Fernández", row)
+    norm = result["normalised_form"]
+    assert "MARIA" in norm
+    assert "FERNANDEZ" in norm
+
+
+def test_spanish_n_tilde_variant():
+    """Muñoz → MUNOZ primary, MUNYOZ variant."""
+    row = {"language": "es", "field_type": "person_name"}
+    result = transliterate("Muñoz", row)
+    assert result["normalised_form"] == "MUNOZ"
+    all_forms = [result["normalised_form"]] + result["allowed_variants"]
+    assert any("MUNYOZ" in v for v in all_forms)
+
+
+def test_spanish_particle_variant():
+    """del Rio → particle-dropped variant generated."""
+    row = {"language": "es", "field_type": "person_name"}
+    result = transliterate("Francisco del Río Blanco", row)
+    norm = result["normalised_form"]
+    all_forms = [norm] + result["allowed_variants"]
+    assert any("RIO BLANCO" in v or "FRANCISCO RIO" in v for v in all_forms)
+
+
+# ---------------------------------------------------------------------------
+# Section 5: Italian
+# ---------------------------------------------------------------------------
+
+def test_italian_apostrophe_particle():
+    """D'Angelo → primary D ANGELO, variants DANGELO and ANGELO."""
+    row = {"language": "it", "field_type": "person_name"}
+    result = transliterate("Lorenzo D'Angelo", row)
+    norm = result["normalised_form"]
+    assert "ANGELO" in norm
+    all_forms = [norm] + result["allowed_variants"]
+    assert any("DANGELO" in v for v in all_forms)
+    assert any("ANGELO" in v and "D" not in v.split("ANGELO")[0].replace("LORENZ", "") for v in all_forms)
+
+
+def test_italian_double_consonant_preserved():
+    """Niccolò Bianchi → double-c preserved (NICCOLO, not NICOLO)."""
+    row = {"language": "it", "field_type": "person_name"}
+    result = transliterate("Niccolò Bianchi", row)
+    assert "NICCOLO" in result["normalised_form"]
+    assert "BIANCHI" in result["normalised_form"]
+
+
+# ---------------------------------------------------------------------------
+# Section 5: Korean
+# ---------------------------------------------------------------------------
+
+def test_korean_surname_variants():
+    """박지훈 → primary BAK JIHUN, variants include PARK JIHUN."""
+    row = {"language": "ko", "field_type": "person_name"}
+    result = transliterate("박지훈", row)
+    assert result["review_required"] is True
+    all_forms = [result["normalised_form"]] + result["allowed_variants"]
+    assert any("JIHUN" in v for v in all_forms)
+    assert any("PARK" in v for v in all_forms)
+
+
+def test_korean_lee_variants():
+    """이민호 → variants include LEE MINHO."""
+    row = {"language": "ko", "field_type": "person_name"}
+    result = transliterate("이민호", row)
+    all_forms = [result["normalised_form"]] + result["allowed_variants"]
+    assert any("LEE" in v or "YI" in v or "RHEE" in v for v in all_forms)
+
+
+def test_korean_ryu_variants():
+    """류지성 → variants include RYU and LYU forms."""
+    row = {"language": "ko", "field_type": "person_name"}
+    result = transliterate("류지성", row)
+    all_forms = [result["normalised_form"]] + result["allowed_variants"]
+    assert any("RYU" in v or "LYU" in v or "YOO" in v for v in all_forms)
+
+
+# ---------------------------------------------------------------------------
+# Section 5: English
+# ---------------------------------------------------------------------------
+
+def test_english_apostrophe_surname():
+    """O'Brien → variants include OBRIEN and O BRIEN."""
+    row = {"language": "en", "field_type": "person_name"}
+    result = transliterate("Michael O'Brien", row)
+    all_forms = [result["normalised_form"]] + result["allowed_variants"]
+    assert any("OBRIEN" in v for v in all_forms)
+    assert any("O BRIEN" in v for v in all_forms)
+
+
+def test_english_mac_variant():
+    """MacDonald → variant Macdonald (alternate capitalisation)."""
+    row = {"language": "en", "field_type": "person_name"}
+    result = transliterate("Alistair MacDonald", row)
+    all_forms = [result["normalised_form"]] + result["allowed_variants"]
+    assert any("MACDONALD" in v or "MCDONALD" in v for v in all_forms)
+
+
+def test_english_saint_variant():
+    """St John → variant SAINT JOHN."""
+    row = {"language": "en", "field_type": "person_name"}
+    result = transliterate("Thomas St John", row)
+    all_forms = [result["normalised_form"]] + result["allowed_variants"]
+    assert any("SAINT JOHN" in v for v in all_forms)

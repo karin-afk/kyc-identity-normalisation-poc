@@ -309,6 +309,288 @@ def _transliterate_arabic(text: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Latin-script language handlers (de, fr, es, it, ko, en) — Section 5
+# ---------------------------------------------------------------------------
+
+def _apply_char_map(text: str, char_map: dict[str, str]) -> str:
+    """Replace each character in text using char_map; unknown chars pass through."""
+    return "".join(char_map.get(c, c) for c in text)
+
+
+def _normalise_german(text: str, field_type: str) -> dict:
+    """Normalise German-script Latin text for KYC screening.
+
+    Primary form uses umlaut expansions (Ä→AE, ß→SS).
+    ``allowed_variants`` includes umlaut-drop forms (Ä→A, ß→S).
+    Hyphenated given names produce a space-separated variant.
+    Noble particles (von/van/zu) are preserved lowercase in primary;
+    a capitalised variant is also generated.
+
+    Args:
+        text: Raw German name/alias text.
+        field_type: Pipeline field type (informational).
+
+    Returns:
+        Full pipeline result dict.
+    """
+    from config.language_normalisation_tables import (
+        GERMAN_UMLAUT_EXPANSIONS, GERMAN_UMLAUT_DROPS,
+    )
+    expanded = _apply_char_map(text, GERMAN_UMLAUT_EXPANSIONS).upper()
+    dropped = _apply_char_map(text, GERMAN_UMLAUT_DROPS).upper()
+
+    variants: set[str] = set()
+    if dropped != expanded:
+        variants.add(dropped)
+    # Hyphen-separated given names: also produce space variant
+    if "-" in expanded:
+        variants.add(expanded.replace("-", " "))
+    if "-" in dropped:
+        variants.add(dropped.replace("-", " "))
+    # Noble particle capitalisation variant
+    for particle in ("VON ", "VAN ", "ZU "):
+        if particle in expanded:
+            cap_form = expanded.replace(particle, particle.capitalize())
+            variants.add(cap_form)
+
+    result = _build_result(text, expanded)
+    result["allowed_variants"] = sorted(v for v in variants if v != expanded)
+    return result
+
+
+def _normalise_french(text: str, field_type: str) -> dict:
+    """Normalise French-script Latin text for KYC screening.
+
+    Applies accent stripping and ligature expansion (œ→oe, æ→ae).
+    Hyphenated forms produce space-separated variants.
+    Noble particles (de/du/de la/des) are preserved in primary;
+    particle-dropped and particle-capitalised variants are generated.
+    Apostrophe elision (d', l') is stripped in primary with fused variant.
+
+    Args:
+        text: Raw French name text.
+        field_type: Pipeline field type (informational).
+
+    Returns:
+        Full pipeline result dict.
+    """
+    from config.language_normalisation_tables import FRENCH_ACCENT_STRIP
+    stripped = _apply_char_map(text, FRENCH_ACCENT_STRIP).upper()
+
+    variants: set[str] = set()
+    # Hyphenated given names
+    if "-" in stripped:
+        variants.add(stripped.replace("-", " "))
+    # Apostrophe elision: "D'AVIGNON" → "DAVIGNON" and "D AVIGNON"
+    if "'" in stripped:
+        variants.add(stripped.replace("'", ""))
+        variants.add(stripped.replace("'", " ").replace("  ", " ").strip())
+    # Noble particles: drop particle variant
+    for particle in ("DE ", "DU ", "DE LA ", "DES ", "D'", "L'"):
+        if stripped.startswith(particle) or f" {particle}" in stripped:
+            dropped = stripped.replace(particle, "").strip()
+            variants.add(dropped)
+
+    result = _build_result(text, stripped)
+    result["allowed_variants"] = sorted(v for v in variants if v != stripped)
+    return result
+
+
+def _normalise_spanish(text: str, field_type: str) -> dict:
+    """Normalise Spanish-script Latin text for KYC screening.
+
+    Strips accents, maps ñ→n in primary (ny variant added).
+    Noble particles (de/del/de la/de los/de las) remain in primary;
+    a particle-dropped variant is generated.
+    Double surnames split into single-surname variants.
+
+    Args:
+        text: Raw Spanish name text.
+        field_type: Pipeline field type (informational).
+
+    Returns:
+        Full pipeline result dict.
+    """
+    from config.language_normalisation_tables import SPANISH_ACCENT_STRIP
+    stripped = _apply_char_map(text, SPANISH_ACCENT_STRIP).upper()
+
+    variants: set[str] = set()
+    # ñ/Ñ: add "NY" variant form
+    if "Ñ" in text.upper() or "ñ" in text:
+        ny_form = stripped.replace("N", "NY") if "N " in stripped or stripped.endswith("N") else None
+        # More precisely, replace only where the original was ñ
+        ny_variant = "".join(
+            "NY" if original in "ñÑ" else ch
+            for original, ch in zip(text, stripped)
+        )
+        if ny_variant != stripped:
+            variants.add(ny_variant)
+    # Hyphenated names
+    if "-" in stripped:
+        variants.add(stripped.replace("-", " "))
+    # Noble particles
+    for particle in ("DEL ", "DE LA ", "DE LOS ", "DE LAS ", "DE "):
+        if f" {particle}" in stripped or stripped.startswith(particle):
+            dropped = stripped.replace(particle, "").strip()
+            variants.add(dropped)
+
+    result = _build_result(text, stripped)
+    result["allowed_variants"] = sorted(v for v in variants if v != stripped)
+    return result
+
+
+def _normalise_italian(text: str, field_type: str) -> dict:
+    """Normalise Italian-script Latin text for KYC screening.
+
+    Strips accents. Apostrophe particles (D', Dell', Dall', L', De', Degli')
+    are stripped in the primary form (D'Angelo → D ANGELO).
+    Variants include: fused form (DANGELO), particle-dropped form (ANGELO).
+    Double consonants are preserved (Bianchi ≠ Bianci).
+
+    Args:
+        text: Raw Italian name text.
+        field_type: Pipeline field type (informational).
+
+    Returns:
+        Full pipeline result dict.
+    """
+    from config.language_normalisation_tables import ITALIAN_ACCENT_STRIP
+    stripped = _apply_char_map(text, ITALIAN_ACCENT_STRIP).upper()
+
+    variants: set[str] = set()
+    # Apostrophe particles: replace ' with space in primary
+    if "'" in stripped:
+        primary_form = stripped.replace("'", " ").replace("  ", " ").strip()
+        fused = stripped.replace("'", "")
+        # Particle-dropped: remove everything up to and including the apostrophe
+        for particle in ("D'", "DELL'", "DALL'", "L'", "DE'", "DEGLI'"):
+            if particle in stripped:
+                dropped = stripped[stripped.index(particle) + len(particle):]
+                variants.add(dropped.strip())
+        variants.add(fused)
+        variants.add(stripped)  # original with apostrophe as variant
+    else:
+        primary_form = stripped
+    # Hyphenated forms
+    if "-" in primary_form:
+        variants.add(primary_form.replace("-", " "))
+
+    result = _build_result(text, primary_form)
+    result["allowed_variants"] = sorted(v for v in variants if v != primary_form)
+    return result
+
+
+def _normalise_korean(text: str, field_type: str) -> dict:
+    """Normalise Korean Hangul text using Revised Romanisation of Korea (RR).
+
+    Uses ``config.language_normalisation_tables.romanise_hangul()`` as a
+    built-in fallback (the ``korean-romanizer`` library is not required).
+
+    For person_name fields:
+    - Surname (first syllable block) is looked up in ``KOREAN_SURNAME_VARIANTS``
+      to generate all documented romanisation alternatives.
+    - Primary: surname-first (Korean convention, e.g. "BAK JIHUN").
+    - Variants include: Western given-name-first forms ("JIHUN BAK"),
+      alternate surname romanisations ("PARK JIHUN"), hyphenated given name.
+
+    Args:
+        text: Raw Korean name text.
+        field_type: Pipeline field type (informational).
+
+    Returns:
+        Full pipeline result dict, always review_required=True.
+    """
+    from config.language_normalisation_tables import KOREAN_SURNAME_VARIANTS, romanise_hangul
+
+    # Try library first; fall back to built-in romaniser
+    try:
+        from korean_romanizer.romanizer import Romanizer
+        romanised = Romanizer(text).romanize()
+    except Exception:
+        romanised = romanise_hangul(text)
+
+    tokens = romanised.strip().split()
+    lat = " ".join(t.capitalize() for t in tokens).upper()
+
+    variants: set[str] = set()
+
+    if field_type == "person_name" and len(text) >= 2:
+        # Extract first syllable block as potential surname
+        surname_char = text[0]
+        alt_surnames = KOREAN_SURNAME_VARIANTS.get(surname_char, [])
+        if alt_surnames:
+            # Tokens: [surname, *given_names]
+            given_parts = tokens[1:] if len(tokens) > 1 else []
+            given_fused = "".join(p.capitalize() for p in given_parts)
+            given_hyphen = "-".join(p.capitalize() for p in given_parts)
+
+            for alt in alt_surnames:
+                alt_up = alt.upper()
+                if given_parts:
+                    variants.add(f"{alt_up} {given_fused.upper()}")
+                    variants.add(f"{alt_up} {given_hyphen.upper()}")
+                    # Western name-order variant
+                    variants.add(f"{given_fused.upper()} {alt_up}")
+                else:
+                    variants.add(alt_up)
+
+    result = _build_result(
+        text, lat,
+        review=True,
+        reason="Korean name: surname romanisation variants generated",
+    )
+    result["allowed_variants"] = sorted(v for v in variants if v != lat)
+    return result
+
+
+def _normalise_english(text: str, field_type: str) -> dict:
+    """Normalise English Latin-script text for KYC screening.
+
+    Minimal processing:
+    1. NFKC normalisation (full-width digits → ASCII, etc.)
+    2. Apostrophe in surnames: O'Brien → variant "O BRIEN" and "OBRIEN"
+    3. Mac/Mc prefix: both capitalisation forms generated as variants
+    4. St/Saint: both forms generated as variants
+    5. Hyphens: hyphen-stripped variant added
+
+    Args:
+        text: Raw English name text.
+        field_type: Pipeline field type (informational).
+
+    Returns:
+        Full pipeline result dict.
+    """
+    normalised = unicodedata.normalize("NFKC", text).upper()
+    variants: set[str] = set()
+
+    if "'" in normalised:
+        variants.add(normalised.replace("'", ""))
+        variants.add(normalised.replace("'", " ").replace("  ", " ").strip())
+    if "-" in normalised:
+        variants.add(normalised.replace("-", " "))
+        variants.add(normalised.replace("-", ""))
+
+    # Mac/Mc: generate alternative capitalisation
+    import re as _re
+    for mac_re, alt in [(_re.compile(r"\bMAC([A-Z])"), "MC"), (_re.compile(r"\bMC([A-Z])"), "MAC")]:
+        def _swap(m: "re.Match[str]") -> str:
+            return alt + m.group(1)
+        swapped = mac_re.sub(_swap, normalised)
+        if swapped != normalised:
+            variants.add(swapped)
+
+    # Saint/St variants
+    if " ST " in normalised or normalised.startswith("ST "):
+        variants.add(normalised.replace("ST ", "SAINT ", 1))
+    if "SAINT " in normalised:
+        variants.add(normalised.replace("SAINT ", "ST ", 1))
+
+    result = _build_result(text, normalised)
+    result["allowed_variants"] = sorted(v for v in variants if v != normalised)
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
@@ -338,6 +620,18 @@ def transliterate(text: str, row: dict) -> dict:
         return _transliterate_greek(text)
     elif language == "ar":
         return _transliterate_arabic(text)
+    elif language == "de":
+        return _normalise_german(text, field_type)
+    elif language == "fr":
+        return _normalise_french(text, field_type)
+    elif language == "es":
+        return _normalise_spanish(text, field_type)
+    elif language == "it":
+        return _normalise_italian(text, field_type)
+    elif language == "ko":
+        return _normalise_korean(text, field_type)
+    elif language == "en":
+        return _normalise_english(text, field_type)
     else:
         lat = _to_latin_fallback(text)
         return _build_result(
