@@ -858,3 +858,37 @@ All six languages are now handled deterministically at Layer 2. None require the
 - English (3): apostrophe, Mac variant, Saint variant
 
 **Test results:** 102 passed, 0 failed (2 pre-existing API-call tests skipped in offline run)
+
+---
+
+### Section 6 — Cantonese Variant Generation for HK Documents (2 April 2026)
+
+**Branch:** `feature/section-6-cantonese-variants` → merged to `main`
+
+**Files changed:**
+- `src/config/cantonese_surname_map.py` ← **new file**
+- `src/pipeline/transliteration_engine.py` — added `_add_cantonese_variants()`, updated `_transliterate_chinese()` and `transliterate()` dispatcher
+
+**What was implemented:**
+
+A 30-entry `CANTONESE_SURNAME_MAP` enables automatic generation of Cantonese (Jyutping) surname variants for Hong Kong identity documents. The standard Mandarin Pinyin romanisation produced by `pypinyin` would be incorrect on HK screening databases (e.g. 黃 → "Huang" in Pinyin vs. "Wong" on HK HKID).
+
+| Component | Purpose |
+|---|---|
+| `CANTONESE_SURNAME_MAP` | Hanzi → Jyutping mapping for 30 common HK surnames |
+| `WADE_GILES_INITIALS` | Pinyin → Wade-Giles initial consonant substitutions (zh→ch, x→hs, etc.) |
+| `_add_cantonese_variants()` | Mutates Pinyin result to add HK/TW variants |
+
+**Cantonese variant generation:** Triggered when `country=="HK"` **or** when the first character of the input is in `CANTONESE_SURNAME_MAP`. Only the surname token is replaced (Jyutping for given names is not standardised enough for automated generation). Sets `review_required=True`.
+
+**Wade-Giles variant generation:** Triggered when `country=="TW"`. Applied to the full Pinyin primary form as an `allowed_variants` addition (not a primary form change).
+
+**Country code routing:** `transliterate()` now passes `row.get("country", "")` to `_transliterate_chinese()`.
+
+**Tests added** (`tests/test_transliteration.py`, 4 new tests):
+- `test_cantonese_hk_surname_variant` — 黃志明 (HK) → WONG variant
+- `test_cantonese_ng_surname_hk` — 吳敏 (HK) → NG variant
+- `test_cantonese_no_variant_for_cn` — 王小明 (CN) → no WONG variant
+- `test_wade_giles_variant_for_tw` — 陳建志 (TW) → Wade-Giles variant exists
+
+**Test results:** 106 passed, 0 failed (2 pre-existing API-call tests excluded)

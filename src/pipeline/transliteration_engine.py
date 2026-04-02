@@ -238,8 +238,66 @@ def _transliterate_japanese(text: str) -> dict:
     return result
 
 
-def _transliterate_chinese(text: str, field_type: str = "") -> dict:
-    """Chinese (Mandarin/Han) → Pinyin via pypinyin."""
+def _add_cantonese_variants(text: str, pinyin_result: dict, country: str) -> dict:
+    """Add Cantonese (Jyutping) and Wade-Giles surname variants to a Pinyin result.
+
+    Cantonese variant is generated when ``country == "HK"`` or when the first
+    character of the input text is present in ``CANTONESE_SURNAME_MAP``.
+
+    The Cantonese surname is substituted for the Pinyin surname token; given-name
+    tokens remain in Pinyin (Jyutping given-name romanisation is not standardised
+    enough for automated generation).
+
+    For Taiwan (TW) documents a basic Wade-Giles variant is added by applying
+    ``WADE_GILES_INITIALS`` substitutions to the Pinyin primary form.
+
+    Args:
+        text: Original Chinese text.
+        pinyin_result: Dict returned by ``_transliterate_chinese()`` — will be
+            mutated with new ``allowed_variants`` and updated ``review_*`` fields.
+        country: ISO 3166-1 alpha-2 country code from the source record.
+
+    Returns:
+        The (mutated) ``pinyin_result`` dict with variants added when applicable.
+    """
+    from config.cantonese_surname_map import CANTONESE_SURNAME_MAP, WADE_GILES_INITIALS
+
+    result = dict(pinyin_result)
+    variants: set[str] = set(result.get("allowed_variants") or [])
+    primary = result["normalised_form"]
+
+    # Cantonese variant: HK country or surname in map
+    first_char = text[0] if text else ""
+    cantonese_surname = CANTONESE_SURNAME_MAP.get(first_char)
+    generate_cantonese = country == "HK" or (cantonese_surname is not None)
+
+    if generate_cantonese and cantonese_surname:
+        # Replace the first token (Pinyin surname) with Cantonese form
+        tokens = primary.split()
+        if tokens:
+            cant_variant = " ".join([cantonese_surname.upper()] + tokens[1:])
+            variants.add(cant_variant)
+            result["review_required"] = True
+            result["review_reason"] = (
+                "HK document: Cantonese surname variant added — "
+                "verify given name romanisation manually"
+            )
+
+    # Wade-Giles variant: TW country
+    if country == "TW":
+        wg = primary.lower()
+        for pinyin_init, wg_init in WADE_GILES_INITIALS:
+            wg = wg.replace(pinyin_init, wg_init)
+        wg_variant = wg.upper()
+        if wg_variant != primary:
+            variants.add(wg_variant)
+
+    result["allowed_variants"] = sorted(variants)
+    return result
+
+
+def _transliterate_chinese(text: str, field_type: str = "", country: str = "") -> dict:
+    """Chinese (Mandarin/Han) → Pinyin via pypinyin with optional Cantonese/Wade-Giles variants."""
     try:
         from pypinyin import lazy_pinyin, Style
         parts = lazy_pinyin(text, style=Style.NORMAL)
@@ -253,11 +311,12 @@ def _transliterate_chinese(text: str, field_type: str = "") -> dict:
     except Exception:
         lat = _to_latin_fallback(text)
 
-    return _build_result(
+    result = _build_result(
         text, lat,
         review=True,
         reason="Surname-first ordering ambiguity: analyst should confirm name order",
     )
+    return _add_cantonese_variants(text, result, country)
 
 
 # Simplified ICAO consonant map.
@@ -615,7 +674,7 @@ def transliterate(text: str, row: dict) -> dict:
             )
         return _transliterate_japanese(text)
     elif language == "zh":
-        return _transliterate_chinese(text, row.get("field_type", ""))
+        return _transliterate_chinese(text, row.get("field_type", ""), row.get("country", ""))
     elif language == "el":
         return _transliterate_greek(text)
     elif language == "ar":

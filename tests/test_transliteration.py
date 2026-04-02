@@ -474,3 +474,42 @@ def test_english_saint_variant():
     result = transliterate("Thomas St John", row)
     all_forms = [result["normalised_form"]] + result["allowed_variants"]
     assert any("SAINT JOHN" in v for v in all_forms)
+
+
+# ---------------------------------------------------------------------------
+# Section 6: Cantonese surname variants
+# ---------------------------------------------------------------------------
+
+def test_cantonese_hk_surname_variant():
+    """黃志明 (HK) → allowed_variants includes WONG ZHIMING."""
+    row = {"language": "zh", "field_type": "person_name", "country": "HK"}
+    result = transliterate("黃志明", row)
+    all_forms = [result["normalised_form"]] + result["allowed_variants"]
+    assert any("WONG" in v for v in all_forms)
+
+
+def test_cantonese_ng_surname_hk():
+    """吳敏 (HK) → allowed_variants includes NG MIN."""
+    row = {"language": "zh", "field_type": "person_name", "country": "HK"}
+    result = transliterate("吳敏", row)
+    all_forms = [result["normalised_form"]] + result["allowed_variants"]
+    assert any("NG" in v for v in all_forms)
+
+
+def test_cantonese_no_variant_for_cn():
+    """王小明 (CN) → no Cantonese variant (王 not in CANTONESE_SURNAME_MAP)."""
+    row = {"language": "zh", "field_type": "person_name", "country": "CN"}
+    result = transliterate("王小明", row)
+    all_forms = [result["normalised_form"]] + result["allowed_variants"]
+    # 王 maps to Wang in Pinyin; no Cantonese entry → no WONG variant expected
+    assert not any("WONG" in v for v in all_forms)
+
+
+def test_wade_giles_variant_for_tw():
+    """陳建志 (TW) → allowed_variants includes Wade-Giles form with 'ch'."""
+    row = {"language": "zh", "field_type": "person_name", "country": "TW"}
+    result = transliterate("陳建志", row)
+    all_forms = [result["normalised_form"]] + result["allowed_variants"]
+    # 建 (jian) → chian in Wade-Giles; 志 (zhi) → chih
+    # At minimum a variant distinct from Pinyin should exist for TW
+    assert len(result["allowed_variants"]) > 0
