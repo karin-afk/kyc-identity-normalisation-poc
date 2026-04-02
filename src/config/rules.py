@@ -14,6 +14,12 @@ TRANSLATE_FIELDS = [
     "company_name",
 ]
 
+# Date fields that require numeric normalisation (calendar conversion + ISO 8601)
+NORMALISE_NUMERIC_FIELDS = [
+    "birth_date",
+    "date",
+]
+
 CONFIDENCE_THRESHOLD = 0.75
 
 # Conflict resolution priority
@@ -32,4 +38,6 @@ TREATMENT_MAP: dict[str, str] = {
     "alias": "TRANSLITERATE",
     "address": "TRANSLATE_NORMALISE",
     "company_name": "TRANSLATE_NORMALISE",
+    "birth_date": "NORMALISE_NUMERIC",
+    "date": "NORMALISE_NUMERIC",
 }

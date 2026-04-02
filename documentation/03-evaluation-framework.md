@@ -688,3 +688,54 @@ The function is applied inside `_transliterate_cyrillic()` **only for `ru` and `
 - KYC057 (ANDREJ JUREVICH → ANDREI YURYEVICH) ✓ resolved  
 - RU007 (JURIJ → YURIJ; YURII from BGN is a distinct suffix variant) ≈ partial
 - RU016 — МИХ→MIH, ЗАХ→ZAH: require additional `кх`→`kh` consonant pattern work, not in scope of this section
+
+---
+
+### Section 2 — Hijri Calendar Detection and ISO 8601 Date Normalisation (2 April 2026)
+
+**Branch:** `feature/section-2-hijri-calendar` → merged to `main`
+
+**Files changed:**
+- `src/utils/calendar_utils.py` ← **new file**
+- `src/pipeline/rules_engine.py` — added `NORMALISE_NUMERIC` routing
+- `src/config/rules.py` — added `NORMALISE_NUMERIC_FIELDS` and `TREATMENT_MAP` entries
+- `requirements.txt` — added `hijri-converter>=2.3.1`
+
+**What was implemented:**
+
+A new deterministic Layer 1 date normalisation module (`calendar_utils.py`) handles all date fields before they reach the transliteration or LLM layers. The module provides:
+
+| Function | Purpose |
+|---|---|
+| `arabic_indic_to_ascii(text)` | Converts Arabic-Indic (٠١…٩) and Persian (۰۱…۹) digits to ASCII 0–9 |
+| `detect_calendar_system(date_str)` | Returns `"hijri"`, `"gregorian"`, or `"unknown"` based on 4-digit year range |
+| `hijri_to_gregorian(year, month, day)` | Converts Hijri AH to Gregorian using `hijri-converter` library; falls back to approximate formula on `ImportError` |
+| `normalise_date_field(date_str, language)` | Master function — returns dict with `normalised` (ISO 8601), `original_calendar`, `review_required`, `review_reason` |
+
+**Calendar detection logic:**
+- Year 1900–2100 → **Gregorian**
+- Year 1300–1500 → **Hijri** (covers approx. 1882–2077 CE)
+- Gregorian takes priority in the overlap zone — the check order prevents misclassification of early-20th-century Gregorian dates
+- Arabic-Indic digits are normalised to ASCII before detection, enabling correct parsing of fully Arabic-script dates
+
+**Rules engine integration:**
+`apply_rules()` now handles `birth_date` and `date` field types via the `NORMALISE_NUMERIC` routing path. The result dict includes an extra `original_calendar` key for audit trail purposes.
+
+**Dependency note:** `hijri-converter` 2.3.2 is deprecated upstream in favour of `hijridate`. It still works correctly and ships `hijridate` as a dependency. This can be migrated to `hijridate` directly in a future maintenance pass.
+
+**Tests added** (`tests/test_rules.py`, 13 new tests):
+- `test_arabic_indic_to_ascii_arabic` — Eastern Arabic digits → ASCII
+- `test_arabic_indic_to_ascii_persian` — Persian digits → ASCII
+- `test_arabic_indic_mixed_with_separators` — digits + separators survive
+- `test_detect_hijri_year` — `"1445/09/20"` → `"hijri"`
+- `test_detect_gregorian_year` — `"1985/03/14"` → `"gregorian"`
+- `test_detect_gregorian_arabic_indic` — Arabic-Indic Gregorian date → `"gregorian"`
+- `test_detect_hijri_arabic_indic` — Arabic-Indic Hijri date → `"hijri"`
+- `test_gregorian_arabic_indic_normalised` — `٠٨/١١/١٩٩٢` → `"1992-11-08"`, no review
+- `test_gregorian_dd_mm_yyyy_normalised` — `"14/03/1985"` → `"1985-03-14"`, no review
+- `test_iso_gregorian_passthrough` — ISO date passes through unchanged
+- `test_hijri_date_converted_and_flagged` — `١٤٤٥/٠٩/٢٠` → `"2024-03-30"`, review required
+- `test_birth_date_field_type_handled` — confirms `birth_date` is routed by RULE
+- `test_date_field_type_handled` — confirms `date` is routed by RULE
+
+**Test results:** 51 passed, 0 failed (1 DeprecationWarning from deprecated `hijri-converter` — harmless)
