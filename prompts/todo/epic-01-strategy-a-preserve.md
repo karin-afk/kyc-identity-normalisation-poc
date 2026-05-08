@@ -20,6 +20,18 @@ The distinction matters because Strategy B's apply_numeric_rules() needs to rece
 
 ---------------------
 
+## Implementation Todo Checklist (this run)
+
+- [x] Add Strategy A implementation in `app/pipeline/normalisation/field_types.py`
+- [x] Enforce agreed decision: keep only strict identifiers in `PRESERVE_FIELDS`
+- [x] Add `FINANCIAL_NUMERIC_FIELDS` for Strategy B handoff
+- [x] Add stable `ProcessingMethod` labels and confidence map
+- [x] Implement `apply_preserve()` in `app/pipeline/normalisation/preserve.py`
+- [x] Add unit tests in `tests/test_strategy_a_preserve.py`
+- [x] Add brief strategy documentation for local testing
+- [x] Run Strategy A tests and verify they pass
+- [x] Launch local UI on localhost:50001 for manual verification
+
 ## What exists in the current codebase
 
 `src/config/rules.py` contains `PRESERVE_FIELDS` with three entries: `passport_no`, `id_no`, `email`.
