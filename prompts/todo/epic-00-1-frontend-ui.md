@@ -19,7 +19,7 @@ This epic touches only frontend files. Do not modify any pipeline, normalisation
 - [x] Add minimal export endpoints for CSV/email fallback notices used by UI buttons
 - [x] Add frontend route/HTMX tests for success and not-implemented paths
 - [x] Run tests and confirm pass
-- [ ] Run app locally on localhost:5001 for manual testing
+- [x] Run app locally on localhost:5001 for manual testing
 
 ---
 
