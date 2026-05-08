@@ -59,14 +59,25 @@ def test_upload_process_returns_not_implemented_partial(client) -> None:
     assert "This feature is not yet available" in html
 
 
-def test_paste_translate_returns_not_implemented_partial(client) -> None:
+def test_paste_translate_returns_result_partial(client) -> None:
     response = client.post(
         "/paste/translate",
-        data={"original_text": "شركة", "field_type": "company_name", "language": "ar"},
+        data={"original_text": "TK1234567", "field_type": "passport_no", "language": "en"},
     )
     html = response.get_data(as_text=True)
     assert response.status_code == 200
-    assert "This feature is not yet available" in html
+    assert "Method:" in html
+    assert "PRESERVE" in html
+
+
+def test_paste_translate_auto_detect_email(client) -> None:
+    response = client.post(
+        "/paste/translate",
+        data={"original_text": "john.doe@example.com", "field_type": "auto", "language": ""},
+    )
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "Field type auto-detected as:" in html
 
 
 def test_review_detail_returns_not_implemented_partial(client) -> None:
