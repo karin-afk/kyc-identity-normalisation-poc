@@ -1,5 +1,7 @@
 # Epic — Frontend UI
 
+**Status: IMPLEMENTED** — branch `feature/epic-frontend-ui`, commit `66b193f`, 15 tests passed.
+
 ## Overview
 
 Build the working HTML/CSS frontend for the KYC Identity Normalisation Flask application. Three tabs. Results appear inline below the input area on the same page via HTMX. If a backend feature is not yet implemented, show a clean notice rather than crashing.

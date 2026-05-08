@@ -1,5 +1,7 @@
 # Epic 01 — Normalisation Strategy A: Preserve
 
+**Status: IMPLEMENTED** — branch `feature/epic-01a-preserve`, commit `0df7fd9`, 66 tests passed.
+
 ## What you need to provide
 
 Nothing. Strategy A requires no data files, no downloads, and no lookup tables from you. It is a pure code change — a field type list and a function. Copilot builds it entirely.

@@ -1,5 +1,7 @@
 # Epic — Minimal Normalisation Router and Orchestrator
 
+**Status: IMPLEMENTED** — branch `feature/epic-04-1-orchestrator-minimal`, commit `5f7f595`, 61 tests passed.
+
 ## Implementation assessment (this run)
 
 Status: agreed with minor practical adjustments so this integrates cleanly with the current Flask UI.
