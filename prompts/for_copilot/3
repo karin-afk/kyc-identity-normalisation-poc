@@ -1,0 +1,104 @@
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — NEW FEATURE: Japanese era-year conversion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+File to modify: src/utils/calendar_utils.py
+File to modify: src/pipeline/transliteration_engine.py
+
+In calendar_utils.py, add:
+
+  JAPANESE_ERAS = {
+    "明治": {"romaji": "Meiji",  "start_gregorian": 1868},
+    "大正": {"romaji": "Taisho", "start_gregorian": 1912},
+    "昭和": {"romaji": "Showa",  "start_gregorian": 1926},
+    "平成": {"romaji": "Heisei", "start_gregorian": 1989},
+    "令和": {"romaji": "Reiwa",  "start_gregorian": 2019},
+    # Romaji forms for input that has already been partially romanised
+    "Meiji":  {"romaji": "Meiji",  "start_gregorian": 1868},
+    "Taisho": {"romaji": "Taisho", "start_gregorian": 1912},
+    "Showa":  {"romaji": "Showa",  "start_gregorian": 1926},
+    "Heisei": {"romaji": "Heisei", "start_gregorian": 1989},
+    "Reiwa":  {"romaji": "Reiwa",  "start_gregorian": 2019},
+  }
+
+  def kanji_numeral_to_int(text: str) -> int:
+    """
+    Converts Japanese Kanji numeral strings to integers.
+    Handle: 一二三四五六七八九十百千 and 〇/零 for zero.
+    Examples:
+      "五十三" → 53
+      "二十" → 20
+      "三" → 3
+      "二〇〇五" → 2005  (positional zero form used in modern dates)
+      "十二" → 12
+    """
+
+  def detect_and_convert_japanese_era(date_str: str) -> dict:
+    """
+    Detects and converts Japanese era-year dates to Gregorian ISO 8601.
+    Input examples:
+      "昭和五十三年四月三日"     → 1978-04-03
+      "平成三年十二月一日"       → 1991-12-01
+      "令和三年一月五日"         → 2021-01-05
+      "二〇〇五年十二月一日"     → 2005-12-01 (no era prefix — Gregorian in Kanji)
+    Returns:
+      {
+        "normalised": "YYYY-MM-DD",
+        "era_detected": str | None,
+        "gregorian_year": int,
+        "review_required": bool,
+        "review_reason": str | None
+      }
+    Always set review_required=True for era-year conversions with reason:
+      "Japanese era date converted — verify year: {era} {era_year} = {gregorian_year}"
+    For Kanji Gregorian (no era prefix), set review_required=False.
+    """
+
+In transliteration_engine.py, call detect_and_convert_japanese_era() for any 
+Japanese (ja) field of type "date" or "birth_date" before routing to pykakasi.
+
+Tests to write in tests/test_transliteration.py:
+  - "昭和五十三年四月三日" → "1978-04-03", era=Showa, review=True
+  - "平成元年一月八日" → "1989-01-08"  (元年 = year 1 of era)
+  - "令和三年一月五日" → "2021-01-05"
+  - "二〇〇五年十二月一日" → "2005-12-01", review=False
+  - kanji_numeral_to_int("五十三") → 53
+  - kanji_numeral_to_int("二〇〇五") → 2005
+  - kanji_numeral_to_int("十二") → 12
+
+
+  
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GENERAL REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Every new function must have a complete Google-style docstring.
+
+2. Every new module must have a module-level docstring explaining its purpose
+   and which pipeline layer it belongs to.
+
+3. Type hints are required on every function signature.
+
+4. All new constants must be defined at module level (not inside functions).
+
+5. No function should be longer than 60 lines. Decompose if needed.
+
+6. All tests must use pytest. No unittest.TestCase. Parametrize where
+   the same assertion applies to multiple input/output pairs.
+
+7. Tests must not require OPENAI_API_KEY. Mock the OpenAI client using
+   pytest-mock or unittest.mock wherever LLM calls are involved.
+
+8. After implementing all sections, run a final check:
+   - Do any existing tests in tests/ now fail? Fix them.
+   - Does `PYTHONPATH=src pytest tests/ -q` complete without errors?
+   - Does the import graph have any circular imports? Resolve if so.
+
+9. Do not change the result dict schema. The existing fields must remain;
+   you may add new fields but not remove or rename existing ones.
+
+10. Preserve existing behaviour for all languages already in the pipeline
+    (ar, ru, uk, el, ja, zh). The changes in Sections 1, 6, 7, 11 modify
+    these languages — ensure backward compatibility by verifying existing
+    golden-dataset cases still pass after each section is implemented.

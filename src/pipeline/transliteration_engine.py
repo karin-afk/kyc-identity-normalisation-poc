@@ -443,6 +443,99 @@ def _apply_char_map(text: str, char_map: dict[str, str]) -> str:
     return "".join(char_map.get(c, c) for c in text)
 
 
+# ---------------------------------------------------------------------------
+# Deterministic Latin-script address normaliser
+# ---------------------------------------------------------------------------
+
+# A small set of German city exonyms whose English form differs from the
+# diacritic-stripped local form.  Other German cities (Düsseldorf→DUSSELDORF,
+# Zürich→ZURICH) are handled correctly by diacritic stripping alone.
+_GERMAN_CITY_EXONYMS: dict[str, str] = {
+    "MUNCHEN": "MUNICH",
+    "MUENCHEN": "MUNICH",
+}
+
+# Latin-script language codes that should use the deterministic address path.
+# These languages have no script-translation requirement — only diacritic
+# stripping, punctuation removal, and ASCII folding are needed.
+_LATIN_SCRIPT_LANGUAGES: frozenset[str] = frozenset({
+    "en", "de", "fr", "es", "it", "pt", "nl", "pl", "cs", "ro", "hu",
+    "sv", "no", "da", "fi", "sk", "hr", "sl", "ca", "eu", "gl",
+})
+
+
+def normalise_address_latin(text: str, language: str) -> dict:
+    """Deterministic normalisation for addresses in Latin-script languages.
+
+    Applies only character-level transformations — no word-level translation.
+    This is correct for KYC address normalisation because:
+    - Street type words (rue, via, calle, strasse) must be preserved in the
+      source language, not translated to English equivalents.
+    - Component order (number/street sequence) must be preserved as-in-source.
+    - Country name must NOT be appended.
+
+    Transformations (in order):
+    1. NFKC normalisation — full-width digits/letters → ASCII (１→1, Ａ→A)
+    2. Pre-substitution of ligatures that don't decompose via NFD:
+       ß/ẞ→SS, œ/Œ→OE, æ/Æ→AE, ø/Ø→O
+    3. NFD + strip combining diacritical marks (category Mn) — removes all
+       accents and umlauts (é→E, ü→U, ö→O, ñ→N, ç→C, etc.)
+    4. German city exonym substitution (MUNCHEN→MUNICH)
+    5. Apostrophe removal (l'Église→L EGLISE, St Stephen's→ST STEPHENS)
+    6. Hyphen → space (Mont-Blanc→MONT BLANC, Nro 32-16→NRO 32 16)
+    7. Strip Spanish/Colombian "Nro" address abbreviation (número)
+    8. Strip commas
+    9. Collapse whitespace and uppercase
+
+    Args:
+        text: Raw address text.
+        language: ISO 639-1 language code.
+
+    Returns:
+        Pipeline result dict with processing_method='RULE'.
+    """
+    t = unicodedata.normalize("NFKC", text)
+
+    # Pre-substitute ligatures that NFD cannot decompose
+    for _src, _dst in (("ß", "SS"), ("ẞ", "SS"), ("œ", "OE"), ("Œ", "OE"),
+                       ("æ", "AE"), ("Æ", "AE"), ("ø", "O"), ("Ø", "O")):
+        t = t.replace(_src, _dst)
+
+    # Strip diacritics via NFD decomposition
+    t = unicodedata.normalize("NFD", t)
+    t = "".join(c for c in t if unicodedata.category(c) != "Mn")
+
+    # German city exonyms (after case-folding to upper to simplify lookup)
+    t_upper = t.upper()
+    for local, english in _GERMAN_CITY_EXONYMS.items():
+        # Only replace when the token appears as a whole word
+        t_upper = re.sub(r"\b" + local + r"\b", english, t_upper)
+    t = t_upper
+
+    # Handle apostrophes:
+    #   Possessive 'S (already uppercased) → drop the apostrophe, keep the S
+    #   Elision (l'EGLISE, D'AVIGNON) → replace with space
+    t = re.sub(r"['\u2019\u2018]S\b", "S", t)   # possessive: 'S → S
+    t = re.sub(r"['\u2019\u2018]", " ", t)       # elision → space
+
+    # Replace hyphens with spaces
+    t = t.replace("-", " ")
+
+    # Strip Spanish "Nro" abbreviation (número de house)
+    t = re.sub(r"\bNRO\.?\s*", " ", t, flags=re.IGNORECASE)
+
+    # Strip commas
+    t = t.replace(",", " ")
+
+    # Collapse whitespace
+    t = re.sub(r"\s+", " ", t).strip()
+
+    result = _build_result(text, t, review=False,
+                           reason="Latin-script address: deterministic normalisation")
+    result["processing_method"] = "RULE"
+    return result
+
+
 def _normalise_german(text: str, field_type: str) -> dict:
     """Normalise German-script Latin text for KYC screening.
 
@@ -628,15 +721,28 @@ def _normalise_korean(text: str, field_type: str) -> dict:
     """
     from config.language_normalisation_tables import KOREAN_SURNAME_VARIANTS, romanise_hangul
 
-    # Try library first; fall back to built-in romaniser
-    try:
-        from korean_romanizer.romanizer import Romanizer
-        romanised = Romanizer(text).romanize()
-    except Exception:
-        romanised = romanise_hangul(text)
+    def _rom(s: str) -> str:
+        """Romanise a Hangul segment, trying library then built-in fallback."""
+        if not s:
+            return ""
+        try:
+            from korean_romanizer.romanizer import Romanizer
+            return Romanizer(s).romanize().strip()
+        except Exception:
+            return romanise_hangul(s).strip()
+
+    if field_type == "person_name" and len(text) >= 2:
+        # Romanise the first syllable (surname) and the remainder (given name)
+        # separately so that a space is inserted between them, matching the
+        # KYC convention "BAK JIHUN" rather than the fused form "BAKJIHUN".
+        surname_rom = _rom(text[0])
+        given_rom = _rom(text[1:])
+        romanised = f"{surname_rom} {given_rom}" if given_rom else surname_rom
+    else:
+        romanised = _rom(text)
 
     tokens = romanised.strip().split()
-    lat = " ".join(t.capitalize() for t in tokens).upper()
+    lat = " ".join(tokens).upper()
 
     variants: set[str] = set()
 

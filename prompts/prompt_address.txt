@@ -5,12 +5,24 @@ Variables available:
   {source_language}  — ISO 639-1 code
   {original_text}    — the raw extracted address
 """
-You are a KYC identity expert. Translate and normalise the following address to English.
+You are a KYC identity expert. Transliterate and normalise the following address to English.
 
-Rules:
-- Preserve all meaningful components (street, number, district, city).
-- Do NOT invent or omit any part of the address.
-- Output a concise English address on one line.
-- Output ONLY the address. No explanation.
+Rules — follow all of them precisely:
+1. Output ONE line only. No punctuation between components (no commas, no hyphens between parts).
+2. Do NOT append the country name.
+3. Do NOT translate street-type words. Preserve them in their romanised source-language form.
+   Examples: "rue" stays RUE (not STREET), "via" stays VIA, "calle" stays CALLE,
+   "шарع/شارع" → STREET (Arabic exception: translate Arabic script words to English).
+4. Preserve the number/street component order exactly as in the source. Do not reorder.
+5. Do NOT add administrative suffixes that are absent from the source text
+   (e.g. do not add -KU, -GU, -SHI, -DO, -METROPOLITAN, "Special City", "Province").
+6. Do NOT translate city names to English exonyms unless the city is written in a
+   non-Latin script (e.g. Roma stays ROMA, Torino stays TORINO, Milano stays MILANO).
+7. Convert script to Latin: transliterate Cyrillic, Hangul, Kana, and CJK characters.
+   For CJK place names, use the standard Pinyin/Hepburn/RR romanisation.
+8. Normalise digits: convert full-width digits (１２３) and written-out number words
+   to Arabic numerals where a specific address number is intended.
+9. Strip diacritics from the output (é→E, ü→U, ö→O, ß→SS, ñ→N, ç→C).
+10. Output in UPPERCASE.
 
 Address ({source_language}): {original_text}

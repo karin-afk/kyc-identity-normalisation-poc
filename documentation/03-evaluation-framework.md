@@ -40,22 +40,27 @@ The dataset has 16 columns per row:
 | `is_negative_case` | boolean | Whether this is a **negative case** (the pipeline should NOT match) |
 | `risk_notes` | string | Free-text annotation explaining the KYC risk dimension being tested |
 
-### Dataset size and composition — current state (112 cases)
+### Dataset size and composition — current state (514 cases)
 
 | Language | Cases | Field types covered |
 |---|---|---|
-| Arabic (ar) | 19 | person_name, alias, company_name, address, passport_no |
-| Greek (el) | 18 | person_name, alias, company_name, address, email, passport_no |
-| English (en) | 2 | passport_no, email |
-| Japanese (ja) | 25 | person_name, alias, company_name, address, passport_no |
-| Russian/Ukrainian (ru) | 18 | person_name, alias, company_name, address, passport_no |
-| Chinese (zh) | 30 | person_name, alias, company_name, address, passport_no |
-| **Total** | **112** | |
+| Arabic (ar) | 48 | address, alias, birth_date, company_name, date, email, free_text, id_number, passport_no, person_name, phone_number, reference_no, registration_no, tax_id, telephone |
+| German (de) | 47 | address, alias, birth_date, company_name, date, email, free_text, id_number, passport_no, person_name, phone_number, reference_no, registration_no, tax_id, telephone |
+| Greek (el) | 46 | address, alias, birth_date, company_name, date, email, free_text, id_number, passport_no, person_name, phone_number, reference_no, registration_no, tax_id, telephone |
+| English (en) | 48 | address, alias, birth_date, company_name, date, email, free_text, id_number, passport_no, person_name, phone_number, reference_no, registration_no, tax_id, telephone |
+| Spanish (es) | 46 | address, alias, birth_date, company_name, date, email, free_text, id_number, passport_no, person_name, phone_number, reference_no, registration_no, tax_id, telephone |
+| French (fr) | 45 | address, alias, birth_date, company_name, date, email, free_text, id_number, passport_no, person_name, phone_number, reference_no, registration_no, tax_id, telephone |
+| Italian (it) | 46 | address, alias, birth_date, company_name, date, email, free_text, id_number, passport_no, person_name, phone_number, reference_no, registration_no, tax_id, telephone |
+| Japanese (ja) | 46 | address, alias, birth_date, company_name, date, email, free_text, id_number, passport_no, person_name, phone_number, reference_no, registration_no, tax_id, telephone |
+| Korean (ko) | 47 | address, alias, birth_date, company_name, date, email, free_text, id_number, passport_no, person_name, phone_number, reference_no, registration_no, tax_id, telephone |
+| Russian/Ukrainian (ru) | 48 | address, alias, birth_date, company_name, date, email, free_text, id_number, passport_no, person_name, phone_number, reference_no, registration_no, tax_id, telephone |
+| Chinese (zh) | 47 | address, alias, birth_date, company_name, date, email, free_text, id_number, passport_no, person_name, phone_number, reference_no, registration_no, tax_id, telephone |
+| **Total** | **514** | |
 
 ### Test dataset
 `data/test_dataset.csv`
 
-A separate 100-case test dataset used to evaluate pipeline generalisation on held-out examples not used during development. It shares the same 16-column schema. Composition: 20 cases per language (Arabic, Greek, Japanese, Russian/Ukrainian, Chinese), covering all field types.
+A separate 528-case test dataset used to evaluate pipeline generalisation on held-out examples not used during development. It shares the same 16-column schema. Composition: 48 cases per language (Arabic, German, Greek, English, Spanish, French, Italian, Japanese, Korean, Russian/Ukrainian, Chinese), covering all 15 field types.
 
 ---
 
@@ -140,12 +145,15 @@ The pipeline runs in stub mode. LLM fields receive `confidence=0.0` and `process
 
 ---
 
-## 6. Current Performance Results
+## 6. Current Performance Results — Golden Dataset
 
-*Measured on 20 March 2026, pipeline v2, model gpt-4o, temperature=0.*
+*Measured on 2 April 2026, pipeline v3, model gpt-4o, temperature=0.*
+*514 cases across 11 languages: ar, de, el, en, es, fr, it, ja, ko, ru, zh.*
 
 ### Overall accuracy
-**88.4% — 99 correct out of 112 cases**
+**68.1% — 350 correct out of 514 cases**
+
+> **Context:** the dataset grew from the original 112 cases (March 2026 baseline) to 514 by adding five languages (de, es, fr, it, ko) and nine new field types (birth_date, date, free_text, id_number, phone_number, reference_no, registration_no, tax_id, telephone). Several of these new types — `NORMALISE`, `NORMALISE_NUMERIC`, `PRESERVE_NORMALISE_SCRIPT`, `FLAG_REVIEW` — are not yet fully implemented and account for the majority of new failures. The pipeline's core treatments (TRANSLITERATE, TRANSLATE_NORMALISE for addresses and company names) are consistent with the previous baseline.
 
 ---
 
@@ -153,99 +161,34 @@ The pipeline runs in stub mode. LLM fields receive `confidence=0.0` and `process
 
 | Language | Correct | Total | Accuracy |
 |---|---|---|---|
-| Arabic (ar) | 18 | 19 | **94.7%** |
-| Greek (el) | 16 | 18 | **88.9%** |
-| English (en) | 2 | 2 | **100.0%** |
-| Japanese (ja) | 24 | 25 | **96.0%** |
-| Russian/Ukrainian (ru) | 15 | 18 | **83.3%** |
-| Chinese (zh) | 24 | 30 | **80.0%** |
+| Arabic (ar) | 33 | 48 | **68.8%** |
+| German (de) | 36 | 47 | **76.6%** |
+| Greek (el) | 27 | 46 | **58.7%** |
+| English (en) | 39 | 48 | **81.2%** |
+| Spanish (es) | 35 | 46 | **76.1%** |
+| French (fr) | 33 | 45 | **73.3%** |
+| Italian (it) | 35 | 46 | **76.1%** |
+| Japanese (ja) | 31 | 46 | **67.4%** |
+| Korean (ko) | 29 | 47 | **61.7%** |
+| Russian/Ukrainian (ru) | 25 | 48 | **52.1%** |
+| Chinese (zh) | 27 | 47 | **57.4%** |
 
 ---
 
-### By processing method (expected treatment)
+### By expected treatment
 
 | Treatment | Correct | Total | Accuracy |
 |---|---|---|---|
-| PRESERVE | 13 | 13 | **100.0%** |
-| TRANSLITERATE | 65 | 67 | **97.0%** |
-| TRANSLATE_NORMALISE | 21 | 29 | **72.4%** |
-| TRANSLATE_COMPOSITE | 0 | 3 | **0.0%** |
+| TRANSLITERATE | 206 | 220 | **93.6%** |
+| TRANSLATE_NORMALISE | 70 | 121 | **57.9%** |
+| PRESERVE | 55 | 68 | **80.9%** |
+| NORMALISE | 8 | 23 | **34.8%** |
+| NORMALISE_NUMERIC | 8 | 24 | **33.3%** |
+| TRANSLATE_ANALYST | 1 | 12 | **8.3%** |
+| PRESERVE_NORMALISE_SCRIPT | 2 | 41 | **4.9%** |
+| FLAG_REVIEW | 0 | 5 | **0.0%** |
 
-PRESERVE achieves 100% as expected — these are pass-through fields with no transformation risk.
-
-TRANSLITERATE achieves 97% — the two failures are known `Ja→Ya` library issues (see below).
-
-TRANSLATE_NORMALISE achieves 72.4% — failures are concentrated in company name translation where LLM brand-name knowledge is incomplete.
-
-TRANSLATE_COMPOSITE is 0% on this baseline run — the `is_composite_alias()` detector and LLM routing are implemented in `feature/translate-composite` and not yet merged. These are alias fields containing both a name and a descriptor phrase that requires translation.
-
----
-
-### By language × field type (full cross-tabulation)
-
-| Language | Field type | Correct | Total | Accuracy |
-|---|---|---|---|---|
-| ar | address | 3 | 3 | 100.0% |
-| ar | alias | 2 | 2 | 100.0% |
-| ar | company_name | 0 | 1 | 0.0% |
-| ar | passport_no | 2 | 2 | 100.0% |
-| ar | person_name | 11 | 11 | 100.0% |
-| el | address | 5 | 5 | 100.0% |
-| el | alias | 0 | 1 | 0.0% |
-| el | company_name | 1 | 2 | 50.0% |
-| el | email | 1 | 1 | 100.0% |
-| el | passport_no | 1 | 1 | 100.0% |
-| el | person_name | 8 | 8 | 100.0% |
-| en | email | 1 | 1 | 100.0% |
-| en | passport_no | 1 | 1 | 100.0% |
-| ja | address | 4 | 4 | 100.0% |
-| ja | alias | 1 | 1 | 100.0% |
-| ja | company_name | 1 | 2 | 50.0% |
-| ja | passport_no | 5 | 5 | 100.0% |
-| ja | person_name | 13 | 13 | 100.0% |
-| ru | address | 3 | 3 | 100.0% |
-| ru | alias | 0 | 1 | 0.0% |
-| ru | company_name | 1 | 1 | 100.0% |
-| ru | passport_no | 1 | 1 | 100.0% |
-| ru | person_name | 10 | 12 | 83.3% |
-| zh | address | 4 | 5 | 80.0% |
-| zh | alias | 0 | 1 | 0.0% |
-| zh | company_name | 0 | 4 | 0.0% |
-| zh | passport_no | 1 | 1 | 100.0% |
-| zh | person_name | 19 | 19 | 100.0% |
-
----
-
-## 7. Test Dataset Performance Results
-
-*Measured on 20 March 2026, pipeline v2, model gpt-4o, temperature=0. 100 held-out cases from `data/test_dataset.csv`.*
-
-### Overall accuracy
-**89.0% — 89 correct out of 100 cases**
-
----
-
-### By language
-
-| Language | Correct | Total | Accuracy |
-|---|---|---|---|
-| Arabic (ar) | 18 | 20 | **90.0%** |
-| Greek (el) | 20 | 20 | **100.0%** |
-| Japanese (ja) | 17 | 20 | **85.0%** |
-| Russian/Ukrainian (ru) | 16 | 20 | **80.0%** |
-| Chinese (zh) | 18 | 20 | **90.0%** |
-
----
-
-### By processing method (expected treatment)
-
-| Treatment | Correct | Total | Accuracy |
-|---|---|---|---|
-| PRESERVE | 6 | 6 | **100.0%** |
-| TRANSLITERATE | 67 | 72 | **93.1%** |
-| TRANSLATE_NORMALISE | 16 | 22 | **72.7%** |
-
-PRESERVE achieves 100% as expected. TRANSLITERATE achieves 93.1%. TRANSLATE_NORMALISE achieves 72.7% — failures are concentrated in address formatting and a small number of name transliteration variants.
+`NORMALISE`, `NORMALISE_NUMERIC`, `PRESERVE_NORMALISE_SCRIPT`, `FLAG_REVIEW`, and `TRANSLATE_ANALYST` are categories covering numeric IDs, phone numbers, dates, registration numbers, free text, and composite aliases — not yet fully implemented.
 
 ---
 
@@ -253,99 +196,941 @@ PRESERVE achieves 100% as expected. TRANSLITERATE achieves 93.1%. TRANSLATE_NORM
 
 | Language | Field type | Correct | Total | Accuracy |
 |---|---|---|---|---|
-| ar | address | 3 | 3 | 100.0% |
-| ar | alias | 2 | 2 | 100.0% |
-| ar | company_name | 1 | 1 | 100.0% |
-| ar | passport_no | 1 | 1 | 100.0% |
-| ar | person_name | 11 | 13 | 84.6% |
-| el | address | 4 | 4 | 100.0% |
-| el | company_name | 2 | 2 | 100.0% |
-| el | email | 1 | 1 | 100.0% |
-| el | passport_no | 1 | 1 | 100.0% |
-| el | person_name | 12 | 12 | 100.0% |
-| ja | address | 0 | 2 | 0.0% |
-| ja | company_name | 2 | 2 | 100.0% |
-| ja | passport_no | 1 | 1 | 100.0% |
-| ja | person_name | 14 | 15 | 93.3% |
-| ru | address | 0 | 2 | 0.0% |
-| ru | company_name | 1 | 1 | 100.0% |
-| ru | passport_no | 1 | 1 | 100.0% |
-| ru | person_name | 14 | 16 | 87.5% |
-| zh | address | 1 | 3 | 33.3% |
-| zh | company_name | 3 | 3 | 100.0% |
-| zh | passport_no | 1 | 1 | 100.0% |
-| zh | person_name | 13 | 13 | 100.0% |
+| ar | address | 1 | 7 | **14.3%** |
+| ar | alias | 2 | 2 | **100.0%** |
+| ar | birth_date | 1 | 1 | **100.0%** |
+| ar | company_name | 3 | 4 | **75.0%** |
+| ar | date | 1 | 1 | **100.0%** |
+| ar | email | 1 | 1 | **100.0%** |
+| ar | free_text | 0 | 1 | **0.0%** |
+| ar | id_number | 1 | 2 | **50.0%** |
+| ar | passport_no | 5 | 5 | **100.0%** |
+| ar | person_name | 16 | 19 | **84.2%** |
+| ar | phone_number | 1 | 1 | **100.0%** |
+| ar | reference_no | 0 | 1 | **0.0%** |
+| ar | registration_no | 0 | 1 | **0.0%** |
+| ar | tax_id | 0 | 1 | **0.0%** |
+| ar | telephone | 0 | 1 | **0.0%** |
+| de | address | 7 | 7 | **100.0%** |
+| de | alias | 2 | 2 | **100.0%** |
+| de | birth_date | 1 | 1 | **100.0%** |
+| de | company_name | 3 | 4 | **75.0%** |
+| de | date | 0 | 1 | **0.0%** |
+| de | email | 1 | 1 | **100.0%** |
+| de | free_text | 0 | 1 | **0.0%** |
+| de | id_number | 0 | 1 | **0.0%** |
+| de | passport_no | 3 | 5 | **60.0%** |
+| de | person_name | 19 | 19 | **100.0%** |
+| de | phone_number | 0 | 1 | **0.0%** |
+| de | reference_no | 0 | 1 | **0.0%** |
+| de | registration_no | 0 | 1 | **0.0%** |
+| de | tax_id | 0 | 1 | **0.0%** |
+| de | telephone | 0 | 1 | **0.0%** |
+| el | address | 1 | 7 | **14.3%** |
+| el | alias | 0 | 2 | **0.0%** |
+| el | birth_date | 1 | 1 | **100.0%** |
+| el | company_name | 4 | 4 | **100.0%** |
+| el | email | 1 | 1 | **100.0%** |
+| el | free_text | 0 | 1 | **0.0%** |
+| el | id_number | 0 | 2 | **0.0%** |
+| el | passport_no | 4 | 5 | **80.0%** |
+| el | person_name | 16 | 19 | **84.2%** |
+| el | phone_number | 0 | 1 | **0.0%** |
+| el | reference_no | 0 | 1 | **0.0%** |
+| el | tax_id | 0 | 1 | **0.0%** |
+| el | telephone | 0 | 1 | **0.0%** |
+| en | address | 7 | 7 | **100.0%** |
+| en | alias | 2 | 2 | **100.0%** |
+| en | birth_date | 1 | 1 | **100.0%** |
+| en | company_name | 3 | 4 | **75.0%** |
+| en | date | 0 | 1 | **0.0%** |
+| en | email | 1 | 1 | **100.0%** |
+| en | free_text | 0 | 1 | **0.0%** |
+| en | id_number | 0 | 2 | **0.0%** |
+| en | passport_no | 5 | 5 | **100.0%** |
+| en | person_name | 19 | 19 | **100.0%** |
+| en | phone_number | 0 | 1 | **0.0%** |
+| en | reference_no | 0 | 1 | **0.0%** |
+| en | registration_no | 1 | 1 | **100.0%** |
+| en | tax_id | 0 | 1 | **0.0%** |
+| en | telephone | 0 | 1 | **0.0%** |
+| es | address | 7 | 7 | **100.0%** |
+| es | alias | 1 | 2 | **50.0%** |
+| es | company_name | 4 | 4 | **100.0%** |
+| es | date | 0 | 1 | **0.0%** |
+| es | email | 1 | 1 | **100.0%** |
+| es | free_text | 0 | 1 | **0.0%** |
+| es | id_number | 0 | 2 | **0.0%** |
+| es | passport_no | 4 | 5 | **80.0%** |
+| es | person_name | 19 | 19 | **100.0%** |
+| es | phone_number | 0 | 1 | **0.0%** |
+| es | reference_no | 0 | 1 | **0.0%** |
+| es | registration_no | 0 | 1 | **0.0%** |
+| es | tax_id | 0 | 1 | **0.0%** |
+| fr | address | 6 | 7 | **85.7%** |
+| fr | alias | 0 | 2 | **0.0%** |
+| fr | company_name | 4 | 4 | **100.0%** |
+| fr | date | 0 | 1 | **0.0%** |
+| fr | free_text | 0 | 1 | **0.0%** |
+| fr | id_number | 0 | 2 | **0.0%** |
+| fr | passport_no | 4 | 5 | **80.0%** |
+| fr | person_name | 19 | 19 | **100.0%** |
+| fr | phone_number | 0 | 1 | **0.0%** |
+| fr | reference_no | 0 | 1 | **0.0%** |
+| fr | registration_no | 0 | 1 | **0.0%** |
+| fr | tax_id | 0 | 1 | **0.0%** |
+| it | address | 7 | 7 | **100.0%** |
+| it | alias | 1 | 2 | **50.0%** |
+| it | company_name | 4 | 4 | **100.0%** |
+| it | date | 0 | 1 | **0.0%** |
+| it | email | 1 | 1 | **100.0%** |
+| it | free_text | 0 | 1 | **0.0%** |
+| it | id_number | 0 | 2 | **0.0%** |
+| it | passport_no | 3 | 5 | **60.0%** |
+| it | person_name | 19 | 19 | **100.0%** |
+| it | phone_number | 0 | 1 | **0.0%** |
+| it | reference_no | 0 | 1 | **0.0%** |
+| it | registration_no | 0 | 1 | **0.0%** |
+| it | tax_id | 0 | 1 | **0.0%** |
+| ja | address | 3 | 7 | **42.9%** |
+| ja | alias | 1 | 2 | **50.0%** |
+| ja | company_name | 4 | 4 | **100.0%** |
+| ja | date | 0 | 1 | **0.0%** |
+| ja | free_text | 0 | 1 | **0.0%** |
+| ja | id_number | 0 | 2 | **0.0%** |
+| ja | passport_no | 5 | 5 | **100.0%** |
+| ja | person_name | 18 | 19 | **94.7%** |
+| ja | phone_number | 0 | 1 | **0.0%** |
+| ja | reference_no | 0 | 1 | **0.0%** |
+| ja | registration_no | 0 | 1 | **0.0%** |
+| ja | tax_id | 0 | 1 | **0.0%** |
+| ja | telephone | 0 | 1 | **0.0%** |
+| ko | address | 3 | 7 | **42.9%** |
+| ko | alias | 0 | 2 | **0.0%** |
+| ko | company_name | 4 | 4 | **100.0%** |
+| ko | date | 0 | 1 | **0.0%** |
+| ko | email | 1 | 1 | **100.0%** |
+| ko | free_text | 0 | 1 | **0.0%** |
+| ko | id_number | 0 | 2 | **0.0%** |
+| ko | passport_no | 3 | 5 | **60.0%** |
+| ko | person_name | 18 | 19 | **94.7%** |
+| ko | phone_number | 0 | 1 | **0.0%** |
+| ko | reference_no | 0 | 1 | **0.0%** |
+| ko | registration_no | 0 | 1 | **0.0%** |
+| ko | tax_id | 0 | 1 | **0.0%** |
+| ko | telephone | 0 | 1 | **0.0%** |
+| ru | address | 0 | 7 | **0.0%** |
+| ru | alias | 0 | 2 | **0.0%** |
+| ru | birth_date | 1 | 1 | **100.0%** |
+| ru | company_name | 3 | 4 | **75.0%** |
+| ru | date | 1 | 1 | **100.0%** |
+| ru | email | 1 | 1 | **100.0%** |
+| ru | free_text | 0 | 1 | **0.0%** |
+| ru | id_number | 0 | 2 | **0.0%** |
+| ru | passport_no | 5 | 5 | **100.0%** |
+| ru | person_name | 14 | 19 | **73.7%** |
+| ru | phone_number | 0 | 1 | **0.0%** |
+| ru | reference_no | 0 | 1 | **0.0%** |
+| ru | registration_no | 0 | 1 | **0.0%** |
+| ru | tax_id | 0 | 1 | **0.0%** |
+| ru | telephone | 0 | 1 | **0.0%** |
+| zh | address | 0 | 7 | **0.0%** |
+| zh | alias | 0 | 2 | **0.0%** |
+| zh | company_name | 2 | 4 | **50.0%** |
+| zh | date | 0 | 1 | **0.0%** |
+| zh | email | 1 | 1 | **100.0%** |
+| zh | free_text | 0 | 1 | **0.0%** |
+| zh | id_number | 0 | 2 | **0.0%** |
+| zh | passport_no | 5 | 5 | **100.0%** |
+| zh | person_name | 19 | 19 | **100.0%** |
+| zh | phone_number | 0 | 1 | **0.0%** |
+| zh | reference_no | 0 | 1 | **0.0%** |
+| zh | registration_no | 0 | 1 | **0.0%** |
+| zh | tax_id | 0 | 1 | **0.0%** |
+| zh | telephone | 0 | 1 | **0.0%** |
 
 ---
 
-### Failing cases (11)
+### By language × expected treatment
 
-| Case ID | Language | Field | Expected | Got | Root cause |
-|---|---|---|---|---|---|
-| AR012 | ar | person_name | NIHAD IBRAHIM ELSAYED ALNAGGAR | NIHAD IBRAHIM AL-SAYYID AL-NAJJAR | LLM applied classical Arabic romanisation (Al-Sayyid Al-Najjar) rather than the Egyptian compound rendering (Elsayed Alnaggar) |
-| AR014 | ar | person_name | MUHAMMAD BIN RASHID AL MAKTOUM | MUHAMMAD BIN RASHID AL-MAKTUM | LLM produced short form Al-Maktum; expected form is the official UAE romanisation Al Maktoum |
-| JA006 | ja | address | TOKYO SHINJUKU | TOKYO, SHINJUKU-KU | LLM preserved the ward suffix -ku and added punctuation; expected form drops both |
-| JA013 | ja | address | DOGENZAKA SHIBUYA TOKYO | DOGENZAKA, SHIBUYA-KU, TOKYO, JAPAN | Same pattern: -ku suffix retained and JAPAN appended |
-| JA019 | ja | person_name | HASHIMOTO DAIKI | HASHIMOTO DAI | Kanji 大輝 has multiple readings; LLM read 大 as DAI (single syllable) instead of merging to DAIKI |
-| RU006 | ru | address | LENINA STREET 10 MOSCOW | 10 LENINA ST, MOSCOW | Address number placed first; ST abbreviation used instead of STREET; comma separator added |
-| RU007 | ru | person_name | YURII GAGARIN | JURIJ GAGARIN | `transliterate` library rendering Ю→JU / Й→J instead of BGN/PCGN YU / Y |
-| RU011 | ru | address | NEVSKY PROSPEKT 20 SAINT PETERSBURG | NEVSKY PROSPECT 20, SAINT PETERSBURG | PROSPEKT vs PROSPECT (minor spelling) and comma formatting |
-| RU016 | ru | person_name | MIKHAIL ZAKHAROV | MIHAIL ZAHAROV | Library renders МИХ→MIH and ЗАХ→ZAH; BGN/PCGN standard is MIKH and ZAKH |
-| ZH013 | zh | address | LUJIAZUI FINANCE AND TRADE ZONE PUDONG NEW AREA SHANGHAI | LUJIAZUI FINANCIAL AND TRADE ZONE, PUDONG NEW DISTRICT, SHANGHAI CITY | FINANCIAL vs FINANCE; NEW DISTRICT vs NEW AREA; SHANGHAI CITY suffix added |
-| ZH020 | zh | address | SCIENCE PARK NANSHAN DISTRICT SHENZHEN GUANGDONG | NANSHAN DISTRICT, SCIENCE AND TECHNOLOGY PARK, SHENZHEN, GUANGDONG PROVINCE | Word order reversed; AND TECHNOLOGY inserted; PROVINCE suffix added |
-
-### Pattern analysis of failures
-
-**Russian Ja/Ju library convention (3 cases: RU007, RU016, and partly RU011)**
-The same `transliterate` library issue seen in the golden dataset — Ю→JU/JURIJ instead of YU/YURII, and МИХ→MIH instead of MIKH. Fix: post-process `ru` output with `str.replace("Ja", "Ya").replace("Ju", "Yu")` and extend to handle additional consonant cluster patterns.
-
-**Address formatting artefacts (5 cases: JA006, JA013, RU006, ZH013, ZH020)**
-Two sub-patterns: (a) word-order and suffix retention (Japanese -ku, Chinese CITY/PROVINCE, Russian number-first placement); (b) minor wording differences (FINANCIAL vs FINANCE, PROSPEKT vs PROSPECT). The address lenient matcher partially mitigates these — the token-set match catches number order; the remaining failures involve inserted words not present in the expected form. Fix: tighten address normalisation in the prompt and extend the lenient matcher to strip common administrative suffixes.
-
-**Arabic classical vs Egyptian romanisation (2 cases: AR012, AR014)**
-The LLM applies the classically correct romanisation but the expected form uses the locally conventional Egyptian/Emirati spelling. These are inherently ambiguous without country-of-document context being injected into the prompt. Fix: pass `country` into the Arabic name prompt system message so LLM can apply country-specific conventions.
-
-**Kanji reading ambiguity (1 case: JA019)**
-Kanji with multiple valid readings where the full compound reading (DAIKI) is standard but the LLM parsed incrementally (DAI). Fix: add more compound-kanji given-name examples to the Japanese person name handling.
+| Language | Treatment | Correct | Total | Accuracy |
+|---|---|---|---|---|
+| ar | FLAG_REVIEW | 0 | 1 | **0.0%** |
+| ar | NORMALISE_NUMERIC | 3 | 4 | **75.0%** |
+| ar | PRESERVE | 6 | 6 | **100.0%** |
+| ar | PRESERVE_NORMALISE_SCRIPT | 1 | 4 | **25.0%** |
+| ar | TRANSLATE_NORMALISE | 4 | 12 | **33.3%** |
+| ar | TRANSLITERATE | 18 | 21 | **85.7%** |
+| de | NORMALISE | 1 | 4 | **25.0%** |
+| de | NORMALISE_NUMERIC | 1 | 2 | **50.0%** |
+| de | PRESERVE | 4 | 6 | **66.7%** |
+| de | PRESERVE_NORMALISE_SCRIPT | 0 | 3 | **0.0%** |
+| de | TRANSLATE_NORMALISE | 9 | 11 | **81.8%** |
+| de | TRANSLITERATE | 21 | 21 | **100.0%** |
+| el | FLAG_REVIEW | 0 | 1 | **0.0%** |
+| el | NORMALISE_NUMERIC | 1 | 3 | **33.3%** |
+| el | PRESERVE | 5 | 6 | **83.3%** |
+| el | PRESERVE_NORMALISE_SCRIPT | 0 | 3 | **0.0%** |
+| el | TRANSLATE_ANALYST | 0 | 2 | **0.0%** |
+| el | TRANSLATE_NORMALISE | 4 | 11 | **36.4%** |
+| el | TRANSLITERATE | 17 | 20 | **85.0%** |
+| en | NORMALISE | 4 | 4 | **100.0%** |
+| en | NORMALISE_NUMERIC | 1 | 4 | **25.0%** |
+| en | PRESERVE | 7 | 8 | **87.5%** |
+| en | PRESERVE_NORMALISE_SCRIPT | 0 | 3 | **0.0%** |
+| en | TRANSLATE_ANALYST | 1 | 1 | **100.0%** |
+| en | TRANSLATE_NORMALISE | 6 | 8 | **75.0%** |
+| en | TRANSLITERATE | 20 | 20 | **100.0%** |
+| es | NORMALISE | 1 | 4 | **25.0%** |
+| es | PRESERVE | 5 | 8 | **62.5%** |
+| es | PRESERVE_NORMALISE_SCRIPT | 0 | 2 | **0.0%** |
+| es | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| es | TRANSLATE_NORMALISE | 10 | 11 | **90.9%** |
+| es | TRANSLITERATE | 20 | 20 | **100.0%** |
+| fr | NORMALISE | 1 | 4 | **25.0%** |
+| fr | PRESERVE | 4 | 5 | **80.0%** |
+| fr | PRESERVE_NORMALISE_SCRIPT | 0 | 4 | **0.0%** |
+| fr | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| fr | TRANSLATE_NORMALISE | 9 | 11 | **81.8%** |
+| fr | TRANSLITERATE | 19 | 20 | **95.0%** |
+| it | NORMALISE | 1 | 3 | **33.3%** |
+| it | PRESERVE | 4 | 8 | **50.0%** |
+| it | PRESERVE_NORMALISE_SCRIPT | 0 | 3 | **0.0%** |
+| it | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| it | TRANSLATE_NORMALISE | 10 | 11 | **90.9%** |
+| it | TRANSLITERATE | 20 | 20 | **100.0%** |
+| ja | FLAG_REVIEW | 0 | 1 | **0.0%** |
+| ja | NORMALISE_NUMERIC | 0 | 3 | **0.0%** |
+| ja | PRESERVE | 5 | 5 | **100.0%** |
+| ja | PRESERVE_NORMALISE_SCRIPT | 0 | 4 | **0.0%** |
+| ja | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| ja | TRANSLATE_NORMALISE | 7 | 12 | **58.3%** |
+| ja | TRANSLITERATE | 19 | 20 | **95.0%** |
+| ko | NORMALISE | 0 | 4 | **0.0%** |
+| ko | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ko | PRESERVE | 4 | 5 | **80.0%** |
+| ko | PRESERVE_NORMALISE_SCRIPT | 0 | 5 | **0.0%** |
+| ko | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| ko | TRANSLATE_NORMALISE | 7 | 11 | **63.6%** |
+| ko | TRANSLITERATE | 18 | 20 | **90.0%** |
+| ru | FLAG_REVIEW | 0 | 1 | **0.0%** |
+| ru | NORMALISE_NUMERIC | 2 | 4 | **50.0%** |
+| ru | PRESERVE | 5 | 5 | **100.0%** |
+| ru | PRESERVE_NORMALISE_SCRIPT | 1 | 5 | **20.0%** |
+| ru | TRANSLATE_ANALYST | 0 | 2 | **0.0%** |
+| ru | TRANSLATE_NORMALISE | 3 | 12 | **25.0%** |
+| ru | TRANSLITERATE | 14 | 19 | **73.7%** |
+| zh | FLAG_REVIEW | 0 | 1 | **0.0%** |
+| zh | NORMALISE_NUMERIC | 0 | 3 | **0.0%** |
+| zh | PRESERVE | 6 | 6 | **100.0%** |
+| zh | PRESERVE_NORMALISE_SCRIPT | 0 | 5 | **0.0%** |
+| zh | TRANSLATE_ANALYST | 0 | 2 | **0.0%** |
+| zh | TRANSLATE_NORMALISE | 2 | 11 | **18.2%** |
+| zh | TRANSLITERATE | 19 | 19 | **100.0%** |
 
 ---
 
-## 8. Failing Cases — Root Cause Analysis (Golden Dataset)
+### By language × field type × expected treatment
 
-The 13 failing cases as of the current evaluation run, with root cause:
-
-| Case ID | Language | Field | Expected | Got | Root Cause |
+| Language | Field type | Treatment | Correct | Total | Accuracy |
 |---|---|---|---|---|---|
-| KYC018 | zh | company_name | BEIJING VISION TECHNOLOGY CO LTD | BEIJING YUANJING KEJI CO LTD | LLM transliterated (不 translating) Chinese brand word 远景 instead of translating to "Vision Keji" |
-| KYC037 | ar | company_name | AL NOOR TRADING CO LTD | AL NOUR LILTIJARA ALMAHDUDA CO LTD | LLM transliterated Arabic company name instead of translating; 贸易→TRADING missed |
-| KYC045 | ja | company_name | MITSUBISHI CORPORATION | MITSUBISHI SHOJI KK | LLM rendered 商事 (Shoji = commercial trading division) instead of the established English brand MITSUBISHI CORPORATION |
-| KYC051 | ru | person_name | NATALYA VIKTOROVNA ORLOVA | NATALJA VIKTOROVNA ORLOVA | `transliterate` library uses `Ja` where BGN/PCGN mandates `Ya` for Я |
-| KYC057 | ru | person_name | ANDREI YURYEVICH KOVALEV | ANDREJ JUREVICH KOVALEV | Same `Ju→Yu` and `J→Y` library convention difference |
-| KYC060 | ru | alias | ALEXANDER NICKNAMED SASHA | ALEKSANDR PO PROZVISCHU SASHA | Descriptive phrase "по прозвищу" (meaning "nicknamed") not translated — TRANSLATE_COMPOSITE case |
-| KYC065 | zh | company_name | SHENZHEN HUAXING ELECTRONICS CO LTD | SHENZHEN HUA XING DIANZI CO LTD | LLM transliterated 华兴电子 instead of resolving to known brand; Pinyin fallback |
-| KYC069 | zh | address | 18 TIYU EAST ROAD TIANHE GUANGZHOU | 18 TIYU EAST ROAD, TIANHE DISTRICT, GUANGZHOU CITY | LLM added "DISTRICT" and "CITY" suffixes; expected form omits them — close miss |
-| KYC070 | zh | alias | WANG QIANG ALSO KNOWN AS WANG XIAOQIANG | WANG QIANG YOU MING WANG XIAO QIANG | 又名 (yòu míng = "also known as") was transliterated rather than translated |
-| KYC074 | el | company_name | ENERGY DEVELOPMENT SA | ANONIMI ETAIRIA ENERGEIAKIS ANAPTYXIS SA | LLM transliterated the Greek company name; "Ανώνυμη Εταιρεία" (=SA) should have been dropped |
-| KYC080 | el | alias | KNOWN AS NIKOS | GNOSTOS OS NIKOS | Greek phrase γνωστός ως (= "known as") was transliterated rather than translated |
-| KYC091 | zh | company_name | TAIWAN SEMICONDUCTOR MANUFACTURING CO LTD | TAIWAN JITI DIANLU ZHIZAO CO LTD | TSMC's Chinese name 台积电路 transliterated instead of resolved to established English brand name |
-| KYC092 | zh | company_name | TENCENT TECHNOLOGY CO LTD | TENGXUN KEJI CO LTD | 腾讯 (Téngxùn) transliterated instead of resolved to established English "TENCENT" brand |
+| ar | address | TRANSLATE_NORMALISE | 1 | 7 | **14.3%** |
+| ar | alias | TRANSLITERATE | 2 | 2 | **100.0%** |
+| ar | birth_date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| ar | company_name | TRANSLATE_NORMALISE | 3 | 4 | **75.0%** |
+| ar | date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| ar | email | PRESERVE | 1 | 1 | **100.0%** |
+| ar | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| ar | id_number | FLAG_REVIEW | 0 | 1 | **0.0%** |
+| ar | id_number | PRESERVE_NORMALISE_SCRIPT | 1 | 1 | **100.0%** |
+| ar | passport_no | PRESERVE | 5 | 5 | **100.0%** |
+| ar | person_name | TRANSLITERATE | 16 | 19 | **84.2%** |
+| ar | phone_number | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| ar | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ar | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ar | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ar | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| de | address | NORMALISE | 1 | 1 | **100.0%** |
+| de | address | TRANSLATE_NORMALISE | 6 | 6 | **100.0%** |
+| de | alias | TRANSLITERATE | 2 | 2 | **100.0%** |
+| de | birth_date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| de | company_name | TRANSLATE_NORMALISE | 3 | 4 | **75.0%** |
+| de | date | NORMALISE | 0 | 1 | **0.0%** |
+| de | email | PRESERVE | 1 | 1 | **100.0%** |
+| de | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| de | id_number | NORMALISE | 0 | 1 | **0.0%** |
+| de | passport_no | PRESERVE | 3 | 5 | **60.0%** |
+| de | person_name | TRANSLITERATE | 19 | 19 | **100.0%** |
+| de | phone_number | NORMALISE | 0 | 1 | **0.0%** |
+| de | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| de | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| de | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| de | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| el | address | TRANSLATE_NORMALISE | 1 | 7 | **14.3%** |
+| el | alias | TRANSLATE_ANALYST | 0 | 2 | **0.0%** |
+| el | birth_date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| el | company_name | TRANSLATE_NORMALISE | 3 | 3 | **100.0%** |
+| el | company_name | TRANSLITERATE | 1 | 1 | **100.0%** |
+| el | email | PRESERVE | 1 | 1 | **100.0%** |
+| el | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| el | id_number | PRESERVE | 0 | 1 | **0.0%** |
+| el | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| el | passport_no | PRESERVE | 4 | 4 | **100.0%** |
+| el | passport_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| el | person_name | TRANSLITERATE | 16 | 19 | **84.2%** |
+| el | phone_number | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| el | reference_no | FLAG_REVIEW | 0 | 1 | **0.0%** |
+| el | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| el | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| en | address | NORMALISE | 4 | 4 | **100.0%** |
+| en | address | TRANSLATE_NORMALISE | 3 | 3 | **100.0%** |
+| en | alias | TRANSLATE_ANALYST | 1 | 1 | **100.0%** |
+| en | alias | TRANSLITERATE | 1 | 1 | **100.0%** |
+| en | birth_date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| en | company_name | TRANSLATE_NORMALISE | 3 | 4 | **75.0%** |
+| en | date | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| en | email | PRESERVE | 1 | 1 | **100.0%** |
+| en | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| en | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 2 | **0.0%** |
+| en | passport_no | PRESERVE | 5 | 5 | **100.0%** |
+| en | person_name | TRANSLITERATE | 19 | 19 | **100.0%** |
+| en | phone_number | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| en | reference_no | PRESERVE | 0 | 1 | **0.0%** |
+| en | registration_no | PRESERVE | 1 | 1 | **100.0%** |
+| en | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| en | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| es | address | NORMALISE | 1 | 1 | **100.0%** |
+| es | address | TRANSLATE_NORMALISE | 6 | 6 | **100.0%** |
+| es | alias | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| es | alias | TRANSLITERATE | 1 | 1 | **100.0%** |
+| es | company_name | TRANSLATE_NORMALISE | 4 | 4 | **100.0%** |
+| es | date | NORMALISE | 0 | 1 | **0.0%** |
+| es | email | PRESERVE | 1 | 1 | **100.0%** |
+| es | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| es | id_number | NORMALISE | 0 | 1 | **0.0%** |
+| es | id_number | PRESERVE | 0 | 1 | **0.0%** |
+| es | passport_no | PRESERVE | 4 | 5 | **80.0%** |
+| es | person_name | TRANSLITERATE | 19 | 19 | **100.0%** |
+| es | phone_number | NORMALISE | 0 | 1 | **0.0%** |
+| es | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| es | registration_no | PRESERVE | 0 | 1 | **0.0%** |
+| es | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| fr | address | NORMALISE | 1 | 1 | **100.0%** |
+| fr | address | TRANSLATE_NORMALISE | 5 | 6 | **83.3%** |
+| fr | alias | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| fr | alias | TRANSLITERATE | 0 | 1 | **0.0%** |
+| fr | company_name | TRANSLATE_NORMALISE | 4 | 4 | **100.0%** |
+| fr | date | NORMALISE | 0 | 1 | **0.0%** |
+| fr | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| fr | id_number | NORMALISE | 0 | 1 | **0.0%** |
+| fr | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| fr | passport_no | PRESERVE | 4 | 5 | **80.0%** |
+| fr | person_name | TRANSLITERATE | 19 | 19 | **100.0%** |
+| fr | phone_number | NORMALISE | 0 | 1 | **0.0%** |
+| fr | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| fr | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| fr | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| it | address | NORMALISE | 1 | 1 | **100.0%** |
+| it | address | TRANSLATE_NORMALISE | 6 | 6 | **100.0%** |
+| it | alias | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| it | alias | TRANSLITERATE | 1 | 1 | **100.0%** |
+| it | company_name | TRANSLATE_NORMALISE | 4 | 4 | **100.0%** |
+| it | date | NORMALISE | 0 | 1 | **0.0%** |
+| it | email | PRESERVE | 1 | 1 | **100.0%** |
+| it | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| it | id_number | PRESERVE | 0 | 2 | **0.0%** |
+| it | passport_no | PRESERVE | 3 | 4 | **75.0%** |
+| it | passport_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| it | person_name | TRANSLITERATE | 19 | 19 | **100.0%** |
+| it | phone_number | NORMALISE | 0 | 1 | **0.0%** |
+| it | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| it | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| it | tax_id | PRESERVE | 0 | 1 | **0.0%** |
+| ja | address | TRANSLATE_NORMALISE | 3 | 7 | **42.9%** |
+| ja | alias | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| ja | alias | TRANSLITERATE | 1 | 1 | **100.0%** |
+| ja | company_name | TRANSLATE_NORMALISE | 4 | 4 | **100.0%** |
+| ja | date | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ja | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| ja | id_number | FLAG_REVIEW | 0 | 1 | **0.0%** |
+| ja | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ja | passport_no | PRESERVE | 5 | 5 | **100.0%** |
+| ja | person_name | TRANSLITERATE | 18 | 19 | **94.7%** |
+| ja | phone_number | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ja | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ja | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ja | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ja | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ko | address | NORMALISE | 0 | 1 | **0.0%** |
+| ko | address | TRANSLATE_NORMALISE | 3 | 6 | **50.0%** |
+| ko | alias | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| ko | alias | TRANSLITERATE | 0 | 1 | **0.0%** |
+| ko | company_name | TRANSLATE_NORMALISE | 4 | 4 | **100.0%** |
+| ko | date | NORMALISE | 0 | 1 | **0.0%** |
+| ko | email | PRESERVE | 1 | 1 | **100.0%** |
+| ko | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| ko | id_number | NORMALISE | 0 | 1 | **0.0%** |
+| ko | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ko | passport_no | PRESERVE | 3 | 4 | **75.0%** |
+| ko | passport_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ko | person_name | TRANSLITERATE | 18 | 19 | **94.7%** |
+| ko | phone_number | NORMALISE | 0 | 1 | **0.0%** |
+| ko | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ko | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ko | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ko | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ru | address | TRANSLATE_NORMALISE | 0 | 7 | **0.0%** |
+| ru | alias | TRANSLATE_ANALYST | 0 | 2 | **0.0%** |
+| ru | birth_date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| ru | company_name | TRANSLATE_NORMALISE | 3 | 4 | **75.0%** |
+| ru | date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| ru | email | PRESERVE | 1 | 1 | **100.0%** |
+| ru | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| ru | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 2 | **0.0%** |
+| ru | passport_no | PRESERVE | 4 | 4 | **100.0%** |
+| ru | passport_no | PRESERVE_NORMALISE_SCRIPT | 1 | 1 | **100.0%** |
+| ru | person_name | TRANSLITERATE | 14 | 19 | **73.7%** |
+| ru | phone_number | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ru | reference_no | FLAG_REVIEW | 0 | 1 | **0.0%** |
+| ru | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ru | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ru | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| zh | address | FLAG_REVIEW | 0 | 1 | **0.0%** |
+| zh | address | TRANSLATE_NORMALISE | 0 | 6 | **0.0%** |
+| zh | alias | TRANSLATE_ANALYST | 0 | 2 | **0.0%** |
+| zh | company_name | TRANSLATE_NORMALISE | 2 | 4 | **50.0%** |
+| zh | date | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| zh | email | PRESERVE | 1 | 1 | **100.0%** |
+| zh | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| zh | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 2 | **0.0%** |
+| zh | passport_no | PRESERVE | 5 | 5 | **100.0%** |
+| zh | person_name | TRANSLITERATE | 19 | 19 | **100.0%** |
+| zh | phone_number | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| zh | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| zh | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| zh | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| zh | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
 
-### Pattern analysis of failures
+---
 
-**Category A — Chinese company brand name resolution (5 cases: KYC018, KYC065, KYC091, KYC092, and partial KYC045)**
-The LLM is correctly transliterating or partially translating but failing to recognise that a well-known Chinese company has an established English trade name. Fix: enrich the company name prompt with examples of Chinese-brand-name resolution, or add a brand lookup table.
+## 7. Test Dataset Performance Results
 
-**Category B — Descriptive alias phrases not translated (3 cases: KYC060, KYC070, KYC080)**
-Aliases containing mixed identity + descriptor (по прозвищу/又名/γνωστός ως) require the LLM to translate the descriptive component while preserving the name component. The current prompt does not instruct on this. Fix: update alias prompts to explicitly handle mixed-descriptor patterns.
+*Measured on 2 April 2026, pipeline v3, model gpt-4o, temperature=0.*
+*528 cases across 11 languages (48 cases per language) from `data/test_dataset.csv`.*
 
-**Category C — Russian Ja/Ju library convention (2 cases: KYC051, KYC057)**
-The `transliterate` library uses `Ja`/`Ju` where BGN/PCGN mandates `Ya`/`Yu`. Fix: post-process `ru` language output with `str.replace("Ja", "Ya").replace("Ju", "Yu")`.
+### Overall accuracy
+**67.2% — 355 correct out of 528 cases**
 
-**Category D — Greek company name LLM behaviour (1 case: KYC074)**
-LLM transliterated the Greek company name instead of translating it. Fix: reinforce the Greek company name handling in the prompt.
+---
 
-**Category E — Address formatting suffix (1 case: KYC069)**
-LLM added "DISTRICT" and "CITY" administrative suffixes that the expected form omits. Minor formatting — may be resolved by adjusting the address lenient matching or the prompt.
+### By language
+
+| Language | Correct | Total | Accuracy |
+|---|---|---|---|
+| Arabic (ar) | 30 | 48 | **62.5%** |
+| German (de) | 38 | 48 | **79.2%** |
+| Greek (el) | 29 | 48 | **60.4%** |
+| English (en) | 39 | 48 | **81.2%** |
+| Spanish (es) | 33 | 48 | **68.8%** |
+| French (fr) | 36 | 48 | **75.0%** |
+| Italian (it) | 36 | 48 | **75.0%** |
+| Japanese (ja) | 29 | 48 | **60.4%** |
+| Korean (ko) | 27 | 48 | **56.2%** |
+| Russian/Ukrainian (ru) | 28 | 48 | **58.3%** |
+| Chinese (zh) | 30 | 48 | **62.5%** |
+
+---
+
+### By expected treatment
+
+| Treatment | Correct | Total | Accuracy |
+|---|---|---|---|
+| TRANSLITERATE | 202 | 222 | **91.0%** |
+| TRANSLATE_NORMALISE | 73 | 131 | **55.7%** |
+| PRESERVE | 62 | 66 | **93.9%** |
+| NORMALISE_NUMERIC | 16 | 44 | **36.4%** |
+| TRANSLATE_ANALYST | 2 | 10 | **20.0%** |
+| PRESERVE_NORMALISE_SCRIPT | 0 | 55 | **0.0%** |
+
+---
+
+### By language × field type
+
+| Language | Field type | Correct | Total | Accuracy |
+|---|---|---|---|---|
+| ar | address | 0 | 7 | **0.0%** |
+| ar | alias | 2 | 2 | **100.0%** |
+| ar | birth_date | 1 | 1 | **100.0%** |
+| ar | company_name | 3 | 4 | **75.0%** |
+| ar | date | 0 | 1 | **0.0%** |
+| ar | email | 1 | 1 | **100.0%** |
+| ar | free_text | 0 | 1 | **0.0%** |
+| ar | id_number | 0 | 2 | **0.0%** |
+| ar | passport_no | 5 | 5 | **100.0%** |
+| ar | person_name | 16 | 19 | **84.2%** |
+| ar | phone_number | 1 | 1 | **100.0%** |
+| ar | reference_no | 0 | 1 | **0.0%** |
+| ar | registration_no | 0 | 1 | **0.0%** |
+| ar | tax_id | 0 | 1 | **0.0%** |
+| ar | telephone | 1 | 1 | **100.0%** |
+| de | address | 7 | 7 | **100.0%** |
+| de | alias | 1 | 2 | **50.0%** |
+| de | birth_date | 1 | 1 | **100.0%** |
+| de | company_name | 4 | 4 | **100.0%** |
+| de | date | 1 | 1 | **100.0%** |
+| de | email | 1 | 1 | **100.0%** |
+| de | free_text | 0 | 1 | **0.0%** |
+| de | id_number | 0 | 2 | **0.0%** |
+| de | passport_no | 4 | 5 | **80.0%** |
+| de | person_name | 19 | 19 | **100.0%** |
+| de | phone_number | 0 | 1 | **0.0%** |
+| de | reference_no | 0 | 1 | **0.0%** |
+| de | registration_no | 0 | 1 | **0.0%** |
+| de | tax_id | 0 | 1 | **0.0%** |
+| de | telephone | 0 | 1 | **0.0%** |
+| el | address | 2 | 7 | **28.6%** |
+| el | alias | 0 | 2 | **0.0%** |
+| el | birth_date | 1 | 1 | **100.0%** |
+| el | company_name | 4 | 4 | **100.0%** |
+| el | date | 1 | 1 | **100.0%** |
+| el | email | 1 | 1 | **100.0%** |
+| el | free_text | 0 | 1 | **0.0%** |
+| el | id_number | 0 | 2 | **0.0%** |
+| el | passport_no | 4 | 5 | **80.0%** |
+| el | person_name | 16 | 19 | **84.2%** |
+| el | phone_number | 0 | 1 | **0.0%** |
+| el | reference_no | 0 | 1 | **0.0%** |
+| el | registration_no | 0 | 1 | **0.0%** |
+| el | tax_id | 0 | 1 | **0.0%** |
+| el | telephone | 0 | 1 | **0.0%** |
+| en | address | 7 | 7 | **100.0%** |
+| en | alias | 2 | 2 | **100.0%** |
+| en | birth_date | 0 | 1 | **0.0%** |
+| en | company_name | 4 | 4 | **100.0%** |
+| en | date | 1 | 1 | **100.0%** |
+| en | email | 1 | 1 | **100.0%** |
+| en | free_text | 0 | 1 | **0.0%** |
+| en | id_number | 0 | 2 | **0.0%** |
+| en | passport_no | 5 | 5 | **100.0%** |
+| en | person_name | 18 | 19 | **94.7%** |
+| en | phone_number | 0 | 1 | **0.0%** |
+| en | reference_no | 0 | 1 | **0.0%** |
+| en | registration_no | 1 | 1 | **100.0%** |
+| en | tax_id | 0 | 1 | **0.0%** |
+| en | telephone | 0 | 1 | **0.0%** |
+| es | address | 3 | 7 | **42.9%** |
+| es | alias | 1 | 2 | **50.0%** |
+| es | birth_date | 1 | 1 | **100.0%** |
+| es | company_name | 2 | 4 | **50.0%** |
+| es | date | 1 | 1 | **100.0%** |
+| es | email | 1 | 1 | **100.0%** |
+| es | free_text | 0 | 1 | **0.0%** |
+| es | id_number | 0 | 2 | **0.0%** |
+| es | passport_no | 5 | 5 | **100.0%** |
+| es | person_name | 19 | 19 | **100.0%** |
+| es | phone_number | 0 | 1 | **0.0%** |
+| es | reference_no | 0 | 1 | **0.0%** |
+| es | registration_no | 0 | 1 | **0.0%** |
+| es | tax_id | 0 | 1 | **0.0%** |
+| es | telephone | 0 | 1 | **0.0%** |
+| fr | address | 6 | 7 | **85.7%** |
+| fr | alias | 1 | 2 | **50.0%** |
+| fr | birth_date | 1 | 1 | **100.0%** |
+| fr | company_name | 3 | 4 | **75.0%** |
+| fr | date | 1 | 1 | **100.0%** |
+| fr | email | 1 | 1 | **100.0%** |
+| fr | free_text | 0 | 1 | **0.0%** |
+| fr | id_number | 0 | 2 | **0.0%** |
+| fr | passport_no | 4 | 5 | **80.0%** |
+| fr | person_name | 19 | 19 | **100.0%** |
+| fr | phone_number | 0 | 1 | **0.0%** |
+| fr | reference_no | 0 | 1 | **0.0%** |
+| fr | registration_no | 0 | 1 | **0.0%** |
+| fr | tax_id | 0 | 1 | **0.0%** |
+| fr | telephone | 0 | 1 | **0.0%** |
+| it | address | 7 | 7 | **100.0%** |
+| it | alias | 1 | 2 | **50.0%** |
+| it | birth_date | 1 | 1 | **100.0%** |
+| it | company_name | 2 | 4 | **50.0%** |
+| it | date | 1 | 1 | **100.0%** |
+| it | email | 1 | 1 | **100.0%** |
+| it | free_text | 0 | 1 | **0.0%** |
+| it | id_number | 0 | 2 | **0.0%** |
+| it | passport_no | 4 | 5 | **80.0%** |
+| it | person_name | 19 | 19 | **100.0%** |
+| it | phone_number | 0 | 1 | **0.0%** |
+| it | reference_no | 0 | 1 | **0.0%** |
+| it | registration_no | 0 | 1 | **0.0%** |
+| it | tax_id | 0 | 1 | **0.0%** |
+| it | telephone | 0 | 1 | **0.0%** |
+| ja | address | 2 | 7 | **28.6%** |
+| ja | alias | 1 | 2 | **50.0%** |
+| ja | birth_date | 0 | 1 | **0.0%** |
+| ja | company_name | 4 | 4 | **100.0%** |
+| ja | date | 0 | 1 | **0.0%** |
+| ja | email | 1 | 1 | **100.0%** |
+| ja | free_text | 0 | 1 | **0.0%** |
+| ja | id_number | 0 | 2 | **0.0%** |
+| ja | passport_no | 5 | 5 | **100.0%** |
+| ja | person_name | 16 | 19 | **84.2%** |
+| ja | phone_number | 0 | 1 | **0.0%** |
+| ja | reference_no | 0 | 1 | **0.0%** |
+| ja | registration_no | 0 | 1 | **0.0%** |
+| ja | tax_id | 0 | 1 | **0.0%** |
+| ja | telephone | 0 | 1 | **0.0%** |
+| ko | address | 3 | 7 | **42.9%** |
+| ko | alias | 0 | 2 | **0.0%** |
+| ko | birth_date | 0 | 1 | **0.0%** |
+| ko | company_name | 4 | 4 | **100.0%** |
+| ko | date | 0 | 1 | **0.0%** |
+| ko | email | 1 | 1 | **100.0%** |
+| ko | free_text | 0 | 1 | **0.0%** |
+| ko | id_number | 0 | 2 | **0.0%** |
+| ko | passport_no | 4 | 5 | **80.0%** |
+| ko | person_name | 15 | 19 | **78.9%** |
+| ko | phone_number | 0 | 1 | **0.0%** |
+| ko | reference_no | 0 | 1 | **0.0%** |
+| ko | registration_no | 0 | 1 | **0.0%** |
+| ko | tax_id | 0 | 1 | **0.0%** |
+| ko | telephone | 0 | 1 | **0.0%** |
+| ru | address | 2 | 7 | **28.6%** |
+| ru | alias | 1 | 2 | **50.0%** |
+| ru | birth_date | 1 | 1 | **100.0%** |
+| ru | company_name | 1 | 4 | **25.0%** |
+| ru | date | 1 | 1 | **100.0%** |
+| ru | email | 1 | 1 | **100.0%** |
+| ru | free_text | 0 | 1 | **0.0%** |
+| ru | id_number | 0 | 2 | **0.0%** |
+| ru | passport_no | 5 | 5 | **100.0%** |
+| ru | person_name | 16 | 19 | **84.2%** |
+| ru | phone_number | 0 | 1 | **0.0%** |
+| ru | reference_no | 0 | 1 | **0.0%** |
+| ru | registration_no | 0 | 1 | **0.0%** |
+| ru | tax_id | 0 | 1 | **0.0%** |
+| ru | telephone | 0 | 1 | **0.0%** |
+| zh | address | 0 | 7 | **0.0%** |
+| zh | alias | 2 | 2 | **100.0%** |
+| zh | birth_date | 0 | 1 | **0.0%** |
+| zh | company_name | 4 | 4 | **100.0%** |
+| zh | date | 0 | 1 | **0.0%** |
+| zh | email | 1 | 1 | **100.0%** |
+| zh | free_text | 0 | 1 | **0.0%** |
+| zh | id_number | 0 | 2 | **0.0%** |
+| zh | passport_no | 5 | 5 | **100.0%** |
+| zh | person_name | 18 | 19 | **94.7%** |
+| zh | phone_number | 0 | 1 | **0.0%** |
+| zh | reference_no | 0 | 1 | **0.0%** |
+| zh | registration_no | 0 | 1 | **0.0%** |
+| zh | tax_id | 0 | 1 | **0.0%** |
+| zh | telephone | 0 | 1 | **0.0%** |
+
+---
+
+### By language × expected treatment
+
+| Language | Treatment | Correct | Total | Accuracy |
+|---|---|---|---|---|
+| ar | NORMALISE_NUMERIC | 3 | 4 | **75.0%** |
+| ar | PRESERVE | 6 | 6 | **100.0%** |
+| ar | PRESERVE_NORMALISE_SCRIPT | 0 | 5 | **0.0%** |
+| ar | TRANSLATE_NORMALISE | 3 | 12 | **25.0%** |
+| ar | TRANSLITERATE | 18 | 21 | **85.7%** |
+| de | NORMALISE_NUMERIC | 2 | 4 | **50.0%** |
+| de | PRESERVE | 5 | 5 | **100.0%** |
+| de | PRESERVE_NORMALISE_SCRIPT | 0 | 6 | **0.0%** |
+| de | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| de | TRANSLATE_NORMALISE | 11 | 12 | **91.7%** |
+| de | TRANSLITERATE | 20 | 20 | **100.0%** |
+| el | NORMALISE_NUMERIC | 2 | 4 | **50.0%** |
+| el | PRESERVE | 5 | 6 | **83.3%** |
+| el | PRESERVE_NORMALISE_SCRIPT | 0 | 5 | **0.0%** |
+| el | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| el | TRANSLATE_NORMALISE | 5 | 11 | **45.5%** |
+| el | TRANSLITERATE | 17 | 21 | **81.0%** |
+| en | NORMALISE_NUMERIC | 1 | 4 | **25.0%** |
+| en | PRESERVE | 7 | 8 | **87.5%** |
+| en | PRESERVE_NORMALISE_SCRIPT | 0 | 3 | **0.0%** |
+| en | TRANSLATE_ANALYST | 1 | 1 | **100.0%** |
+| en | TRANSLATE_NORMALISE | 11 | 12 | **91.7%** |
+| en | TRANSLITERATE | 19 | 20 | **95.0%** |
+| es | NORMALISE_NUMERIC | 2 | 4 | **50.0%** |
+| es | PRESERVE | 6 | 7 | **85.7%** |
+| es | PRESERVE_NORMALISE_SCRIPT | 0 | 4 | **0.0%** |
+| es | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| es | TRANSLATE_NORMALISE | 5 | 12 | **41.7%** |
+| es | TRANSLITERATE | 20 | 20 | **100.0%** |
+| fr | NORMALISE_NUMERIC | 2 | 4 | **50.0%** |
+| fr | PRESERVE | 5 | 5 | **100.0%** |
+| fr | PRESERVE_NORMALISE_SCRIPT | 0 | 6 | **0.0%** |
+| fr | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| fr | TRANSLATE_NORMALISE | 9 | 12 | **75.0%** |
+| fr | TRANSLITERATE | 20 | 20 | **100.0%** |
+| it | NORMALISE_NUMERIC | 2 | 4 | **50.0%** |
+| it | PRESERVE | 5 | 6 | **83.3%** |
+| it | PRESERVE_NORMALISE_SCRIPT | 0 | 5 | **0.0%** |
+| it | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| it | TRANSLATE_NORMALISE | 9 | 12 | **75.0%** |
+| it | TRANSLITERATE | 20 | 20 | **100.0%** |
+| ja | NORMALISE_NUMERIC | 0 | 4 | **0.0%** |
+| ja | PRESERVE | 6 | 6 | **100.0%** |
+| ja | PRESERVE_NORMALISE_SCRIPT | 0 | 5 | **0.0%** |
+| ja | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| ja | TRANSLATE_NORMALISE | 6 | 12 | **50.0%** |
+| ja | TRANSLITERATE | 17 | 20 | **85.0%** |
+| ko | NORMALISE_NUMERIC | 0 | 4 | **0.0%** |
+| ko | PRESERVE | 5 | 5 | **100.0%** |
+| ko | PRESERVE_NORMALISE_SCRIPT | 0 | 6 | **0.0%** |
+| ko | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| ko | TRANSLATE_NORMALISE | 7 | 12 | **58.3%** |
+| ko | TRANSLITERATE | 15 | 20 | **75.0%** |
+| ru | NORMALISE_NUMERIC | 2 | 4 | **50.0%** |
+| ru | PRESERVE | 6 | 6 | **100.0%** |
+| ru | PRESERVE_NORMALISE_SCRIPT | 0 | 5 | **0.0%** |
+| ru | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| ru | TRANSLATE_NORMALISE | 3 | 12 | **25.0%** |
+| ru | TRANSLITERATE | 17 | 20 | **85.0%** |
+| zh | NORMALISE_NUMERIC | 0 | 4 | **0.0%** |
+| zh | PRESERVE | 6 | 6 | **100.0%** |
+| zh | PRESERVE_NORMALISE_SCRIPT | 0 | 5 | **0.0%** |
+| zh | TRANSLATE_ANALYST | 1 | 1 | **100.0%** |
+| zh | TRANSLATE_NORMALISE | 4 | 12 | **33.3%** |
+| zh | TRANSLITERATE | 19 | 20 | **95.0%** |
+
+---
+
+### By language × field type × expected treatment
+
+| Language | Field type | Treatment | Correct | Total | Accuracy |
+|---|---|---|---|---|---|
+| ar | address | TRANSLATE_NORMALISE | 0 | 7 | **0.0%** |
+| ar | alias | TRANSLITERATE | 2 | 2 | **100.0%** |
+| ar | birth_date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| ar | company_name | TRANSLATE_NORMALISE | 3 | 4 | **75.0%** |
+| ar | date | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ar | email | PRESERVE | 1 | 1 | **100.0%** |
+| ar | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| ar | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 2 | **0.0%** |
+| ar | passport_no | PRESERVE | 5 | 5 | **100.0%** |
+| ar | person_name | TRANSLITERATE | 16 | 19 | **84.2%** |
+| ar | phone_number | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| ar | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ar | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ar | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ar | telephone | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| de | address | TRANSLATE_NORMALISE | 7 | 7 | **100.0%** |
+| de | alias | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| de | alias | TRANSLITERATE | 1 | 1 | **100.0%** |
+| de | birth_date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| de | company_name | TRANSLATE_NORMALISE | 4 | 4 | **100.0%** |
+| de | date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| de | email | PRESERVE | 1 | 1 | **100.0%** |
+| de | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| de | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 2 | **0.0%** |
+| de | passport_no | PRESERVE | 4 | 4 | **100.0%** |
+| de | passport_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| de | person_name | TRANSLITERATE | 19 | 19 | **100.0%** |
+| de | phone_number | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| de | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| de | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| de | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| de | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| el | address | TRANSLATE_NORMALISE | 2 | 7 | **28.6%** |
+| el | alias | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| el | alias | TRANSLITERATE | 0 | 1 | **0.0%** |
+| el | birth_date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| el | company_name | TRANSLATE_NORMALISE | 3 | 3 | **100.0%** |
+| el | company_name | TRANSLITERATE | 1 | 1 | **100.0%** |
+| el | date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| el | email | PRESERVE | 1 | 1 | **100.0%** |
+| el | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| el | id_number | PRESERVE | 0 | 1 | **0.0%** |
+| el | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| el | passport_no | PRESERVE | 4 | 4 | **100.0%** |
+| el | passport_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| el | person_name | TRANSLITERATE | 16 | 19 | **84.2%** |
+| el | phone_number | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| el | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| el | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| el | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| el | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| en | address | TRANSLATE_NORMALISE | 7 | 7 | **100.0%** |
+| en | alias | TRANSLATE_ANALYST | 1 | 1 | **100.0%** |
+| en | alias | TRANSLITERATE | 1 | 1 | **100.0%** |
+| en | birth_date | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| en | company_name | TRANSLATE_NORMALISE | 4 | 4 | **100.0%** |
+| en | date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| en | email | PRESERVE | 1 | 1 | **100.0%** |
+| en | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| en | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 2 | **0.0%** |
+| en | passport_no | PRESERVE | 5 | 5 | **100.0%** |
+| en | person_name | TRANSLITERATE | 18 | 19 | **94.7%** |
+| en | phone_number | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| en | reference_no | PRESERVE | 0 | 1 | **0.0%** |
+| en | registration_no | PRESERVE | 1 | 1 | **100.0%** |
+| en | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| en | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| es | address | TRANSLATE_NORMALISE | 3 | 7 | **42.9%** |
+| es | alias | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| es | alias | TRANSLITERATE | 1 | 1 | **100.0%** |
+| es | birth_date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| es | company_name | TRANSLATE_NORMALISE | 2 | 4 | **50.0%** |
+| es | date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| es | email | PRESERVE | 1 | 1 | **100.0%** |
+| es | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| es | id_number | PRESERVE | 0 | 1 | **0.0%** |
+| es | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| es | passport_no | PRESERVE | 5 | 5 | **100.0%** |
+| es | person_name | TRANSLITERATE | 19 | 19 | **100.0%** |
+| es | phone_number | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| es | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| es | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| es | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| es | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| fr | address | TRANSLATE_NORMALISE | 6 | 7 | **85.7%** |
+| fr | alias | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| fr | alias | TRANSLITERATE | 1 | 1 | **100.0%** |
+| fr | birth_date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| fr | company_name | TRANSLATE_NORMALISE | 3 | 4 | **75.0%** |
+| fr | date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| fr | email | PRESERVE | 1 | 1 | **100.0%** |
+| fr | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| fr | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 2 | **0.0%** |
+| fr | passport_no | PRESERVE | 4 | 4 | **100.0%** |
+| fr | passport_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| fr | person_name | TRANSLITERATE | 19 | 19 | **100.0%** |
+| fr | phone_number | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| fr | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| fr | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| fr | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| fr | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| it | address | TRANSLATE_NORMALISE | 7 | 7 | **100.0%** |
+| it | alias | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| it | alias | TRANSLITERATE | 1 | 1 | **100.0%** |
+| it | birth_date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| it | company_name | TRANSLATE_NORMALISE | 2 | 4 | **50.0%** |
+| it | date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| it | email | PRESERVE | 1 | 1 | **100.0%** |
+| it | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| it | id_number | PRESERVE | 0 | 1 | **0.0%** |
+| it | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| it | passport_no | PRESERVE | 4 | 4 | **100.0%** |
+| it | passport_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| it | person_name | TRANSLITERATE | 19 | 19 | **100.0%** |
+| it | phone_number | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| it | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| it | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| it | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| it | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ja | address | TRANSLATE_NORMALISE | 2 | 7 | **28.6%** |
+| ja | alias | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| ja | alias | TRANSLITERATE | 1 | 1 | **100.0%** |
+| ja | birth_date | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ja | company_name | TRANSLATE_NORMALISE | 4 | 4 | **100.0%** |
+| ja | date | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ja | email | PRESERVE | 1 | 1 | **100.0%** |
+| ja | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| ja | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 2 | **0.0%** |
+| ja | passport_no | PRESERVE | 5 | 5 | **100.0%** |
+| ja | person_name | TRANSLITERATE | 16 | 19 | **84.2%** |
+| ja | phone_number | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ja | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ja | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ja | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ja | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ko | address | TRANSLATE_NORMALISE | 3 | 7 | **42.9%** |
+| ko | alias | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| ko | alias | TRANSLITERATE | 0 | 1 | **0.0%** |
+| ko | birth_date | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ko | company_name | TRANSLATE_NORMALISE | 4 | 4 | **100.0%** |
+| ko | date | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ko | email | PRESERVE | 1 | 1 | **100.0%** |
+| ko | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| ko | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 2 | **0.0%** |
+| ko | passport_no | PRESERVE | 4 | 4 | **100.0%** |
+| ko | passport_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ko | person_name | TRANSLITERATE | 15 | 19 | **78.9%** |
+| ko | phone_number | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ko | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ko | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ko | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ko | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ru | address | TRANSLATE_NORMALISE | 2 | 7 | **28.6%** |
+| ru | alias | TRANSLATE_ANALYST | 0 | 1 | **0.0%** |
+| ru | alias | TRANSLITERATE | 1 | 1 | **100.0%** |
+| ru | birth_date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| ru | company_name | TRANSLATE_NORMALISE | 1 | 4 | **25.0%** |
+| ru | date | NORMALISE_NUMERIC | 1 | 1 | **100.0%** |
+| ru | email | PRESERVE | 1 | 1 | **100.0%** |
+| ru | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| ru | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 2 | **0.0%** |
+| ru | passport_no | PRESERVE | 5 | 5 | **100.0%** |
+| ru | person_name | TRANSLITERATE | 16 | 19 | **84.2%** |
+| ru | phone_number | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| ru | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ru | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ru | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| ru | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| zh | address | TRANSLATE_NORMALISE | 0 | 7 | **0.0%** |
+| zh | alias | TRANSLATE_ANALYST | 1 | 1 | **100.0%** |
+| zh | alias | TRANSLITERATE | 1 | 1 | **100.0%** |
+| zh | birth_date | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| zh | company_name | TRANSLATE_NORMALISE | 4 | 4 | **100.0%** |
+| zh | date | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| zh | email | PRESERVE | 1 | 1 | **100.0%** |
+| zh | free_text | TRANSLATE_NORMALISE | 0 | 1 | **0.0%** |
+| zh | id_number | PRESERVE_NORMALISE_SCRIPT | 0 | 2 | **0.0%** |
+| zh | passport_no | PRESERVE | 5 | 5 | **100.0%** |
+| zh | person_name | TRANSLITERATE | 18 | 19 | **94.7%** |
+| zh | phone_number | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+| zh | reference_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| zh | registration_no | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| zh | tax_id | PRESERVE_NORMALISE_SCRIPT | 0 | 1 | **0.0%** |
+| zh | telephone | NORMALISE_NUMERIC | 0 | 1 | **0.0%** |
+
+---
+
+## 8. Key Failure Patterns (Golden Dataset, April 2026)
+
+The 164 golden-dataset failures and 173 test-dataset failures share the same root causes. The priority-ordered patterns below are based on the language × field type breakdown.
+
+### Pattern 1 — Unimplemented field types (largest category)
+
+`NORMALISE_NUMERIC` (phone numbers, dates, numeric IDs), `PRESERVE_NORMALISE_SCRIPT` (foreign-script ID/reference numbers), `FLAG_REVIEW`, and `NORMALISE` (date formatting, free text) together account for ~100 failures. The pipeline routes these to the LLM which applies formatting rules inconsistently. These field types need dedicated deterministic handlers.
+
+Examples:
+- `TEN048 [en|telephone]` expected `12125550198` got `+1 (212) 555-0198` — phone normalisation not yet stripping separators
+- `TKO018 [ko|id_number]` expected `8512031234567` got `주민번호 850203-1234567` — non-Latin script label prepended
+
+### Pattern 2 — Address: non-Latin scripts (ru, zh, ja, ar, el, ko address at 0–43%)
+
+The LLM consistently outputs addresses in a different word order and appends script-local administrative suffixes (SHI, KU, QU, UL). This is the single biggest scored category by volume (77 address cases × 2 datasets = ~154 cases, most failing).
+
+Examples:
+- `KYC015 [ru|address]` expected `LENINA STREET 10 MOSCOW` got `UL LENINA 10 MOSKVA`
+- `KYC044 [ja|address]` expected `OSAKA KITA WARD` got `OSAKA SHI KITA KU`
+- `KYC019 [zh|address]` expected `88 JIANGUO ROAD CHAOYANG BEIJING` got `BEIJING SHI CHAOYANG QU JIANGUO LU 88 HAO`
+
+Latin-script languages (de, en, es, fr, it) achieve 85–100% on address via the new deterministic `normalise_address_latin()` handler.
+
+### Pattern 3 — Russian transliteration library (ru person_name at 73.7%)
+
+`transliterate` library renders Я→JA, Ю→JU, МИХ→MIH where BGN/PCGN mandates YA, YU, MIKH. The library also romanises some Belarusian forms differently. A post-processing substitution step partially addressed this (KYC051, KYC057) but multiple cases remain.
+
+### Pattern 4 — Korean given-name romanisation variants (ko person_name at ~90–95%)
+
+Revised Romanization of Korean gives HYEONU where the expected form is HYUNWOO (traditional), MINU where expected is MINWOO, etc. These are valid RR forms that differ from the pre-2000 McCune-Reischauer or traditional spellings used in the dataset's expected column.
+
+### Pattern 5 — Composite alias phrases not fully translated (alias at 0% across multiple languages)
+
+Aliases tagged `TRANSLATE_ANALYST` containing mixed name + descriptor (дит/по прозвищу/又名/γνωστός ως/conocido como) require the descriptor to be translated to English while the name is transliterated. The pipeline either translates both or neither. Requires a dedicated composite alias routing path.
+
+### Pattern 6 — Chinese address reformatting (zh address at 0%)
+
+LLM outputs the full administrative hierarchy in Chinese ordering (city → district → street → number-suffix 号), whereas expected forms use Western ordering (number street district city). The address lenient matcher handles number/street order reversal but not full hierarchy inversion.
+
+### Pattern 7 — Company name: LLM vs screener-form tension (company_name at 50–75%)
+
+The LLM uses internationally-recognised long-form names (GENERALI ASSICURAZIONI SPA, MEDIOBANCA FINANCIAL CREDIT BANK SPA) where the dataset expects the short screener form (GENERALI SPA, MEDIOBANCA SPA). Also: Chinese company brand-name resolution failures (BEIJING ENVISION vs BEIJING VISION, TENGXUN vs TENCENT).
 
 ---
 
@@ -498,77 +1283,6 @@ ENVISION is a valid translation of 远景 (yuǎnjǐng = "vision/prospect"), but 
 Key observations:
 - The copilot LLM outperforms the pipeline on the **test dataset** (92.0% vs 89.0%), suggesting good generalisation on held-out cases.
 - The pipeline outperforms on the **golden dataset** (88.4% vs 84.8%) — the pipeline's deterministic rules give it an edge on cases that were implicitly calibrated against.
-
----
-
-## 10. TRANSLATE_COMPOSITE Feature Test — Expanded Dataset
-
-*Measured on 2 April 2026, branch `feature/translate-composite`, model gpt-4o, temperature=0.*
-*Dataset: `data/golden_dataset.csv` — 514 cases across 11 languages (expanded from the original 112-case golden dataset).*
-
-> **Purpose of this run:** Verify that the `TRANSLATE_COMPOSITE` implementation correctly routes composite alias fields (containing a descriptor phrase such as "nicknamed", "also known as", "по прозвищу", "又名", "γνωστός ως") to the LLM and returns a normalised screening form. The wider accuracy figures are not directly comparable to Section 6 because the dataset is substantially larger and covers many new field types (dates, phone numbers, IDs, free text) not yet in scope for the pipeline.
-
-### Overall accuracy (expanded dataset)
-**59.9% — 308 correct out of 514 cases**
-
-Note: the lower overall figure relative to Section 6 (88.4%) reflects the expanded dataset containing field types (NORMALISE_NUMERIC, NORMALISE, PRESERVE_NORMALISE_SCRIPT, FLAG_REVIEW) that are not yet implemented. The pipeline's core treatments remain stable — see by-treatment breakdown below.
-
----
-
-### By language
-
-| Language | Correct | Total | Accuracy |
-|---|---|---|---|
-| Arabic (ar) | 36 | 48 | **75.0%** |
-| German (de) | 25 | 47 | **53.2%** |
-| Greek (el) | 33 | 46 | **71.7%** |
-| English (en) | 27 | 48 | **56.2%** |
-| Spanish (es) | 31 | 46 | **67.4%** |
-| French (fr) | 23 | 45 | **51.1%** |
-| Italian (it) | 28 | 46 | **60.9%** |
-| Japanese (ja) | 32 | 46 | **69.6%** |
-| Korean (ko) | 10 | 47 | **21.3%** |
-| Russian (ru) | 30 | 48 | **62.5%** |
-| Chinese (zh) | 33 | 47 | **70.2%** |
-
----
-
-### By treatment
-
-| Treatment | Correct | Total | Accuracy | Notes |
-|---|---|---|---|---|
-| PRESERVE | 55 | 68 | **80.9%** | Stable — regressions from new field variants not in original scope |
-| TRANSLITERATE | 169 | 220 | **76.8%** | Stable for original languages; new languages (ko, de, fr, es, it) bring new failures |
-| TRANSLATE_NORMALISE | 76 | 121 | **62.8%** | LLM address/company name performance consistent with previous baseline |
-| **TRANSLATE_COMPOSITE** | **4** | **12** | **33.3%** | **↑ from 0% — composite alias routing confirmed working** |
-| NORMALISE | 1 | 23 | **4.3%** | Not yet implemented |
-| NORMALISE_NUMERIC | 1 | 24 | **4.2%** | Not yet implemented |
-| PRESERVE_NORMALISE_SCRIPT | 2 | 41 | **4.9%** | Not yet implemented |
-| FLAG_REVIEW | 0 | 5 | **0.0%** | Not yet implemented |
-
----
-
-### TRANSLATE_COMPOSITE alias cases — detail
-
-The three original composite alias cases from the golden dataset (KYC060, KYC070, KYC080) all reached the LLM via the new `is_composite_alias()` routing. Results:
-
-| Case ID | Language | Input | Expected | Got | Pass |
-|---|---|---|---|---|---|
-| KYC060 | ru | Александр по прозвищу Саша | ALEXANDER NICKNAMED SASHA | ALEKSANDR NICKNAMED SASHA | ✗ |
-| KYC070 | zh | 王强又名王小强 | WANG QIANG ALSO KNOWN AS WANG XIAOQIANG | WANG QIANG ALSO KNOWN AS WANG XIAOQIANG | ✓ |
-| KYC080 | el | γνωστός ως Νίκος | KNOWN AS NIKOS | KNOWN AS NIKOS | ✓ |
-
-**2 of 3 composite alias cases now pass (up from 0 of 3).**
-
-KYC060 is a near miss: the descriptor phrase "по прозвищу" was correctly translated to NICKNAMED and the alias name SASHA is correct, but the primary name was romanised as ALEKSANDR rather than the expected ALEXANDER. Both are valid BGN/PCGN representations of Александр; the expected form uses the classical English spelling. This can be resolved by adding ALEKSANDR as an accepted variant in the golden dataset, or by adding a variant-match rule for this common pair.
-
----
-
-### Key finding
-
-The `TRANSLATE_COMPOSITE` feature is working as designed. Descriptor phrases in Russian (по прозвищу), Chinese (又名), and Greek (γνωστός ως) are being detected, routed to the LLM, translated to standard English screener form (NICKNAMED / ALSO KNOWN AS / KNOWN AS), and returned as a correctly structured `PRIMARY DESCRIPTOR ALIAS` normalised form. The one remaining failure is a romanisation variant disagreement on the primary name, not a structural failure of the composite routing logic.
-- The copilot LLM achieves **100% on TRANSLATE_COMPOSITE** (composite alias phrases with descriptor + name tokens) — a known zero-score category for the unmodified pipeline — demonstrating the LLM's semantic translation capability.
-- Both approaches share the same weakness on **TRANSLATE_NORMALISE addresses** (~65–72%) — the LLM prompt precision and the pipeline's address LLM handling suffer from similar issues.
 
 ---
 
@@ -991,4 +1705,335 @@ Dedicated Belarusian Cyrillic → Latin transliteration handler with automatic s
 - `test_russian_without_u_short_not_promoted` — `language="ru"` no Ў → not flagged as Belarusian
 
 **Test results:** 113 passed, 0 failed (2 pre-existing API-call tests excluded)
+
+---
+
+## 17. Evaluation Results — Language × Field Type
+
+### Golden Dataset (514 cases, 331 correct, 64.4% overall)
+
+| Language | Field type | Correct | Total | Accuracy |
+|---|---|---|---|---|
+| ar | address | 7 | 7 | 100.0% |
+| ar | alias | 2 | 2 | 100.0% |
+| ar | birth_date | 1 | 1 | 100.0% |
+| ar | company_name | 3 | 4 | 75.0% |
+| ar | date | 1 | 1 | 100.0% |
+| ar | email | 1 | 1 | 100.0% |
+| ar | free_text | 0 | 1 | 0.0% |
+| ar | id_number | 1 | 2 | 50.0% |
+| ar | passport_no | 5 | 5 | 100.0% |
+| ar | person_name | 16 | 19 | 84.2% |
+| ar | phone_number | 1 | 1 | 100.0% |
+| ar | reference_no | 0 | 1 | 0.0% |
+| ar | registration_no | 0 | 1 | 0.0% |
+| ar | tax_id | 0 | 1 | 0.0% |
+| ar | telephone | 0 | 1 | 0.0% |
+| de | address | 3 | 7 | 42.9% |
+| de | alias | 2 | 2 | 100.0% |
+| de | birth_date | 1 | 1 | 100.0% |
+| de | company_name | 3 | 4 | 75.0% |
+| de | date | 0 | 1 | 0.0% |
+| de | email | 1 | 1 | 100.0% |
+| de | free_text | 0 | 1 | 0.0% |
+| de | id_number | 0 | 1 | 0.0% |
+| de | passport_no | 3 | 5 | 60.0% |
+| de | person_name | 19 | 19 | 100.0% |
+| de | phone_number | 0 | 1 | 0.0% |
+| de | reference_no | 0 | 1 | 0.0% |
+| de | registration_no | 0 | 1 | 0.0% |
+| de | tax_id | 0 | 1 | 0.0% |
+| de | telephone | 0 | 1 | 0.0% |
+| el | address | 7 | 7 | 100.0% |
+| el | alias | 0 | 2 | 0.0% |
+| el | birth_date | 1 | 1 | 100.0% |
+| el | company_name | 3 | 4 | 75.0% |
+| el | email | 1 | 1 | 100.0% |
+| el | free_text | 0 | 1 | 0.0% |
+| el | id_number | 0 | 2 | 0.0% |
+| el | passport_no | 4 | 5 | 80.0% |
+| el | person_name | 16 | 19 | 84.2% |
+| el | phone_number | 0 | 1 | 0.0% |
+| el | reference_no | 0 | 1 | 0.0% |
+| el | tax_id | 0 | 1 | 0.0% |
+| el | telephone | 0 | 1 | 0.0% |
+| en | address | 2 | 7 | 28.6% |
+| en | alias | 2 | 2 | 100.0% |
+| en | birth_date | 1 | 1 | 100.0% |
+| en | company_name | 3 | 4 | 75.0% |
+| en | date | 0 | 1 | 0.0% |
+| en | email | 1 | 1 | 100.0% |
+| en | free_text | 0 | 1 | 0.0% |
+| en | id_number | 0 | 2 | 0.0% |
+| en | passport_no | 5 | 5 | 100.0% |
+| en | person_name | 19 | 19 | 100.0% |
+| en | phone_number | 0 | 1 | 0.0% |
+| en | reference_no | 0 | 1 | 0.0% |
+| en | registration_no | 1 | 1 | 100.0% |
+| en | tax_id | 0 | 1 | 0.0% |
+| en | telephone | 0 | 1 | 0.0% |
+| es | address | 4 | 7 | 57.1% |
+| es | alias | 1 | 2 | 50.0% |
+| es | company_name | 3 | 4 | 75.0% |
+| es | date | 0 | 1 | 0.0% |
+| es | email | 1 | 1 | 100.0% |
+| es | free_text | 0 | 1 | 0.0% |
+| es | id_number | 0 | 2 | 0.0% |
+| es | passport_no | 4 | 5 | 80.0% |
+| es | person_name | 19 | 19 | 100.0% |
+| es | phone_number | 0 | 1 | 0.0% |
+| es | reference_no | 0 | 1 | 0.0% |
+| es | registration_no | 0 | 1 | 0.0% |
+| es | tax_id | 0 | 1 | 0.0% |
+| fr | address | 2 | 7 | 28.6% |
+| fr | alias | 0 | 2 | 0.0% |
+| fr | company_name | 4 | 4 | 100.0% |
+| fr | date | 0 | 1 | 0.0% |
+| fr | free_text | 0 | 1 | 0.0% |
+| fr | id_number | 0 | 2 | 0.0% |
+| fr | passport_no | 4 | 5 | 80.0% |
+| fr | person_name | 19 | 19 | 100.0% |
+| fr | phone_number | 0 | 1 | 0.0% |
+| fr | reference_no | 0 | 1 | 0.0% |
+| fr | registration_no | 0 | 1 | 0.0% |
+| fr | tax_id | 0 | 1 | 0.0% |
+| it | address | 2 | 7 | 28.6% |
+| it | alias | 1 | 2 | 50.0% |
+| it | company_name | 4 | 4 | 100.0% |
+| it | date | 0 | 1 | 0.0% |
+| it | email | 1 | 1 | 100.0% |
+| it | free_text | 0 | 1 | 0.0% |
+| it | id_number | 0 | 2 | 0.0% |
+| it | passport_no | 3 | 5 | 60.0% |
+| it | person_name | 19 | 19 | 100.0% |
+| it | phone_number | 0 | 1 | 0.0% |
+| it | reference_no | 0 | 1 | 0.0% |
+| it | registration_no | 0 | 1 | 0.0% |
+| it | tax_id | 0 | 1 | 0.0% |
+| ja | address | 4 | 7 | 57.1% |
+| ja | alias | 1 | 2 | 50.0% |
+| ja | company_name | 4 | 4 | 100.0% |
+| ja | date | 0 | 1 | 0.0% |
+| ja | free_text | 0 | 1 | 0.0% |
+| ja | id_number | 0 | 2 | 0.0% |
+| ja | passport_no | 5 | 5 | 100.0% |
+| ja | person_name | 18 | 19 | 94.7% |
+| ja | phone_number | 0 | 1 | 0.0% |
+| ja | reference_no | 0 | 1 | 0.0% |
+| ja | registration_no | 0 | 1 | 0.0% |
+| ja | tax_id | 0 | 1 | 0.0% |
+| ja | telephone | 0 | 1 | 0.0% |
+| ko | address | 2 | 7 | 28.6% |
+| ko | alias | 0 | 2 | 0.0% |
+| ko | company_name | 4 | 4 | 100.0% |
+| ko | date | 0 | 1 | 0.0% |
+| ko | email | 1 | 1 | 100.0% |
+| ko | free_text | 0 | 1 | 0.0% |
+| ko | id_number | 0 | 2 | 0.0% |
+| ko | passport_no | 3 | 5 | 60.0% |
+| ko | person_name | 0 | 19 | 0.0% |
+| ko | phone_number | 0 | 1 | 0.0% |
+| ko | reference_no | 0 | 1 | 0.0% |
+| ko | registration_no | 0 | 1 | 0.0% |
+| ko | tax_id | 0 | 1 | 0.0% |
+| ko | telephone | 0 | 1 | 0.0% |
+| ru | address | 5 | 7 | 71.4% |
+| ru | alias | 0 | 2 | 0.0% |
+| ru | birth_date | 1 | 1 | 100.0% |
+| ru | company_name | 3 | 4 | 75.0% |
+| ru | date | 1 | 1 | 100.0% |
+| ru | email | 1 | 1 | 100.0% |
+| ru | free_text | 0 | 1 | 0.0% |
+| ru | id_number | 0 | 2 | 0.0% |
+| ru | passport_no | 5 | 5 | 100.0% |
+| ru | person_name | 14 | 19 | 73.7% |
+| ru | phone_number | 0 | 1 | 0.0% |
+| ru | reference_no | 0 | 1 | 0.0% |
+| ru | registration_no | 0 | 1 | 0.0% |
+| ru | tax_id | 0 | 1 | 0.0% |
+| ru | telephone | 0 | 1 | 0.0% |
+| zh | address | 5 | 7 | 71.4% |
+| zh | alias | 0 | 2 | 0.0% |
+| zh | company_name | 2 | 4 | 50.0% |
+| zh | date | 0 | 1 | 0.0% |
+| zh | email | 1 | 1 | 100.0% |
+| zh | free_text | 0 | 1 | 0.0% |
+| zh | id_number | 0 | 2 | 0.0% |
+| zh | passport_no | 5 | 5 | 100.0% |
+| zh | person_name | 19 | 19 | 100.0% |
+| zh | phone_number | 0 | 1 | 0.0% |
+| zh | reference_no | 0 | 1 | 0.0% |
+| zh | registration_no | 0 | 1 | 0.0% |
+| zh | tax_id | 0 | 1 | 0.0% |
+| zh | telephone | 0 | 1 | 0.0% |
+
+### Test Dataset (528 cases, 331 correct, 62.7% overall)
+
+| Language | Field type | Correct | Total | Accuracy |
+|---|---|---|---|---|
+| ar | address | 5 | 7 | 71.4% |
+| ar | alias | 2 | 2 | 100.0% |
+| ar | birth_date | 1 | 1 | 100.0% |
+| ar | company_name | 3 | 4 | 75.0% |
+| ar | date | 0 | 1 | 0.0% |
+| ar | email | 1 | 1 | 100.0% |
+| ar | free_text | 0 | 1 | 0.0% |
+| ar | id_number | 0 | 2 | 0.0% |
+| ar | passport_no | 5 | 5 | 100.0% |
+| ar | person_name | 16 | 19 | 84.2% |
+| ar | phone_number | 1 | 1 | 100.0% |
+| ar | reference_no | 0 | 1 | 0.0% |
+| ar | registration_no | 0 | 1 | 0.0% |
+| ar | tax_id | 0 | 1 | 0.0% |
+| ar | telephone | 1 | 1 | 100.0% |
+| de | address | 2 | 7 | 28.6% |
+| de | alias | 1 | 2 | 50.0% |
+| de | birth_date | 1 | 1 | 100.0% |
+| de | company_name | 4 | 4 | 100.0% |
+| de | date | 1 | 1 | 100.0% |
+| de | email | 1 | 1 | 100.0% |
+| de | free_text | 0 | 1 | 0.0% |
+| de | id_number | 0 | 2 | 0.0% |
+| de | passport_no | 4 | 5 | 80.0% |
+| de | person_name | 19 | 19 | 100.0% |
+| de | phone_number | 0 | 1 | 0.0% |
+| de | reference_no | 0 | 1 | 0.0% |
+| de | registration_no | 0 | 1 | 0.0% |
+| de | tax_id | 0 | 1 | 0.0% |
+| de | telephone | 0 | 1 | 0.0% |
+| el | address | 7 | 7 | 100.0% |
+| el | alias | 0 | 2 | 0.0% |
+| el | birth_date | 1 | 1 | 100.0% |
+| el | company_name | 4 | 4 | 100.0% |
+| el | date | 1 | 1 | 100.0% |
+| el | email | 1 | 1 | 100.0% |
+| el | free_text | 0 | 1 | 0.0% |
+| el | id_number | 0 | 2 | 0.0% |
+| el | passport_no | 4 | 5 | 80.0% |
+| el | person_name | 16 | 19 | 84.2% |
+| el | phone_number | 0 | 1 | 0.0% |
+| el | reference_no | 0 | 1 | 0.0% |
+| el | registration_no | 0 | 1 | 0.0% |
+| el | tax_id | 0 | 1 | 0.0% |
+| el | telephone | 0 | 1 | 0.0% |
+| en | address | 3 | 7 | 42.9% |
+| en | alias | 2 | 2 | 100.0% |
+| en | birth_date | 0 | 1 | 0.0% |
+| en | company_name | 4 | 4 | 100.0% |
+| en | date | 1 | 1 | 100.0% |
+| en | email | 1 | 1 | 100.0% |
+| en | free_text | 0 | 1 | 0.0% |
+| en | id_number | 0 | 2 | 0.0% |
+| en | passport_no | 5 | 5 | 100.0% |
+| en | person_name | 18 | 19 | 94.7% |
+| en | phone_number | 0 | 1 | 0.0% |
+| en | reference_no | 0 | 1 | 0.0% |
+| en | registration_no | 1 | 1 | 100.0% |
+| en | tax_id | 0 | 1 | 0.0% |
+| en | telephone | 0 | 1 | 0.0% |
+| es | address | 1 | 7 | 14.3% |
+| es | alias | 1 | 2 | 50.0% |
+| es | birth_date | 1 | 1 | 100.0% |
+| es | company_name | 2 | 4 | 50.0% |
+| es | date | 1 | 1 | 100.0% |
+| es | email | 1 | 1 | 100.0% |
+| es | free_text | 0 | 1 | 0.0% |
+| es | id_number | 0 | 2 | 0.0% |
+| es | passport_no | 5 | 5 | 100.0% |
+| es | person_name | 19 | 19 | 100.0% |
+| es | phone_number | 0 | 1 | 0.0% |
+| es | reference_no | 0 | 1 | 0.0% |
+| es | registration_no | 0 | 1 | 0.0% |
+| es | tax_id | 0 | 1 | 0.0% |
+| es | telephone | 0 | 1 | 0.0% |
+| fr | address | 2 | 7 | 28.6% |
+| fr | alias | 1 | 2 | 50.0% |
+| fr | birth_date | 1 | 1 | 100.0% |
+| fr | company_name | 3 | 4 | 75.0% |
+| fr | date | 1 | 1 | 100.0% |
+| fr | email | 1 | 1 | 100.0% |
+| fr | free_text | 0 | 1 | 0.0% |
+| fr | id_number | 0 | 2 | 0.0% |
+| fr | passport_no | 4 | 5 | 80.0% |
+| fr | person_name | 19 | 19 | 100.0% |
+| fr | phone_number | 0 | 1 | 0.0% |
+| fr | reference_no | 0 | 1 | 0.0% |
+| fr | registration_no | 0 | 1 | 0.0% |
+| fr | tax_id | 0 | 1 | 0.0% |
+| fr | telephone | 0 | 1 | 0.0% |
+| it | address | 3 | 7 | 42.9% |
+| it | alias | 1 | 2 | 50.0% |
+| it | birth_date | 1 | 1 | 100.0% |
+| it | company_name | 2 | 4 | 50.0% |
+| it | date | 1 | 1 | 100.0% |
+| it | email | 1 | 1 | 100.0% |
+| it | free_text | 0 | 1 | 0.0% |
+| it | id_number | 0 | 2 | 0.0% |
+| it | passport_no | 4 | 5 | 80.0% |
+| it | person_name | 19 | 19 | 100.0% |
+| it | phone_number | 0 | 1 | 0.0% |
+| it | reference_no | 0 | 1 | 0.0% |
+| it | registration_no | 0 | 1 | 0.0% |
+| it | tax_id | 0 | 1 | 0.0% |
+| it | telephone | 0 | 1 | 0.0% |
+| ja | address | 0 | 7 | 0.0% |
+| ja | alias | 1 | 2 | 50.0% |
+| ja | birth_date | 0 | 1 | 0.0% |
+| ja | company_name | 4 | 4 | 100.0% |
+| ja | date | 0 | 1 | 0.0% |
+| ja | email | 1 | 1 | 100.0% |
+| ja | free_text | 0 | 1 | 0.0% |
+| ja | id_number | 0 | 2 | 0.0% |
+| ja | passport_no | 5 | 5 | 100.0% |
+| ja | person_name | 16 | 19 | 84.2% |
+| ja | phone_number | 0 | 1 | 0.0% |
+| ja | reference_no | 0 | 1 | 0.0% |
+| ja | registration_no | 0 | 1 | 0.0% |
+| ja | tax_id | 0 | 1 | 0.0% |
+| ja | telephone | 0 | 1 | 0.0% |
+| ko | address | 1 | 7 | 14.3% |
+| ko | alias | 0 | 2 | 0.0% |
+| ko | birth_date | 0 | 1 | 0.0% |
+| ko | company_name | 4 | 4 | 100.0% |
+| ko | date | 0 | 1 | 0.0% |
+| ko | email | 1 | 1 | 100.0% |
+| ko | free_text | 0 | 1 | 0.0% |
+| ko | id_number | 0 | 2 | 0.0% |
+| ko | passport_no | 4 | 5 | 80.0% |
+| ko | person_name | 0 | 19 | 0.0% |
+| ko | phone_number | 0 | 1 | 0.0% |
+| ko | reference_no | 0 | 1 | 0.0% |
+| ko | registration_no | 0 | 1 | 0.0% |
+| ko | tax_id | 0 | 1 | 0.0% |
+| ko | telephone | 0 | 1 | 0.0% |
+| ru | address | 2 | 7 | 28.6% |
+| ru | alias | 1 | 2 | 50.0% |
+| ru | birth_date | 1 | 1 | 100.0% |
+| ru | company_name | 2 | 4 | 50.0% |
+| ru | date | 1 | 1 | 100.0% |
+| ru | email | 1 | 1 | 100.0% |
+| ru | free_text | 0 | 1 | 0.0% |
+| ru | id_number | 0 | 2 | 0.0% |
+| ru | passport_no | 5 | 5 | 100.0% |
+| ru | person_name | 16 | 19 | 84.2% |
+| ru | phone_number | 0 | 1 | 0.0% |
+| ru | reference_no | 0 | 1 | 0.0% |
+| ru | registration_no | 0 | 1 | 0.0% |
+| ru | tax_id | 0 | 1 | 0.0% |
+| ru | telephone | 0 | 1 | 0.0% |
+| zh | address | 3 | 7 | 42.9% |
+| zh | alias | 2 | 2 | 100.0% |
+| zh | birth_date | 0 | 1 | 0.0% |
+| zh | company_name | 4 | 4 | 100.0% |
+| zh | date | 0 | 1 | 0.0% |
+| zh | email | 1 | 1 | 100.0% |
+| zh | free_text | 0 | 1 | 0.0% |
+| zh | id_number | 0 | 2 | 0.0% |
+| zh | passport_no | 5 | 5 | 100.0% |
+| zh | person_name | 18 | 19 | 94.7% |
+| zh | phone_number | 0 | 1 | 0.0% |
+| zh | reference_no | 0 | 1 | 0.0% |
+| zh | registration_no | 0 | 1 | 0.0% |
+| zh | tax_id | 0 | 1 | 0.0% |
+| zh | telephone | 0 | 1 | 0.0% |
 

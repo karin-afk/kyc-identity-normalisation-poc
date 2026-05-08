@@ -111,19 +111,26 @@ def _company_core(text: str) -> str:
 _DATASET_PATH = Path(__file__).parent.parent.parent / "data" / "golden_dataset.csv"
 
 
-def load_golden_dataset() -> list[dict]:
-    """Load all rows from the golden dataset CSV."""
-    with open(_DATASET_PATH, encoding="utf-8") as fh:
+def load_dataset(path: Path | None = None) -> list[dict]:
+    """Load all rows from a dataset CSV (defaults to golden dataset)."""
+    p = path if path is not None else _DATASET_PATH
+    with open(p, encoding="utf-8") as fh:
         return list(csv.DictReader(fh))
 
 
-def run_evaluation() -> list[dict]:
+# Keep old name as alias so existing callers aren't broken
+def load_golden_dataset() -> list[dict]:
+    return load_dataset()
+
+
+def run_evaluation(dataset_path: Path | None = None) -> list[dict]:
     """
-    Run the pipeline over every row in the golden dataset.
+    Run the pipeline over every row in the dataset.
+    Pass dataset_path to evaluate a file other than the golden dataset.
     Returns one result dict per row with match status and metadata.
     """
     results = []
-    for row in load_golden_dataset():
+    for row in load_dataset(dataset_path):
         result = process_field(row)
 
         expected_normalised = row["expected_normalised"]

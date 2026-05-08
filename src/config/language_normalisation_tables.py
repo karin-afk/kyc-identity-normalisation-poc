@@ -91,8 +91,10 @@ ITALIAN_ACCENT_STRIP: dict[str, str] = {
 
 KOREAN_SURNAME_VARIANTS: dict[str, list[str]] = {
     "이": ["I", "Yi", "Lee", "Rhee", "Ri", "Rhie"],
+    "김": ["Gim", "Kim"],
     "박": ["Bak", "Park", "Pak"],
     "최": ["Choe", "Choi", "Ch'oe"],
+    "강": ["Gang", "Kang"],
     "류": ["Ryu", "Yu", "Yoo", "Lyu"],
     "유": ["Yu", "Yoo", "Ryu"],
     "정": ["Jeong", "Jung", "Chung", "Chŏng"],
@@ -105,6 +107,8 @@ KOREAN_SURNAME_VARIANTS: dict[str, list[str]] = {
     "오": ["O", "Oh"],
     "조": ["Jo", "Cho"],
     "신": ["Sin", "Shin"],
+    "서": ["Seo", "Suh"],
+    "홍": ["Hong"],
 }
 
 

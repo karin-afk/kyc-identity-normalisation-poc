@@ -1,0 +1,95 @@
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7 — NEW FEATURE: Belarusian (be) language handler
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+File to modify: src/pipeline/transliteration_engine.py
+File to modify: src/utils/script_detection.py
+
+In script_detection.py, add:
+
+  BELARUSIAN_EXCLUSIVE_CHARS = {
+    "Ў", "ў",   # Short U — exclusive to Belarusian
+    "Ё", "ё",   # Yo — exists in Russian but mandatory in Belarusian
+  }
+  # Note: Belarusian also uses І/і (like Ukrainian) but NOT Є or Ї
+
+  def detect_belarusian(text: str) -> bool:
+    """
+    Returns True if the text contains Ў or ў (definitive Belarusian marker).
+    Ў (short U, U+040E) does not exist in Russian or Ukrainian.
+    """
+
+In transliteration_engine.py, implement:
+
+  BELARUSIAN_CHAR_MAP = {
+    # Characters that differ from Russian BGN/PCGN mappings
+    "Ў": "W",  "ў": "w",   # Short U → W in Belarusian romanisation
+    "Г": "H",  "г": "h",   # Г → H in Belarusian (not G as in Russian)
+    "І": "I",  "і": "i",   # Same as Ukrainian І
+  }
+
+  def _transliterate_belarusian(text: str) -> dict:
+    """
+    Transliterates Belarusian Cyrillic to Latin.
+    Strategy:
+    1. Apply BELARUSIAN_CHAR_MAP substitutions BEFORE calling transliterate library.
+    2. Call transliterate library in Russian mode (closest available).
+    3. Apply _apply_bgn_pcgn_corrections() post-processing.
+    4. Always set review_required=True,
+       review_reason="Belarusian text: manual verification required — 
+                      automated Belarusian romanisation is approximate"
+    5. Add Russian-mode transliteration as an additional variant
+       (for cases where documents were processed under wrong language code).
+    Returns full result dict.
+    """
+
+Update the main dispatch in transliteration_engine.py:
+  - Add "be" → _transliterate_belarusian
+  - In the auto-detection path: if detect_belarusian(text) returns True,
+    override language to "be" regardless of the declared language code,
+    and add review_reason="Belarusian character detected — language code overridden"
+
+Tests to write in tests/test_transliteration.py:
+  - "Мікалай Каваленка" with language="ru" and detect_belarusian → False
+    (no Ў present, so stays as Russian mode)
+  - "Аляксандр Лукашэнка" with Ў detection → routed to Belarusian handler
+  - detect_belarusian("Уладзімір") → False (Ў not present)
+  - detect_belarusian("Зянон Пазьняк") → False  
+  - A string containing "Ў" → detect_belarusian → True
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GENERAL REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Every new function must have a complete Google-style docstring.
+
+2. Every new module must have a module-level docstring explaining its purpose
+   and which pipeline layer it belongs to.
+
+3. Type hints are required on every function signature.
+
+4. All new constants must be defined at module level (not inside functions).
+
+5. No function should be longer than 60 lines. Decompose if needed.
+
+6. All tests must use pytest. No unittest.TestCase. Parametrize where
+   the same assertion applies to multiple input/output pairs.
+
+7. Tests must not require OPENAI_API_KEY. Mock the OpenAI client using
+   pytest-mock or unittest.mock wherever LLM calls are involved.
+
+8. After implementing all sections, run a final check:
+   - Do any existing tests in tests/ now fail? Fix them.
+   - Does `PYTHONPATH=src pytest tests/ -q` complete without errors?
+   - Does the import graph have any circular imports? Resolve if so.
+
+9. Do not change the result dict schema. The existing fields must remain;
+   you may add new fields but not remove or rename existing ones.
+
+10. Preserve existing behaviour for all languages already in the pipeline
+    (ar, ru, uk, el, ja, zh). The changes in Sections 1, 6, 7, 11 modify
+    these languages — ensure backward compatibility by verifying existing
+    golden-dataset cases still pass after each section is implemented.

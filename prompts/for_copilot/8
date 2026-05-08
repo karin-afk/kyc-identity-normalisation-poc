@@ -1,0 +1,142 @@
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8 — GOVERNANCE: Input validation and prompt injection defence
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+File to create: src/utils/input_validator.py
+File to modify: src/pipeline/pipeline.py
+File to modify: src/pipeline/llm_layer.py
+
+In input_validator.py, implement:
+
+  MAX_FIELD_LENGTHS = {
+    "person_name":    200,
+    "alias":          300,
+    "address":        500,
+    "company_name":   300,
+    "passport_no":     20,
+    "id_number":       30,
+    "email":          254,   # RFC 5321 maximum
+    "birth_date":      20,
+    "date":            20,
+    "telephone":       30,
+    "phone_number":    30,
+    "free_text":      800,
+    "reference_no":    50,
+    "registration_no": 50,
+    "tax_id":          50,
+    "default":        500,
+  }
+
+  # Fields that must NEVER be routed to the LLM under any circumstance
+  LLM_PROHIBITED_FIELD_TYPES = {
+    "passport_no", "id_number", "email", "reference_no",
+    "registration_no", "tax_id"
+  }
+
+  PROMPT_INJECTION_PATTERNS = [
+    r"ignore\s+(all\s+)?previous\s+instructions?",
+    r"disregard\s+(all\s+)?previous",
+    r"you\s+are\s+now\s+a",
+    r"new\s+instructions?:",
+    r"system\s*:\s*you",
+    r"<\s*system\s*>",
+    r"\[INST\]",
+    r"###\s*instruction",
+    r"forget\s+(everything|all)\s+(above|previous)",
+    r"act\s+as\s+(if\s+you\s+are|a)",
+    r"your\s+new\s+(role|persona|instructions?)\s+is",
+    r"print\s+(your\s+)?(system\s+)?prompt",
+    r"reveal\s+(your\s+)?(instructions?|prompt|system)",
+  ]
+
+  def validate_field(
+      value: str,
+      field_type: str,
+      language: str
+  ) -> dict:
+    """
+    Validates a single field before pipeline processing.
+    Returns:
+      {
+        "valid": bool,
+        "sanitised_value": str,   # value after safe sanitisation
+        "rejection_reason": str | None,
+        "warnings": list[str]
+      }
+    Checks in order:
+    1. Type check — must be a string
+    2. Length check — against MAX_FIELD_LENGTHS[field_type] or "default"
+       If exceeded: truncate and add warning (do not reject)
+    3. Prompt injection check — scan against PROMPT_INJECTION_PATTERNS (case-insensitive)
+       If matched: set valid=False, rejection_reason="Prompt injection pattern detected"
+    4. Script consistency check — verify text script is consistent with declared language:
+       If language="ar" but no Arabic Unicode block characters present: add warning
+       If language="ru"/"uk"/"bg" but no Cyrillic present: add warning
+       If language="el" but no Greek present: add warning
+       If language="zh"/"ja"/"ko" but no CJK characters present: add warning
+       (these are warnings only — do not reject, as mixed-script input is legitimate)
+    5. Null byte / control character check:
+       Strip null bytes and C0/C1 control characters silently
+       (except tab and newline which are stripped with a warning)
+    """
+
+  def validate_llm_routing(field_type: str, language: str) -> None:
+    """
+    Raises ValueError if an LLM call is attempted for a prohibited field type.
+    Call this at the start of every function in llm_layer.py.
+    Message format:
+      "LLM routing violation: field_type '{field_type}' must never be sent 
+       to the LLM. This is a governance control. Processing aborted."
+    """
+
+In pipeline.py, call validate_field() on every input record before any processing.
+If valid=False, return a result dict with:
+  normalised=None, confidence=0.0, review_required=True,
+  review_reason=rejection_reason, should_use_in_screening=False
+
+In llm_layer.py, call validate_llm_routing() at the entry point of every
+public function before making any API call.
+
+Tests to write in tests/test_rules.py:
+  - Prompt injection string → valid=False
+  - Field exceeding max length → truncated with warning, valid=True
+  - passport_no routed to LLM → raises ValueError
+  - Arabic language code with Latin text → valid=True with warning
+  - Null bytes in input → stripped silently
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GENERAL REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Every new function must have a complete Google-style docstring.
+
+2. Every new module must have a module-level docstring explaining its purpose
+   and which pipeline layer it belongs to.
+
+3. Type hints are required on every function signature.
+
+4. All new constants must be defined at module level (not inside functions).
+
+5. No function should be longer than 60 lines. Decompose if needed.
+
+6. All tests must use pytest. No unittest.TestCase. Parametrize where
+   the same assertion applies to multiple input/output pairs.
+
+7. Tests must not require OPENAI_API_KEY. Mock the OpenAI client using
+   pytest-mock or unittest.mock wherever LLM calls are involved.
+
+8. After implementing all sections, run a final check:
+   - Do any existing tests in tests/ now fail? Fix them.
+   - Does `PYTHONPATH=src pytest tests/ -q` complete without errors?
+   - Does the import graph have any circular imports? Resolve if so.
+
+9. Do not change the result dict schema. The existing fields must remain;
+   you may add new fields but not remove or rename existing ones.
+
+10. Preserve existing behaviour for all languages already in the pipeline
+    (ar, ru, uk, el, ja, zh). The changes in Sections 1, 6, 7, 11 modify
+    these languages — ensure backward compatibility by verifying existing
+    golden-dataset cases still pass after each section is implemented.

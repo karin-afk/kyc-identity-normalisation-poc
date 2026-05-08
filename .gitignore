@@ -1,6 +1,7 @@
 # Test images — never commit real identity documents
 data/images/
 data/output/
+data/geonames/allCountries.txt
 
 # Environment / secrets
 .env

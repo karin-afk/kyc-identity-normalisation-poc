@@ -91,3 +91,40 @@ Tests to write in tests/test_evaluator.py:
   - Simulate PRESERVE accuracy of 0.99 → gate raises (below 1.00 threshold)
   - Report dict contains all required keys
   - save_regression_report creates a valid JSON file
+
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GENERAL REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Every new function must have a complete Google-style docstring.
+
+2. Every new module must have a module-level docstring explaining its purpose
+   and which pipeline layer it belongs to.
+
+3. Type hints are required on every function signature.
+
+4. All new constants must be defined at module level (not inside functions).
+
+5. No function should be longer than 60 lines. Decompose if needed.
+
+6. All tests must use pytest. No unittest.TestCase. Parametrize where
+   the same assertion applies to multiple input/output pairs.
+
+7. Tests must not require OPENAI_API_KEY. Mock the OpenAI client using
+   pytest-mock or unittest.mock wherever LLM calls are involved.
+
+8. After implementing all sections, run a final check:
+   - Do any existing tests in tests/ now fail? Fix them.
+   - Does `PYTHONPATH=src pytest tests/ -q` complete without errors?
+   - Does the import graph have any circular imports? Resolve if so.
+
+9. Do not change the result dict schema. The existing fields must remain;
+   you may add new fields but not remove or rename existing ones.
+
+10. Preserve existing behaviour for all languages already in the pipeline
+    (ar, ru, uk, el, ja, zh). The changes in Sections 1, 6, 7, 11 modify
+    these languages — ensure backward compatibility by verifying existing
+    golden-dataset cases still pass after each section is implemented.

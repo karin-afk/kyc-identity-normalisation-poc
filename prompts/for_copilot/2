@@ -1,0 +1,107 @@
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — NEW FEATURE: Hijri calendar detection and conversion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+File to create: src/utils/calendar_utils.py
+File to modify: src/pipeline/rules_engine.py
+File to modify: src/config/rules.py
+
+In rules.py, add "birth_date" and "date" to the NORMALISE_NUMERIC field types.
+
+In calendar_utils.py, implement:
+
+  def detect_calendar_system(date_str: str) -> str:
+    """
+    Returns "hijri", "gregorian", or "unknown".
+    Hijri detection rules:
+      - Year component is between 1300 and 1500 (covers ~1882–2077 Gregorian)
+      - OR the string contains Arabic-Indic digits (٠١٢٣٤٥٦٧٨٩)
+        AND the year component when converted is in that range
+    Gregorian detection rules:
+      - Year component is between 1900 and 2100
+    Handle separators: / - . and space
+    """
+
+  def arabic_indic_to_ascii(text: str) -> str:
+    """
+    Converts Arabic-Indic digits (٠١٢٣٤٥٦٧٨٩) to ASCII (0123456789).
+    Also converts Eastern Arabic-Indic (۰۱۲۳۴۵۶۷۸۹).
+    Leaves all other characters unchanged.
+    """
+
+  def hijri_to_gregorian(year: int, month: int, day: int) -> tuple[int, int, int]:
+    """
+    Converts a Hijri (AH) date to Gregorian using the standard astronomical
+    algorithm. Use the `hijri-converter` library (hijri_converter.convert.Hijri).
+    If hijri-converter is not installed, fall back to the approximate formula:
+      gregorian_year = year + 622 - (year // 33)
+    and set review_required=True with reason "Hijri conversion used approximate 
+    formula — hijri-converter library not installed".
+    """
+
+  def normalise_date_field(date_str: str, language: str) -> dict:
+    """
+    Master date normalisation function. Returns:
+      {
+        "normalised": str,           # ISO 8601: YYYY-MM-DD
+        "original_calendar": str,    # "hijri" | "gregorian"  
+        "review_required": bool,
+        "review_reason": str | None
+      }
+    Steps:
+      1. Convert Arabic-Indic digits to ASCII
+      2. Detect calendar system
+      3. If Hijri: convert to Gregorian, set review_required=True,
+         review_reason="Hijri date converted to Gregorian — verify original"
+      4. Parse the resulting date and output ISO 8601
+      5. If calendar is "unknown": set review_required=True,
+         review_reason="Calendar system could not be determined"
+    """
+
+Add hijri-converter to requirements.txt.
+
+Tests to write in tests/test_rules.py:
+  - "٠٨/١١/١٩٩٢" → "1992-11-08", calendar=gregorian, review=False
+  - "١٤٤٥/٠٩/٢٠" → "2024-03-31" (approximately), calendar=hijri, review=True
+  - "14/03/1985" → "1985-03-14", calendar=gregorian, review=False
+  - "2024-03-14" (already ISO) → "2024-03-14", review=False
+  - arabic_indic_to_ascii("١٤٤٥") → "1445"
+  - detect_calendar_system("1445/09/20") → "hijri"
+  - detect_calendar_system("1985/03/14") → "gregorian"
+
+
+  
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GENERAL REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Every new function must have a complete Google-style docstring.
+
+2. Every new module must have a module-level docstring explaining its purpose
+   and which pipeline layer it belongs to.
+
+3. Type hints are required on every function signature.
+
+4. All new constants must be defined at module level (not inside functions).
+
+5. No function should be longer than 60 lines. Decompose if needed.
+
+6. All tests must use pytest. No unittest.TestCase. Parametrize where
+   the same assertion applies to multiple input/output pairs.
+
+7. Tests must not require OPENAI_API_KEY. Mock the OpenAI client using
+   pytest-mock or unittest.mock wherever LLM calls are involved.
+
+8. After implementing all sections, run a final check:
+   - Do any existing tests in tests/ now fail? Fix them.
+   - Does `PYTHONPATH=src pytest tests/ -q` complete without errors?
+   - Does the import graph have any circular imports? Resolve if so.
+
+9. Do not change the result dict schema. The existing fields must remain;
+   you may add new fields but not remove or rename existing ones.
+
+10. Preserve existing behaviour for all languages already in the pipeline
+    (ar, ru, uk, el, ja, zh). The changes in Sections 1, 6, 7, 11 modify
+    these languages — ensure backward compatibility by verifying existing
+    golden-dataset cases still pass after each section is implemented.

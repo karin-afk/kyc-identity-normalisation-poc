@@ -1,0 +1,53 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\KarinSasaki\Documents\Projects\MUFG\7. Translation\kyc-identity-normalisation-poc
+configfile: pyproject.toml
+plugins: anyio-4.13.0
+collected 5 items / 4 deselected / 1 selected
+
+tests\test_ocr_pipeline.py F
+
+================================== FAILURES ===================================
+_ test_transliterate_latin_script_name[IMG006-AHMED SAMIR NASR ABDELNASER-ar-AHMED SAMIR NASR ABDELNASER] _
+
+case_id = 'IMG006', original_text = 'AHMED SAMIR NASR ABDELNASER'
+language = 'ar', expected_normalised = 'AHMED SAMIR NASR ABDELNASER'
+
+    @pytest.mark.parametrize("case_id,original_text,language,expected_normalised", [
+        ("IMG001", "KUSAKA HIROSHI",  "ja", "KUSAKA HIROSHI"),
+        ("IMG006", "AHMED SAMIR NASR ABDELNASER", "ar", "AHMED SAMIR NASR ABDELNASER"),
+        ("IMG009", "GAIMU SAKURA",   "ja", "GAIMU SAKURA"),
+        ("IMG011", "GAIMU NATSUKO",  "ja", "GAIMU NATSUKO"),
+        ("IMG016", "NITOH SHINJI",   "ja", "NITOH SHINJI"),
+    ])
+    def test_transliterate_latin_script_name(case_id, original_text, language, expected_normalised):
+        """
+        Latin-script names extracted from MRZ / stamps are already romanised.
+        The transliteration engine must pass them through and produce the correct
+        uppercase normalised form.
+        """
+        from pipeline.pipeline import process_field
+    
+        row = {
+            "field_type": "person_name",
+            "original_text": original_text,
+            "language": language,
+            "document_type": "passport",
+        }
+        result = process_field(row)
+    
+>       assert result["normalised_form"] == expected_normalised, (
+            f"{case_id}: expected {expected_normalised!r}, got {result['normalised_form']!r}"
+        )
+E       AssertionError: IMG006: expected 'AHMED SAMIR NASR ABDELNASER', got 'AHMAD SAMIR NASR ABD AL-NASIR'
+E       assert 'AHMAD SAMIR ... ABD AL-NASIR' == 'AHMED SAMIR NASR ABDELNASER'
+E         
+E         - AHMED SAMIR NASR ABDELNASER
+E         ?    ^                ^    ^
+E         + AHMAD SAMIR NASR ABD AL-NASIR
+E         ?    ^                ^^ +   ^
+
+tests\test_ocr_pipeline.py:131: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_ocr_pipeline.py::test_transliterate_latin_script_name[IMG006-AHMED SAMIR NASR ABDELNASER-ar-AHMED SAMIR NASR ABDELNASER]
+======================= 1 failed, 4 deselected in 4.61s =======================

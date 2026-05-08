@@ -1,0 +1,241 @@
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — NEW FEATURE: New language handlers (de, fr, es, it, ko, en)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+File to modify: src/pipeline/transliteration_engine.py
+File to create: src/config/language_normalisation_tables.py
+
+All six languages are Latin-script (de, fr, es, it, en) or syllabic-to-Latin (ko).
+NONE of these languages should use the LLM for person name normalisation.
+All are Layer 2 (deterministic).
+
+In language_normalisation_tables.py, define the following lookup tables as
+module-level constants:
+
+  # --- GERMAN ---
+  GERMAN_UMLAUT_EXPANSIONS = {
+    "Ä": "AE", "ä": "ae",
+    "Ö": "OE", "ö": "oe",
+    "Ü": "UE", "ü": "ue",
+    "ß": "SS",
+  }
+  GERMAN_UMLAUT_DROPS = {
+    "Ä": "A", "ä": "a",
+    "Ö": "O", "ö": "o",
+    "Ü": "U", "ü": "u",
+    "ß": "S",   # less common but appears in some legacy systems
+  }
+
+  # --- FRENCH ---
+  FRENCH_ACCENT_STRIP = {
+    # Map each accented character to its base ASCII equivalent
+    # Must include: é è ê ë → e, à â → a, ù û ü → u,
+    #               î ï → i, ô → o, ÿ → y, ç → c, œ → oe, æ → ae
+    # Provide both upper and lower case for each
+  }
+
+  # --- SPANISH ---
+  SPANISH_ACCENT_STRIP = {
+    # á → a, é → e, í → i, ó → o, ú → u, ü → u, ñ → n
+    # Upper and lower case for each
+  }
+  SPANISH_N_TILDE_VARIANTS = ["n", "ny"]  # both forms appear on watchlists
+
+  # --- ITALIAN ---
+  ITALIAN_ACCENT_STRIP = {
+    # à → a, è → e, é → e, ì → i, î → i, ò → o, ó → o, ù → u
+  }
+
+  # --- KOREAN SURNAME VARIANTS ---
+  # These CANNOT be derived algorithmically — hard-coded lookup required
+  KOREAN_SURNAME_VARIANTS = {
+    "이": ["I", "Yi", "Lee", "Rhee", "Ri", "Rhie"],
+    "박": ["Bak", "Park", "Pak"],
+    "최": ["Choe", "Choi", "Ch'oe"],
+    "류": ["Ryu", "Yu", "Yoo", "Lyu"],
+    "유": ["Yu", "Yoo", "Ryu"],
+    "정": ["Jeong", "Jung", "Chung", "Chŏng"],
+    "권": ["Gwon", "Kwon", "Kwŏn"],
+    "윤": ["Yun", "Yoon"],
+    "임": ["Im", "Lim"],
+    "나": ["Na", "Rah"],
+    "라": ["Ra", "Na", "Rah"],
+    "노": ["No", "Roh"],
+    "오": ["O", "Oh"],
+    "조": ["Jo", "Cho"],
+    "신": ["Sin", "Shin"],
+  }
+
+In transliteration_engine.py, implement these handler functions:
+
+  def _normalise_german(text: str, field_type: str) -> dict:
+    """
+    Normalises German-script Latin text.
+    - Primary: apply GERMAN_UMLAUT_EXPANSIONS (Ä→AE, ß→SS)
+    - Variants: apply GERMAN_UMLAUT_DROPS (Ä→A, ß→S) and add to allowed_variants
+    - Both forms (expanded and dropped) must be in allowed_variants
+    - Hyphenated given names: include space-separated variant
+    - Particle "von/van/zu": preserve lowercase in primary,
+      generate capitalised variant (Von/Van/Zu)
+    - Returns full result dict with processing_method="TRANSLITERATE"
+    """
+
+  def _normalise_french(text: str, field_type: str) -> dict:
+    """
+    Normalises French-script Latin text.
+    - Apply FRENCH_ACCENT_STRIP to produce normalised form
+    - Ligatures: œ→oe, æ→ae in normalised form
+    - Hyphenated given names: include space-separated variant in allowed_variants
+    - Particle "de/du/de la/des/d'/l'":
+        Primary: preserve particle lowercase
+        Variant: generate particle-dropped form and particle-capitalised form
+    - Apostrophe elision (d', l'): strip apostrophe in normalised form;
+      keep apostrophe in primary; add fused form as variant
+    - Returns full result dict
+    """
+
+  def _normalise_spanish(text: str, field_type: str) -> dict:
+    """
+    Normalises Spanish-script Latin text.
+    - Apply SPANISH_ACCENT_STRIP
+    - ñ: primary → n; add ny variant to allowed_variants
+    - Particle "de/del/de la/de los/de las":
+        Preserve in primary; generate dropped-particle variant
+    - Double surnames: preserve both; generate single-surname variants
+      (remove first surname, remove second surname) in allowed_variants
+    - Returns full result dict
+    """
+
+  def _normalise_italian(text: str, field_type: str) -> dict:
+    """
+    Normalises Italian-script Latin text.
+    - Apply ITALIAN_ACCENT_STRIP
+    - Apostrophe particles (D', Dell', Dall', L', De', Degli'):
+        Primary: strip apostrophe (D'Angelo → DAngelo)
+        Allowed variants: fused (Dangelo), space-separated (D Angelo), 
+                          particle-dropped (Angelo)
+        NOTE: do NOT simplify double consonants — they are phonemically
+              meaningful in Italian (Bianchi ≠ Bianci)
+    - Returns full result dict
+    """
+
+  def _normalise_korean(text: str, field_type: str) -> dict:
+    """
+    Normalises Korean Hangul text using Revised Romanisation of Korea (RR).
+    Use the `korean-romanizer` library (pip install korean-romanizer).
+    If not available, fall back to a basic jamo decomposition.
+
+    Post-processing after library call:
+    1. Detect surname token (first syllable block for person_name fields).
+    2. Look up surname in KOREAN_SURNAME_VARIANTS.
+    3. Primary: use RR form from library.
+    4. allowed_variants: all forms from KOREAN_SURNAME_VARIANTS lookup.
+    5. Name order:
+       - Primary: surname-first (Korean convention)
+       - Variant: given-name-first (for Western DB compatibility)
+    6. Given name: generate both fused and hyphenated forms as variants.
+       Example: 박지훈 → primary "Bak Jihun", variants include:
+         "Park Jihun", "Pak Jihun", "Park Ji-hun", "Bak Ji-hun",
+         "Jihun Bak", "Jihun Park", "Ji-hun Park"
+    7. Returns full result dict, review_required=True,
+       review_reason="Korean name: surname romanisation variants generated"
+    """
+
+  def _normalise_english(text: str, field_type: str) -> dict:
+    """
+    Normalises English Latin-script text.
+    Minimal processing only:
+    1. Full-width digit → ASCII (Unicode NFKC normalisation)
+    2. Apostrophe in surnames: O'Brien → O Brien (space) variant added
+    3. Mac/Mc prefix: generate both capitalisation variants
+       (MacDonald → Macdonald variant, and vice versa)
+    4. St/Saint: generate both forms as variants for any St- surname
+    5. Do NOT strip hyphens from hyphenated names without generating
+       a variant — always add the hyphen-stripped form as a variant
+    Returns full result dict, review_required=False for most cases,
+    review_required=True only for ambiguous Mac/Mc cases.
+    """
+
+Add `korean-romanizer` to requirements.txt.
+
+In transliteration_engine.py, update the main dispatch function to route:
+  "de" → _normalise_german
+  "fr" → _normalise_french
+  "es" → _normalise_spanish
+  "it" → _normalise_italian
+  "ko" → _normalise_korean
+  "en" → _normalise_english
+
+Tests to write in tests/test_transliteration.py:
+
+  GERMAN:
+  - "Müller" → primary "MUELLER", variants include "MULLER"
+  - "Weiß" → primary "WEISS"
+  - "Schröder-Braun" → primary "SCHROEDER BRAUN", variants include "SCHRODER BRAUN"
+  - "Heinrich von Braun" → primary includes "von", variant includes "Von"
+
+  FRENCH:
+  - "Jean-François Dupont" → primary "JEAN FRANCOIS DUPONT",
+    variants include "JEAN-FRANCOIS DUPONT"
+  - "Laurent d'Avignon" → primary "LAURENT D AVIGNON",
+    variants include "LAURENT DAVIGNON"
+  - "Hélène Masson" → "HELENE MASSON"
+
+  SPANISH:
+  - "María-José Fernández" → primary "MARIA JOSE FERNANDEZ"
+  - "Muñoz" → primary "MUNOZ", variants include "MUNYOZ"
+  - "Francisco del Río Blanco" → variants include particle-dropped form
+
+  ITALIAN:
+  - "Lorenzo D'Angelo" → primary "LORENZO D ANGELO",
+    variants include "LORENZO DANGELO" and "LORENZO ANGELO"
+  - "Niccolò Bianchi" → "NICCOLO BIANCHI" (double-c preserved)
+  - "Simona Dell'Aquila" → variants include fused and space-separated forms
+
+  KOREAN:
+  - "박지훈" → primary "BAK JIHUN",
+    variants include "PARK JIHUN", "PAK JIHUN", "JIHUN BAK", "JIHUN PARK"
+  - "이민호" → variants include "LEE MINHO", "YI MINHO", "RHEE MINHO"
+  - "류지성" → variants include "YOO JISUNG", "RYU JISUNG", "LYU JISUNG"
+
+  ENGLISH:
+  - "Michael O'Brien" → variants include "MICHAEL OBRIEN" and "MICHAEL O BRIEN"
+  - "Alistair MacDonald" → variants include "ALISTAIR MACDONALD"
+  - "Thomas St John" → variants include "THOMAS SAINT JOHN"
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GENERAL REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Every new function must have a complete Google-style docstring.
+
+2. Every new module must have a module-level docstring explaining its purpose
+   and which pipeline layer it belongs to.
+
+3. Type hints are required on every function signature.
+
+4. All new constants must be defined at module level (not inside functions).
+
+5. No function should be longer than 60 lines. Decompose if needed.
+
+6. All tests must use pytest. No unittest.TestCase. Parametrize where
+   the same assertion applies to multiple input/output pairs.
+
+7. Tests must not require OPENAI_API_KEY. Mock the OpenAI client using
+   pytest-mock or unittest.mock wherever LLM calls are involved.
+
+8. After implementing all sections, run a final check:
+   - Do any existing tests in tests/ now fail? Fix them.
+   - Does `PYTHONPATH=src pytest tests/ -q` complete without errors?
+   - Does the import graph have any circular imports? Resolve if so.
+
+9. Do not change the result dict schema. The existing fields must remain;
+   you may add new fields but not remove or rename existing ones.
+
+10. Preserve existing behaviour for all languages already in the pipeline
+    (ar, ru, uk, el, ja, zh). The changes in Sections 1, 6, 7, 11 modify
+    these languages — ensure backward compatibility by verifying existing
+    golden-dataset cases still pass after each section is implemented.

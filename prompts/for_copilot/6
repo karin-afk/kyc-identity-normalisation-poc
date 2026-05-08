@@ -1,0 +1,115 @@
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — NEW FEATURE: Cantonese variant generation for HK documents
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+File to modify: src/pipeline/transliteration_engine.py
+File to create: src/config/cantonese_surname_map.py
+
+In cantonese_surname_map.py, define:
+
+  # Common Chinese surname characters with their Cantonese (Jyutping) romanisations
+  # that differ from Mandarin Pinyin — essential for HK screening
+  CANTONESE_SURNAME_MAP = {
+    "黃": "Wong",   # Mandarin: Huang
+    "陳": "Chan",   # Mandarin: Chen
+    "李": "Lee",    # Mandarin: Li
+    "張": "Cheung", # Mandarin: Zhang
+    "劉": "Lau",    # Mandarin: Liu
+    "林": "Lam",    # Mandarin: Lin
+    "吳": "Ng",     # Mandarin: Wu
+    "鄭": "Cheng",  # Mandarin: Zheng
+    "楊": "Yeung",  # Mandarin: Yang
+    "許": "Hui",    # Mandarin: Xu
+    "何": "Ho",     # Mandarin: He
+    "梁": "Leung",  # Mandarin: Liang
+    "鄧": "Tang",   # Mandarin: Deng
+    "蔡": "Choi",   # Mandarin: Cai
+    "謝": "Tse",    # Mandarin: Xie
+    "曾": "Tsang",  # Mandarin: Zeng
+    "蕭": "Siu",    # Mandarin: Xiao
+    "江": "Kong",   # Mandarin: Jiang
+    "潘": "Poon",   # Mandarin: Pan
+    "羅": "Law",    # Mandarin: Luo
+    "余": "Yu",     # Mandarin: Yu
+    "孫": "Suen",   # Mandarin: Sun
+    "馬": "Ma",     # Mandarin: Ma (same)
+    "朱": "Chu",    # Mandarin: Zhu
+    "胡": "Wu",     # Mandarin: Hu
+    "高": "Ko",     # Mandarin: Gao
+    "郭": "Kwok",   # Mandarin: Guo
+    "周": "Chow",   # Mandarin: Zhou
+    "唐": "Tong",   # Mandarin: Tang (note: same as 鄧 in Cantonese)
+    "徐": "Tsui",   # Mandarin: Xu
+  }
+
+In transliteration_engine.py, modify the Chinese (zh) handler:
+
+  def _add_cantonese_variants(
+      text: str,
+      pinyin_result: dict,
+      country: str
+  ) -> dict:
+    """
+    When country == "HK" OR when Chinese text contains characters
+    present in CANTONESE_SURNAME_MAP:
+    1. Look up the first character (surname) in CANTONESE_SURNAME_MAP.
+    2. If found, generate a Cantonese surname variant by replacing the
+       Pinyin surname with the Cantonese form.
+    3. For given name characters, use Pinyin as-is (Jyutping for 
+       given names is not standardised enough for automated generation).
+    4. Add Cantonese variant to allowed_variants.
+    5. Set review_required=True, 
+       review_reason="HK document: Cantonese surname variant added — 
+                      verify given name romanisation manually"
+    6. For Wade-Giles (Taiwan, TW country code):
+       Apply basic Wade-Giles substitutions for common initial consonants:
+         zh→ch, x→hs, q→ch, z→ts, c→ts, r→j
+       Add resulting form to allowed_variants only (not as primary).
+    Returns updated result dict.
+    """
+
+Update the zh dispatch to call _add_cantonese_variants() after pypinyin processing,
+passing the country code from the input record.
+
+Tests to write in tests/test_transliteration.py:
+  - 黃志明 (country=HK) → allowed_variants includes "WONG ZHIMING"
+  - 陳建志 (country=TW) → allowed_variants includes Wade-Giles form "CHEN CHIEN-CHIH"
+  - 王小明 (country=CN) → no Cantonese variant generated
+  - 吳敏 (country=HK) → allowed_variants includes "NG MIN"
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GENERAL REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Every new function must have a complete Google-style docstring.
+
+2. Every new module must have a module-level docstring explaining its purpose
+   and which pipeline layer it belongs to.
+
+3. Type hints are required on every function signature.
+
+4. All new constants must be defined at module level (not inside functions).
+
+5. No function should be longer than 60 lines. Decompose if needed.
+
+6. All tests must use pytest. No unittest.TestCase. Parametrize where
+   the same assertion applies to multiple input/output pairs.
+
+7. Tests must not require OPENAI_API_KEY. Mock the OpenAI client using
+   pytest-mock or unittest.mock wherever LLM calls are involved.
+
+8. After implementing all sections, run a final check:
+   - Do any existing tests in tests/ now fail? Fix them.
+   - Does `PYTHONPATH=src pytest tests/ -q` complete without errors?
+   - Does the import graph have any circular imports? Resolve if so.
+
+9. Do not change the result dict schema. The existing fields must remain;
+   you may add new fields but not remove or rename existing ones.
+
+10. Preserve existing behaviour for all languages already in the pipeline
+    (ar, ru, uk, el, ja, zh). The changes in Sections 1, 6, 7, 11 modify
+    these languages — ensure backward compatibility by verifying existing
+    golden-dataset cases still pass after each section is implemented.

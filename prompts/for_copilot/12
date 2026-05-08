@@ -1,0 +1,119 @@
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 12 — DOCUMENTATION: Update all three documentation files
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+File to modify: documentation/01-linguistic-approach.md
+File to modify: documentation/02-ai-governance.md  
+File to modify: documentation/03-evaluation-framework.md
+
+In 01-linguistic-approach.md, add new sections (after the existing Greek section,
+before the Preserve Fields section) for each new language:
+
+  Section 9:  German (de) — covering umlaut expansion, ß handling,
+              variant generation (both expansion and drop forms),
+              particle von/zu handling, Layer 2 only (no LLM)
+
+  Section 10: French (fr) — covering accent stripping, ligature handling,
+              hyphenated names, particle de/du/d' normalisation, Layer 2 only
+
+  Section 11: Spanish (es) — covering accent stripping, ñ→n,
+              two-surname system, particle de/del handling, Layer 2 only
+
+  Section 12: Italian (it) — covering grave accent stripping,
+              apostrophe particle handling (D'/Dell'), double consonant
+              preservation rule, Layer 2 only
+
+  Section 13: Korean (ko) — covering Hangul writing system, Revised Romanisation
+              standard, McCune-Reischauer variants, surname variant hard-coded
+              table (with the table from Section 5 above), name order conventions,
+              Layer 2 only
+
+  Section 14: English (en) — covering minimal normalisation,
+              apostrophe/Mac/St handling, Layer 1/2 only
+
+  Also update the existing Arabic section to add:
+  - Egyptian convention paragraph
+  - Ayin variant generation paragraph
+
+  Also update the existing Japanese section to add:
+  - Era-year conversion paragraph with the JAPANESE_ERAS table
+
+In 02-ai-governance.md, add new sections:
+
+  Section 12: Input Validation and Prompt Injection Controls
+  - Describe the validate_field() function and its checks
+  - Describe the validate_llm_routing() invariant
+  - Explain why LLM_PROHIBITED_FIELD_TYPES exist
+
+  Section 13: Human Review Escalation Workflow
+  Write the following workflow description:
+    "Records flagged review_required=True are written to a dedicated review
+    queue in [QUEUE_SYSTEM — operator to specify]. A trained KYC analyst
+    reviews each flagged record within [SLA — operator to specify] business hours.
+    The analyst either: (a) approves the normalised output and sets
+    should_use_in_screening=True, (b) manually corrects the normalised output,
+    or (c) escalates to the compliance team. All analyst decisions are logged
+    with analyst ID, timestamp, and decision rationale. The review queue and
+    audit log are retained for [RETENTION_PERIOD — operator to specify] years
+    per regulatory requirement."
+    Add TODO markers for the operator-configurable fields.
+
+  Section 14: Scope Boundaries — Unsupported Languages
+  List: Belarusian (partial support, review_required always),
+  Cantonese/HK (Mandarin primary + Cantonese surname variants),
+  all other scripts (routed to unidecode fallback with confidence=0.0)
+
+  Update Section 11 (Residual Risks) to remove "TRANSLATE_ANALYST 0%" 
+  and replace with the new partial implementation status.
+
+In 03-evaluation-framework.md, add:
+
+  Section: Regression Gate
+  - Document the ACCURACY_THRESHOLDS table
+  - Describe the CI/CD integration
+  - Describe the RegressionGateFailure exception and deployment block
+
+  Update the Evaluation Results section to include a Version History table:
+    | Version | Date | Overall | ar | ru | zh | ja | el |
+    |---------|------|---------|----|----|----|----|-----|
+    | v1      | [date] | [%]  | [%]| [%]| [%]| [%]| [%] |
+    | v2      | 20 Mar 2026 | 88.4% | 94.7% | 83.3% | 80.0% | 96.0% | 88.9% |
+  Add a TODO for populating v1 figures from git history.
+
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GENERAL REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Every new function must have a complete Google-style docstring.
+
+2. Every new module must have a module-level docstring explaining its purpose
+   and which pipeline layer it belongs to.
+
+3. Type hints are required on every function signature.
+
+4. All new constants must be defined at module level (not inside functions).
+
+5. No function should be longer than 60 lines. Decompose if needed.
+
+6. All tests must use pytest. No unittest.TestCase. Parametrize where
+   the same assertion applies to multiple input/output pairs.
+
+7. Tests must not require OPENAI_API_KEY. Mock the OpenAI client using
+   pytest-mock or unittest.mock wherever LLM calls are involved.
+
+8. After implementing all sections, run a final check:
+   - Do any existing tests in tests/ now fail? Fix them.
+   - Does `PYTHONPATH=src pytest tests/ -q` complete without errors?
+   - Does the import graph have any circular imports? Resolve if so.
+
+9. Do not change the result dict schema. The existing fields must remain;
+   you may add new fields but not remove or rename existing ones.
+
+10. Preserve existing behaviour for all languages already in the pipeline
+    (ar, ru, uk, el, ja, zh). The changes in Sections 1, 6, 7, 11 modify
+    these languages — ensure backward compatibility by verifying existing
+    golden-dataset cases still pass after each section is implemented.

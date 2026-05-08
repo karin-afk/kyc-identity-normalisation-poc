@@ -1,0 +1,136 @@
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — NEW FEATURE: TRANSLATE_ANALYST minimum viable handler
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+File to create: src/pipeline/analyst_handler.py
+File to modify: src/pipeline/pipeline.py
+File to modify: src/config/rules.py
+
+The TRANSLATE_ANALYST treatment is currently unimplemented (0% accuracy).
+It is used for alias fields containing explanatory descriptive phrases, e.g.:
+  "أبو بكر البغدادي المعروف بخليفة إبراهيم"
+  "Александр по прозвищу Саша"
+  "γνωστός ως Νίκος"
+  "Wang Qiang also known as Wang Xiaoqiang"
+
+In analyst_handler.py, implement:
+
+  # Alias-phrase trigger patterns — multilingual
+  ALIAS_TRIGGERS = {
+    "en": [
+      r"\balso\s+known\s+as\b", r"\baka\b", r"\balias\b",
+      r"\bknown\s+as\b", r"\bnicknamed?\b", r"\bcalled\b",
+      r"\bformerly\s+known\s+as\b"
+    ],
+    "ar": [
+      r"المعروف\s+ب", r"المعروف\s+بـ", r"الملقب\s+ب",
+      r"يُعرف\s+بـ?", r"المُلقَّب"
+    ],
+    "ru": [
+      r"по\s+прозвищу", r"известный\s+как", r"также\s+известен\s+как",
+      r"кличка", r"псевдоним"
+    ],
+    "el": [
+      r"γνωστός\s+ως", r"γνωστή\s+ως", r"αλλιώς\s+γνωστός",
+      r"επίσης\s+γνωστός"
+    ],
+    "zh": [r"又名", r"又称", r"亦称", r"别名", r"化名"],
+    "ja": [r"別名", r"通称", r"またの名"],
+    "de": [r"\bgenannt\b", r"\bbekannt\s+als\b", r"\baliasname\b"],
+    "fr": [r"\bdit\b", r"\bdite\b", r"\bégalement\s+connu\s+sous", r"\bconnu\s+sous\b"],
+    "es": [r"\bconocido\s+como\b", r"\bconocida\s+como\b", r"\btambién\s+conocido\b"],
+    "it": [r"\bdetto\b", r"\bdetta\b", r"\bconosciuto\s+come\b", r"\banche\s+detto\b"],
+    "ko": [r"일명", r"별명", r"별칭", r"이라고도\s+불림"],
+  }
+
+  def extract_name_and_alias(text: str, language: str) -> dict:
+    """
+    Splits an alias phrase into primary name and alias name(s).
+    Algorithm:
+      1. Try each trigger pattern for the given language (and always try "en" patterns).
+      2. If a trigger is found, split on the trigger:
+         - primary_text = text before the trigger (stripped)
+         - alias_text   = text after the trigger (stripped)
+      3. If no trigger found, treat the entire text as the primary name.
+      4. Return:
+         {
+           "primary_text": str,
+           "alias_text": str | None,
+           "trigger_found": str | None,  # the matched trigger pattern
+           "split_method": "trigger" | "no_split"
+         }
+    """
+
+  def process_analyst_field(
+      text: str,
+      language: str,
+      transliterate_fn: callable,   # pass the existing transliteration function
+      llm_fn: callable | None       # pass the existing LLM function (may be None)
+  ) -> dict:
+    """
+    Processes a TRANSLATE_ANALYST field end-to-end.
+    Steps:
+      1. Call extract_name_and_alias(text, language)
+      2. Transliterate/translate primary_text using transliterate_fn or llm_fn
+         as appropriate for the language (same routing logic as normal pipeline)
+      3. If alias_text is not None:
+         a. Transliterate/translate alias_text using the same routing logic
+         b. Combine as: "{primary_normalised} ALSO KNOWN AS {alias_normalised}"
+      4. Return a full result dict with:
+         - processing_method = "TRANSLITERATE+ANALYST" or "LLM+ANALYST"
+         - review_required = True always for TRANSLATE_ANALYST fields
+         - review_reason = "Analyst field: alias phrase extracted and normalised"
+         - allowed_variants includes both primary-only and combined forms
+    """
+
+In pipeline.py, route TRANSLATE_ANALYST field_type to process_analyst_field()
+instead of the current unimplemented path.
+
+Tests to write in tests/test_pipeline.py:
+  - "Александр по прозвищу Саша" (ru) → 
+      normalised contains "ALEKSANDR" and "SASHA", review=True
+  - "γνωστός ως Νίκος" (el) → 
+      normalised contains "NIKOS", review=True
+  - "Wang Qiang also known as Wang Xiaoqiang" (zh) →
+      normalised="WANG QIANG ALSO KNOWN AS WANG XIAOQIANG", review=True
+  - "unknown phrase no trigger" (en) → 
+      entire text treated as primary, no split, review=True
+  - Test every ALIAS_TRIGGERS pattern fires correctly for each language
+
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GENERAL REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Every new function must have a complete Google-style docstring.
+
+2. Every new module must have a module-level docstring explaining its purpose
+   and which pipeline layer it belongs to.
+
+3. Type hints are required on every function signature.
+
+4. All new constants must be defined at module level (not inside functions).
+
+5. No function should be longer than 60 lines. Decompose if needed.
+
+6. All tests must use pytest. No unittest.TestCase. Parametrize where
+   the same assertion applies to multiple input/output pairs.
+
+7. Tests must not require OPENAI_API_KEY. Mock the OpenAI client using
+   pytest-mock or unittest.mock wherever LLM calls are involved.
+
+8. After implementing all sections, run a final check:
+   - Do any existing tests in tests/ now fail? Fix them.
+   - Does `PYTHONPATH=src pytest tests/ -q` complete without errors?
+   - Does the import graph have any circular imports? Resolve if so.
+
+9. Do not change the result dict schema. The existing fields must remain;
+   you may add new fields but not remove or rename existing ones.
+
+10. Preserve existing behaviour for all languages already in the pipeline
+    (ar, ru, uk, el, ja, zh). The changes in Sections 1, 6, 7, 11 modify
+    these languages — ensure backward compatibility by verifying existing
+    golden-dataset cases still pass after each section is implemented.
