@@ -33,6 +33,7 @@ def create_app(config_name: str | None = None) -> Flask:
 
     _register_blueprints(app)
     _register_cli(app)
+    _register_context_processors(app)
 
     app.add_url_rule("/", "root", lambda: redirect(url_for("upload.index")))
 
@@ -57,3 +58,16 @@ def _register_cli(app: Flask) -> None:
     from app.cli.seed_repository import seed_repository_cmd
 
     app.cli.add_command(seed_repository_cmd)
+
+
+def _register_context_processors(app: Flask) -> None:
+    @app.context_processor
+    def inject_user_flags() -> dict[str, bool]:
+        """Inject native speaker visibility flag for template navigation."""
+        try:
+            from app.models.user import User
+
+            user = User.query.filter_by(is_native_speaker=True).first()  # type: ignore[attr-defined]
+            return {"current_user_is_native_speaker": user is not None}
+        except Exception:
+            return {"current_user_is_native_speaker": True}

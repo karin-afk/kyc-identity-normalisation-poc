@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Review Task{% endblock %}
+{% block content %}
+<section class="section">
+  <p><a class="btn btn-secondary" href="{{ url_for('review.index') }}">Back to queue</a></p>
+  <h1 class="page-title">Review: {{ task.field_type|replace('_', ' ')|title }}</h1>
+
+  <div class="context-block">
+    <div class="context-grid">
+      <div class="section-label">Field type</div>
+      <div>{{ task.field_type }}</div>
+
+      <div class="section-label">Language</div>
+      <div>{{ task.language_code if task.language_code else '-' }}</div>
+
+      <div class="section-label">Reason</div>
+      <div>{{ task.review_reason if task.review_reason else '-' }}</div>
+
+      <div class="section-label">Original text</div>
+      <div class="queue-original" dir="auto">{{ task.original_text }}</div>
+
+      <div class="section-label">Raw text</div>
+      <div class="context-raw" dir="auto">{{ task.raw_text if task.raw_text else '-' }}</div>
+
+      {% if task.suggested_form %}
+      <div class="section-label">Suggested form</div>
+      <div class="mono">{{ task.suggested_form }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <form class="stack-20" hx-post="{{ url_for('review.submit', task_id=task.id) }}" hx-target="#review-confirm" hx-swap="innerHTML">
+    <div>
+      <label class="section-label" for="confirmed-form">Confirmed normalised form (uppercase)</label>
+      <input id="confirmed-form" name="confirmed_form" type="text" value="{{ task.suggested_form if task.suggested_form else '' }}" required>
+    </div>
+
+    <div>
+      <label class="section-label" for="allowed-variants">Allowed variants (comma-separated, optional)</label>
+      <input id="allowed-variants" name="allowed_variants" type="text" value="">
+    </div>
+
+    <div class="actions-row">
+      <button class="btn btn-primary" type="submit">Confirm and save</button>
+      {% if task.suggested_form %}
+      <button class="btn btn-secondary" type="submit" name="confirmed_form" value="{{ task.suggested_form }}">Approve as suggested</button>
+      {% endif %}
+    </div>
+  </form>
+
+  <div id="review-confirm" class="results-block"></div>
+</section>
+{% endblock %}

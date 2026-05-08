@@ -1,0 +1,58 @@
+<article class="result-card stack-16">
+  <h3>Processing Result</h3>
+  <div class="meta-grid">
+    <div><span class="section-label">Document type detected</span> {{ document_type_detected }}</div>
+    <div><span class="section-label">Language detected</span> {{ language_detected }}</div>
+  </div>
+
+  {% if results %}
+  <div class="table-wrap">
+    <table class="result-table">
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Original</th>
+          <th>Normalised</th>
+          <th>Language</th>
+          <th>Method</th>
+          <th>Confidence</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in results %}
+        {% set field_name = row.field_name if row.field_name is defined else row.get('field_name', '-') %}
+        {% set original_text = row.original_text if row.original_text is defined else row.get('original_text', '-') %}
+        {% set normalised = row.normalized_text if row.normalized_text is defined else row.get('normalized_text', '') %}
+        {% set lang = row.language if row.language is defined else row.get('language', '-') %}
+        {% set method = row.processing_method if row.processing_method is defined else row.get('processing_method', '-') %}
+        {% set confidence = row.confidence_score if row.confidence_score is defined else row.get('confidence_score', '') %}
+        {% set review_required = row.review_required if row.review_required is defined else row.get('review_required', False) %}
+        {% set allowed_variants = row.allowed_variants if row.allowed_variants is defined else row.get('allowed_variants', []) %}
+        <tr>
+          <td>{{ field_name|replace('_', ' ')|title }}</td>
+          <td dir="auto">{{ original_text }}</td>
+          <td>
+            <span class="mono">{{ normalised if normalised else '—' }}</span>
+            {% if allowed_variants %}
+            <div class="meta">Variants: {{ allowed_variants|join(' · ') }}</div>
+            {% endif %}
+          </td>
+          <td>{{ lang }}</td>
+          <td><span class="method-pill">{{ method }}</span></td>
+          <td class="meta">{% if confidence != '' %}{{ (confidence * 100)|round|int if confidence is number and confidence <= 1 else confidence }}{% if confidence is number and confidence <= 1 %}%{% endif %}{% else %}-{% endif %}</td>
+          <td>{% if review_required %}<span class="error-inline">Awaiting review</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">No fields were extracted.</p>
+  {% endif %}
+
+  <div class="actions-row">
+    <button class="btn btn-secondary" type="button" hx-get="{{ url_for('export.export_csv') }}" hx-target="#upload-results" hx-swap="beforeend">Download CSV</button>
+    <button class="btn btn-secondary" type="button" hx-post="{{ url_for('export.export_email') }}" hx-target="#upload-results" hx-swap="beforeend">Email to me</button>
+  </div>
+</article>
