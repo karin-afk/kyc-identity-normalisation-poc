@@ -1,3 +1,77 @@
 ﻿{% extends "base.html" %}
-{% block title %}Upload{% endblock %}
-{% block content %}Placeholder{% endblock %}
+{% block title %}Document Normalisation{% endblock %}
+{% block content %}
+<section class="section">
+	<h1 class="page-title">Document Normalisation</h1>
+	<p class="page-subtitle">Uploaded documents are processed and all KYC fields extracted and normalised to English.</p>
+
+	<form class="stack-20" hx-post="{{ url_for('upload.process') }}" hx-target="#upload-results" hx-swap="innerHTML" enctype="multipart/form-data">
+		<label class="section-label" for="upload-file">Document file</label>
+		<label class="dropzone" for="upload-file">
+			<input id="upload-file" name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.tiff,.docx,.txt" required>
+			<span id="upload-file-label">Click to select or drag a file here</span>
+		</label>
+
+		<div class="two-col">
+			<div>
+				<label class="section-label" for="document-type">Document type</label>
+				<select id="document-type" name="document_type">
+					<option value="">Auto-detect</option>
+					<option>National ID</option>
+					<option>Driver's Licence</option>
+					<option>Passport</option>
+					<option>Company Registry - Local</option>
+					<option>Company Registry - Foreign</option>
+					<option>Business Registration</option>
+					<option>Articles of Association</option>
+					<option>Financial Statement</option>
+					<option>Shareholder Table</option>
+				</select>
+			</div>
+			<div>
+				<label class="section-label" for="language-hint">Language hint</label>
+				<select id="language-hint" name="language">
+					<option value="">Auto-detect</option>
+					<option value="ar">Arabic</option>
+					<option value="be">Belarusian</option>
+					<option value="bg">Bulgarian</option>
+					<option value="zh">Chinese</option>
+					<option value="da">Danish</option>
+					<option value="nl">Dutch</option>
+					<option value="en">English</option>
+					<option value="fa">Farsi / Persian</option>
+					<option value="fr">French</option>
+					<option value="de">German</option>
+					<option value="el">Greek</option>
+					<option value="he">Hebrew</option>
+					<option value="it">Italian</option>
+					<option value="ja">Japanese</option>
+					<option value="ko">Korean</option>
+					<option value="no">Norwegian</option>
+					<option value="pl">Polish</option>
+					<option value="pt">Portuguese</option>
+					<option value="ru">Russian</option>
+					<option value="es">Spanish</option>
+					<option value="sv">Swedish</option>
+					<option value="th">Thai</option>
+					<option value="tr">Turkish</option>
+					<option value="uk">Ukrainian</option>
+				</select>
+			</div>
+		</div>
+
+		<button type="submit" class="btn btn-primary">Extract and Normalise</button>
+		<div class="htmx-indicator muted">Processing document...</div>
+	</form>
+
+	<div id="upload-results" class="results-block"></div>
+</section>
+
+<script>
+	const uploadFile = document.getElementById('upload-file');
+	const uploadLabel = document.getElementById('upload-file-label');
+	uploadFile.addEventListener('change', () => {
+		uploadLabel.textContent = uploadFile.files.length ? uploadFile.files[0].name : 'Click to select or drag a file here';
+	});
+</script>
+{% endblock %}

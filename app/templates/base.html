@@ -3,18 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}KYC Identity Normalisation{% endblock %}</title>
+  <title>{% block title %}KYC Normalisation{% endblock %}</title>
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
 <body>
-  <nav>
-    <a href="{{ url_for('upload.index') }}">Upload</a>
-    <a href="{{ url_for('paste.index') }}">Paste</a>
-    <a href="{{ url_for('review.index') }}">Review</a>
-    <a href="{{ url_for('admin.index') }}">Admin</a>
-  </nav>
-  <main>
+  <header class="topbar">
+    <div class="brand">KYC Normalisation</div>
+    <nav class="tabs" aria-label="Primary">
+      <a class="tab{% if request.path.startswith('/upload') or request.path == '/' %} tab-active{% endif %}" href="{{ url_for('upload.index') }}">Document</a>
+      <a class="tab{% if request.path.startswith('/paste') %} tab-active{% endif %}" href="{{ url_for('paste.index') }}">Sentence</a>
+      {% if current_user_is_native_speaker %}
+      <a class="tab{% if request.path.startswith('/review') %} tab-active{% endif %}" href="{{ url_for('review.index') }}">Review</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  <main class="page-wrap">
     {% block content %}{% endblock %}
   </main>
 </body>

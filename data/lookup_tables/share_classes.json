@@ -1,0 +1,263 @@
+{
+  "_note": "Keyed by ISO 639-1 language code. Canonical values: ORDINARY, PREFERENCE, REDEEMABLE, NON-VOTING, MANAGEMENT. Matching is case-insensitive.",
+
+  "ar": {
+    "أسهم عادية": "ORDINARY",
+    "أسهم ممتازة": "PREFERENCE",
+    "أسهم قابلة للاسترداد": "REDEEMABLE",
+    "أسهم بدون حق تصويت": "NON-VOTING",
+    "أسهم إدارية": "MANAGEMENT"
+  },
+
+  "be": {
+    "звычайныя акцыі": "ORDINARY",
+    "прывілеяваныя акцыі": "PREFERENCE",
+    "выкупаемыя акцыі": "REDEEMABLE",
+    "акцыі без права голасу": "NON-VOTING"
+  },
+
+  "bg": {
+    "обикновени акции": "ORDINARY",
+    "привилегировани акции": "PREFERENCE",
+    "обратно изкупуеми акции": "REDEEMABLE",
+    "акции без право на глас": "NON-VOTING"
+  },
+
+  "da": {
+    "ordinære aktier": "ORDINARY",
+    "præferenceaktier": "PREFERENCE",
+    "indløselige aktier": "REDEEMABLE",
+    "stemmeløse aktier": "NON-VOTING",
+    "A-aktier": "ORDINARY",
+    "B-aktier": "NON-VOTING"
+  },
+
+  "de": {
+    "Stammaktien": "ORDINARY",
+    "Vorzugsaktien": "PREFERENCE",
+    "Rückzahlbare Aktien": "REDEEMABLE",
+    "Stimmrechtslose Vorzugsaktien": "NON-VOTING",
+    "Geschäftsanteile": "ORDINARY",
+    "Kommanditanteile": "ORDINARY"
+  },
+
+  "el": {
+    "Κοινές Μετοχές": "ORDINARY",
+    "Προνομιούχες Μετοχές": "PREFERENCE",
+    "Εξαγοράσιμες Μετοχές": "REDEEMABLE",
+    "Μετοχές Χωρίς Δικαίωμα Ψήφου": "NON-VOTING"
+  },
+
+  "en": {
+    "Ordinary": "ORDINARY",
+    "Ordinary Share": "ORDINARY",
+    "Ordinary Shares": "ORDINARY",
+    "Common": "ORDINARY",
+    "Common Share": "ORDINARY",
+    "Common Shares": "ORDINARY",
+    "Common Stock": "ORDINARY",
+    "A Share": "ORDINARY",
+    "A Shares": "ORDINARY",
+    "B Share": "NON-VOTING",
+    "B Shares": "NON-VOTING",
+    "Preference": "PREFERENCE",
+    "Preference Share": "PREFERENCE",
+    "Preference Shares": "PREFERENCE",
+    "Preferred": "PREFERENCE",
+    "Preferred Share": "PREFERENCE",
+    "Preferred Shares": "PREFERENCE",
+    "Preferred Stock": "PREFERENCE",
+    "Cumulative Preference": "PREFERENCE",
+    "Cumulative Preferred": "PREFERENCE",
+    "Participating Preference": "PREFERENCE",
+    "Redeemable": "REDEEMABLE",
+    "Redeemable Share": "REDEEMABLE",
+    "Redeemable Shares": "REDEEMABLE",
+    "Redeemable Preference": "REDEEMABLE",
+    "Redeemable Preferred": "REDEEMABLE",
+    "Non-Voting": "NON-VOTING",
+    "Non-Voting Share": "NON-VOTING",
+    "Non-Voting Shares": "NON-VOTING",
+    "Non-Voting Ordinary": "NON-VOTING",
+    "Deferred Share": "NON-VOTING",
+    "Deferred Shares": "NON-VOTING",
+    "Management Share": "MANAGEMENT",
+    "Management Shares": "MANAGEMENT",
+    "Founder Share": "MANAGEMENT",
+    "Founder Shares": "MANAGEMENT",
+    "Golden Share": "MANAGEMENT"
+  },
+
+  "es": {
+    "Acciones Ordinarias": "ORDINARY",
+    "Acciones Comunes": "ORDINARY",
+    "Participaciones Ordinarias": "ORDINARY",
+    "Acciones Preferentes": "PREFERENCE",
+    "Acciones Privilegiadas": "PREFERENCE",
+    "Acciones Rescatables": "REDEEMABLE",
+    "Acciones Sin Voto": "NON-VOTING",
+    "Acciones de Gestión": "MANAGEMENT",
+    "Participaciones de Fundador": "MANAGEMENT"
+  },
+
+  "fa": {
+    "سهام عادی": "ORDINARY",
+    "سهام ممتاز": "PREFERENCE",
+    "سهام قابل بازخرید": "REDEEMABLE",
+    "سهام بدون حق رأی": "NON-VOTING"
+  },
+
+  "fr": {
+    "Actions Ordinaires": "ORDINARY",
+    "Actions Communes": "ORDINARY",
+    "Parts Sociales": "ORDINARY",
+    "Actions de Préférence": "PREFERENCE",
+    "Actions Privilégiées": "PREFERENCE",
+    "Actions Rachetables": "REDEEMABLE",
+    "Actions Sans Droit de Vote": "NON-VOTING",
+    "Actions de Management": "MANAGEMENT",
+    "Actions de Fondateur": "MANAGEMENT",
+    "Action de Priorité": "PREFERENCE"
+  },
+
+  "he": {
+    "מניות רגילות": "ORDINARY",
+    "מניות בכורה": "PREFERENCE",
+    "מניות הניתנות לפדיון": "REDEEMABLE",
+    "מניות ללא זכות הצבעה": "NON-VOTING",
+    "מניות מנהלים": "MANAGEMENT"
+  },
+
+  "it": {
+    "Azioni Ordinarie": "ORDINARY",
+    "Quote Ordinarie": "ORDINARY",
+    "Azioni Privilegiate": "PREFERENCE",
+    "Azioni di Risparmio": "NON-VOTING",
+    "Azioni Riscattabili": "REDEEMABLE",
+    "Azioni Senza Diritto di Voto": "NON-VOTING",
+    "Azioni di Godimento": "ORDINARY",
+    "Quote di Partecipazione": "ORDINARY"
+  },
+
+  "ja": {
+    "普通株式": "ORDINARY",
+    "優先株式": "PREFERENCE",
+    "累積優先株式": "PREFERENCE",
+    "参加型優先株式": "PREFERENCE",
+    "償還株式": "REDEEMABLE",
+    "取得条項付株式": "REDEEMABLE",
+    "議決権制限株式": "NON-VOTING",
+    "無議決権株式": "NON-VOTING",
+    "種類株式": "PREFERENCE",
+    "黄金株": "MANAGEMENT",
+    "拒否権付株式": "MANAGEMENT"
+  },
+
+  "ko": {
+    "보통주": "ORDINARY",
+    "우선주": "PREFERENCE",
+    "누적적 우선주": "PREFERENCE",
+    "상환주식": "REDEEMABLE",
+    "의결권 없는 주식": "NON-VOTING",
+    "무의결권 주식": "NON-VOTING",
+    "종류주식": "PREFERENCE"
+  },
+
+  "nl": {
+    "Gewone Aandelen": "ORDINARY",
+    "Preferente Aandelen": "PREFERENCE",
+    "Cumulatief Preferente Aandelen": "PREFERENCE",
+    "Inkoopbare Aandelen": "REDEEMABLE",
+    "Stemrechtloze Aandelen": "NON-VOTING",
+    "Prioriteitsaandelen": "MANAGEMENT",
+    "Oprichtersaandelen": "MANAGEMENT"
+  },
+
+  "no": {
+    "Ordinære Aksjer": "ORDINARY",
+    "Preferanseaksjer": "PREFERENCE",
+    "Innløselige Aksjer": "REDEEMABLE",
+    "Stemmerettsløse Aksjer": "NON-VOTING"
+  },
+
+  "pl": {
+    "Akcje Zwykłe": "ORDINARY",
+    "Udziały Zwykłe": "ORDINARY",
+    "Akcje Uprzywilejowane": "PREFERENCE",
+    "Akcje Umarzalne": "REDEEMABLE",
+    "Akcje Bez Prawa Głosu": "NON-VOTING",
+    "Udziały Założycielskie": "MANAGEMENT"
+  },
+
+  "pt": {
+    "Acções Ordinárias": "ORDINARY",
+    "Ações Ordinárias": "ORDINARY",
+    "Quotas": "ORDINARY",
+    "Acções Preferenciais": "PREFERENCE",
+    "Ações Preferenciais": "PREFERENCE",
+    "Acções Resgatáveis": "REDEEMABLE",
+    "Ações Resgatáveis": "REDEEMABLE",
+    "Acções Sem Direito de Voto": "NON-VOTING",
+    "Ações Sem Direito de Voto": "NON-VOTING"
+  },
+
+  "ru": {
+    "Обыкновенные акции": "ORDINARY",
+    "обыкновенные акции": "ORDINARY",
+    "Привилегированные акции": "PREFERENCE",
+    "привилегированные акции": "PREFERENCE",
+    "Кумулятивные привилегированные акции": "PREFERENCE",
+    "Погашаемые акции": "REDEEMABLE",
+    "Акции без права голоса": "NON-VOTING",
+    "Доли": "ORDINARY",
+    "Доля участия": "ORDINARY"
+  },
+
+  "sv": {
+    "Stamaktier": "ORDINARY",
+    "Preferensaktier": "PREFERENCE",
+    "Inlösenbara Aktier": "REDEEMABLE",
+    "Röstsvaga Aktier": "NON-VOTING",
+    "A-aktier": "ORDINARY",
+    "B-aktier": "NON-VOTING"
+  },
+
+  "th": {
+    "หุ้นสามัญ": "ORDINARY",
+    "หุ้นบุริมสิทธิ": "PREFERENCE",
+    "หุ้นที่ไถ่ถอนได้": "REDEEMABLE",
+    "หุ้นที่ไม่มีสิทธิออกเสียง": "NON-VOTING"
+  },
+
+  "tr": {
+    "Adi Hisse Senedi": "ORDINARY",
+    "Imtiyazlı Hisse Senedi": "PREFERENCE",
+    "İtfa Edilebilir Hisse": "REDEEMABLE",
+    "Oy Hakkı Olmayan Hisse": "NON-VOTING",
+    "Yönetim Hissesi": "MANAGEMENT"
+  },
+
+  "uk": {
+    "Звичайні акції": "ORDINARY",
+    "Привілейовані акції": "PREFERENCE",
+    "Погашувані акції": "REDEEMABLE",
+    "Акції без права голосу": "NON-VOTING",
+    "Частки": "ORDINARY"
+  },
+
+  "zh": {
+    "普通股": "ORDINARY",
+    "A股": "ORDINARY",
+    "B股": "ORDINARY",
+    "H股": "ORDINARY",
+    "优先股": "PREFERENCE",
+    "累积优先股": "PREFERENCE",
+    "可赎回优先股": "REDEEMABLE",
+    "可赎回股": "REDEEMABLE",
+    "无表决权股": "NON-VOTING",
+    "无投票权股份": "NON-VOTING",
+    "管理股": "MANAGEMENT",
+    "创始人股": "MANAGEMENT",
+    "黄金股": "MANAGEMENT"
+  }
+}

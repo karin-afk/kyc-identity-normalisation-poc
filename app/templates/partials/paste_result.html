@@ -1,0 +1,48 @@
+<article class="result-card stack-16">
+  <hr class="result-separator">
+
+  {% set normalised = result.normalised_form if result.normalised_form is defined else (result.normalized_text if result.normalized_text is defined else result.get('normalised_form', result.get('normalized_text', ''))) %}
+  {% set variants = result.allowed_variants if result.allowed_variants is defined else result.get('allowed_variants', []) %}
+  {% set method = result.processing_method if result.processing_method is defined else result.get('processing_method', '-') %}
+  {% set confidence = result.confidence if result.confidence is defined else (result.confidence_score if result.confidence_score is defined else result.get('confidence', result.get('confidence_score', ''))) %}
+  {% set language = result.language if result.language is defined else result.get('language', '-') %}
+  {% set review_required = result.review_required if result.review_required is defined else result.get('review_required', False) %}
+  {% set detected_field_type = detected_field_type if detected_field_type is defined else result.get('detected_field_type') %}
+  {% set field_type_confidence = field_type_confidence if field_type_confidence is defined else result.get('field_type_confidence') %}
+
+  <div class="kv-row">
+    <div class="section-label">Original</div>
+    <div class="queue-original" dir="auto">{{ original }}</div>
+  </div>
+
+  <div class="kv-row">
+    <div class="section-label">Normalised</div>
+    <div class="mono">{{ normalised if normalised else '—' }}</div>
+  </div>
+
+  {% if variants %}
+  <div class="kv-row">
+    <div class="section-label">Variants</div>
+    <div class="meta">{{ variants|join(' · ') }}</div>
+  </div>
+  {% endif %}
+
+  <div class="meta">Method: {{ method }} · Confidence: {{ (confidence * 100)|round|int if confidence is number and confidence <= 1 else confidence }}{% if confidence is number and confidence <= 1 %}%{% endif %} · Language: {{ language }}</div>
+
+  {% if detected_field_type %}
+  <div class="meta">Field type auto-detected as: {{ detected_field_type|replace('_', ' ')|title }} ({{ (field_type_confidence * 100)|round|int }}% confidence) - resubmit with a specific type selected if incorrect.</div>
+  {% endif %}
+
+  {% if review_required %}
+  <div class="error-inline">Awaiting native speaker review</div>
+  {% endif %}
+
+  <form class="actions-row" hx-post="{{ url_for('review.escalate_paste') }}" hx-target="#escalate-confirm" hx-swap="innerHTML">
+    <input type="hidden" name="original_text" value="{{ original }}">
+    <input type="hidden" name="field_type" value="{{ field_type }}">
+    <input type="hidden" name="normalised_suggestion" value="{{ normalised }}">
+    <input type="hidden" name="language" value="{{ language }}">
+    <button class="btn btn-secondary" type="submit">Escalate to Human Review</button>
+  </form>
+  <div id="escalate-confirm"></div>
+</article>

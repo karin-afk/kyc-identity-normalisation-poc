@@ -1,3 +1,27 @@
 ﻿{% extends "base.html" %}
-{% block title %}Review{% endblock %}
-{% block content %}Placeholder{% endblock %}
+{% block title %}Review Queue{% endblock %}
+{% block content %}
+<section class="section">
+	<h1 class="page-title">Review Queue</h1>
+	<p class="page-subtitle">Fields that could not be resolved automatically are listed for your review.</p>
+
+	{% if tasks %}
+	<div class="queue-list">
+		{% for task in tasks %}
+		<article class="queue-row">
+			<div class="queue-main">
+				<div class="section-label">{{ task.field_type|replace('_', ' ')|upper }}</div>
+				<div class="queue-original" dir="auto">{{ task.original_text }}</div>
+				<div class="meta">Assigned {{ task.assigned_at if task.assigned_at else 'now' }}</div>
+			</div>
+			<div>
+				<a class="btn btn-secondary" href="{{ url_for('review.task_detail', task_id=task.id) }}">Review</a>
+			</div>
+		</article>
+		{% endfor %}
+	</div>
+	{% else %}
+	<p class="muted">No pending tasks.</p>
+	{% endif %}
+</section>
+{% endblock %}

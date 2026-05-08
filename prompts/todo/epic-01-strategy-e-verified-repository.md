@@ -4,6 +4,51 @@
 
 Two JSON seed files. These pre-populate the repository before the tool processes any real documents, so common names resolve immediately without going to native speaker review.
 
+## Ammendments to the below:
+Amendment to Epic 05 — Strategy E: Verified Repository
+In the store_token() function signature and docstring, add country_code as an optional parameter:
+pythondef store_token(
+    self,
+    token: str,
+    language: str,
+    field_type: str,
+    romanised_form: str,
+    allowed_variants: list[str],
+    verified_by_user_id: int,
+    country_code: str = "",
+) -> None:
+    """
+    Write a single token entry to the token_entries table.
+
+    Uses upsert semantics on (token, language_code, field_type, country_code).
+    The country_code is required for issuing_authority field types because
+    the same authority name in the same language means different things across
+    countries (e.g. 'وزارة الداخلية' in ar/AE vs ar/SA vs ar/EG).
+    For all other field types, country_code defaults to empty string.
+
+    Called automatically by store_verified() for applicable field types.
+    Can also be called directly by the seed loader.
+    """
+Add a note in the seed loading section:
+The flask seed-repository command also loads app/data/seed/issuing_authorities_seed.json. When loading this file, skip any object containing a _comment key. The unique key for issuing authority entries is (token, language_code, country_code, field_type) — not just (token, language_code, field_type) as for other field types.
+Add a note on repository growth:
+issuing_authority is a repository-managed field type, not a lookup table field type. It is not in lookup_tables/. New issuing authority names encountered in real documents and confirmed by a native speaker are written to the verified repository automatically by store_verified(). The seed file in app/data/seed/issuing_authorities_seed.json is the starting point only — it should not be manually maintained as documents are processed. The repository is the live source of truth.
+In the token_entries table definition (Epic 06 database schema), add country_code column:
+pythonclass TokenEntry(db.Model):
+    __tablename__ = "token_entries"
+    id: int
+    token: str          (not null)
+    language_code: str  (not null)
+    country_code: str   (default "")
+    field_type: str
+    romanised_form: str
+    allowed_variants: JSON
+    verified_by: int    (FK → users.id)
+    verified_at: datetime
+    # Unique constraint: (token, language_code, country_code, field_type)
+
+That is the complete amendment. The only database change is adding country_code to token_entries with an empty string default, so existing entries for names and company names are unaffected.
+
 ---
 
 ### `person_name_tokens.json`
