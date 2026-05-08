@@ -42,9 +42,14 @@ def route_field(row: dict) -> dict:
 	text = row.get("original_text", "")
 	field_type = row.get("field_type", "")
 	language = row.get("language", "")
+	country = row.get("country", "")
 
 	if not field_type:
 		return _unresolved(text, field_type, language, reason="Missing field_type")
+
+	result = _try_strategy_b(text, field_type, language, country)
+	if result:
+		return result
 
 	result = _try_strategy_a(text, field_type)
 	if result:
@@ -98,6 +103,27 @@ def _try_strategy_a(text: str, field_type: str) -> dict | None:
 		"latin_transliteration": None,
 		"analyst_english_rendering": text,
 	}
+
+
+def _try_strategy_b(text: str, field_type: str, language: str, country: str) -> dict | None:
+	"""Apply Strategy B for calendar and financial numeric fields."""
+	try:
+		from app.pipeline.normalisation.calendar_rules import (
+			apply_calendar_rules,
+			apply_numeric_rules,
+		)
+
+		cal = apply_calendar_rules(field_type, text, language=language, country=country)
+		if cal:
+			return cal
+
+		num = apply_numeric_rules(field_type, text, language=language, country=country)
+		if num:
+			return num
+	except Exception:
+		pass
+
+	return None
 
 
 def _try_stub(strategy_letter: str, module_name: str) -> None:

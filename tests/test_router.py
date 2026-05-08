@@ -50,7 +50,6 @@ def test_preserve_empty_string():
         "person_name",
         "company_name",
         "address",
-        "date_of_birth",
         "legal_form",
         "status",
         "nationality",
@@ -123,6 +122,30 @@ def test_orchestrator_unresolved():
     )
     assert result["processing_method"] == "UNRESOLVED"
     assert result["review_required"] is True
+
+
+def test_strategy_b_calendar_in_router():
+    result = route_field(
+        {
+            "original_text": "2568/5/8",
+            "field_type": "date_of_birth",
+            "language": "th",
+        }
+    )
+    assert result["processing_method"] == "CALENDAR"
+    assert result["normalised_form"] == "2025-05-08"
+
+
+def test_strategy_b_numeric_in_router():
+    result = route_field(
+        {
+            "original_text": "△4.191",
+            "field_type": "total_assets",
+            "language": "ja",
+        }
+    )
+    assert result["processing_method"] == "NUMERIC"
+    assert result["normalised_form"] == "-4191"
 
 
 def test_orchestrator_document_file_raises_not_implemented():
