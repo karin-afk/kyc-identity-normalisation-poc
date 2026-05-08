@@ -1,4 +1,27 @@
-# Epic 02 — Normalisation Strategy B: Calendar and Numeric Rules
+# Epic 01 — Normalisation Strategy B: Calendar and Numeric Rules
+
+**Status: IMPLEMENTED** — branch `feature/epic-01b-strategy-b-calendar-numeric`.
+
+## Execution Todo Checklist (this run)
+
+- [x] Create source conversion modules:
+    - [x] `src/pipeline/calendar_solar_hijri.py`
+    - [x] `src/pipeline/calendar_hebrew.py`
+    - [x] `src/pipeline/calendar_offset.py`
+    - [x] `src/pipeline/numeric_rules.py`
+- [x] Add `convertdate>=2.4.0` to `requirements.txt`
+- [x] Implement `app/pipeline/normalisation/calendar_rules.py` with:
+    - [x] `apply_calendar_rules(...)`
+    - [x] `apply_numeric_rules(...)`
+    - [x] Calendar routing for Japanese/Hebrew/Thai/Minguo/Solar-Hijri/Hijri/Gregorian
+    - [x] Numeric script + formatting + currency normalisation helpers
+- [x] Update router Strategy B wiring in `app/pipeline/normalisation/router.py`
+- [x] Update orchestrator integration in `app/pipeline/orchestrator.py` (ensure Strategy B path is reachable for sentence and document stubs)
+- [x] Add tests in `tests/test_strategy_b_calendar.py`
+- [x] Update impacted router/orchestrator tests for new Strategy B behavior
+- [x] Run tests and fix regressions
+- [x] Run Flask app on `127.0.0.1:5001` for manual UI verification
+- [x] Provide copy/paste examples for the Sentence tab
 
 ## What you need to provide
 
@@ -14,7 +37,7 @@ Copilot will merge what you provide with the existing logic from `src/utils/cale
 
 **What to include:** A function `solar_hijri_to_gregorian(year: int, month: int, day: int) -> tuple[int, int, int]` with the conversion logic. Include inline comments explaining month length rules (first six months have 31 days, next five have 30, last month has 29 or 30 in leap years) and any edge cases. Also include a regex pattern for detecting Solar Hijri date strings in document text — Persian-Indic numerals (۱۴۰۴) are common and must be handled.
 
-**Save to:** `app/pipeline/normalisation/calendar_solar_hijri.py`
+**Save to:** `\src\pipeline\calendar_solar_hijri.py`
 
 ---
 
@@ -24,7 +47,7 @@ Copilot will merge what you provide with the existing logic from `src/utils/cale
 
 **What to include:** A function `hebrew_to_gregorian(year: int, month: int, day: int) -> tuple[int, int, int]`. Include comments on the leap year cycle (7 leap years per 19-year cycle) and month ordering. Also include a regex pattern for Hebrew date strings, noting that Hebrew is written right-to-left and dates may appear in various formats.
 
-**Save to:** `app/pipeline/normalisation/calendar_hebrew.py`
+**Save to:** `\src\pipeline\calendar_hebrew.py`
 
 ---
 
@@ -38,7 +61,7 @@ Both use the same month/day structure as Gregorian — only the year count diffe
 
 **What to include:** Two functions — `thai_buddhist_to_gregorian(year, month, day)` and `minguo_to_gregorian(year, month, day)` — with regex patterns for detecting each format in document text. Thai documents often show the year as a 4-digit Thai-script numeral (๒๕๖๘); Minguo years are typically 2–3 digits.
 
-**Save to:** `app/pipeline/normalisation/calendar_offset.py`
+**Save to:** `\src\pipeline\calendar_offset.py`
 
 ---
 
@@ -55,7 +78,7 @@ Both use the same month/day structure as Gregorian — only the year count diffe
 - Parenthetical negative notation function: `△4191` → `-4191`, `（4191）` → `-4191`, `(4191)` → `-4191`. Used in Japanese financial statements.
 - Currency symbol mapping: dict mapping symbol → ISO 4217 code. Cover at minimum: `¥` (ambiguous — JPY vs CNY, resolved by `language` or `country` parameter), `﷼` → `SAR`, `₪` → `ILS`, `€` → `EUR`, `£` → `GBP`, `$` → `USD`. Include a `normalise_currency(text, language, country)` function that extracts the amount and returns `(amount_str, iso_4217_code)`.
 
-**Save to:** `app/pipeline/normalisation/numeric_rules.py`
+**Save to:** `\src\pipeline\numeric_rules.py`
 
 ---
 

@@ -5,6 +5,12 @@ def process_field_row(row: dict) -> dict:
 	"""Process one pre-extracted field through the normalisation router."""
 	from app.pipeline.normalisation.router import route_field
 
+	row = {
+		"original_text": row.get("original_text", ""),
+		"field_type": row.get("field_type", ""),
+		"language": row.get("language", ""),
+		"country": row.get("country", ""),
+	}
 	return route_field(row)
 
 
