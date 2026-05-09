@@ -59,6 +59,7 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG: bool = True
+    TEMPLATES_AUTO_RELOAD: bool = True
     SQLALCHEMY_DATABASE_URI: str = os.environ.get(
         "DATABASE_URL", "sqlite:///kyc_dev.db"
     )
