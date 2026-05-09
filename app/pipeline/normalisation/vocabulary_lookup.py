@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from app.utils.session_trace import log_event
+
 VOCABULARY_FIELDS: set[str] = {
 	"legal_form",
 	"status",
@@ -58,9 +60,15 @@ class VocabularyLookupService:
 	def lookup(self, field_type: str, text: str, language: str = "", country: str = "") -> dict | None:
 		"""Route to strategy-specific vocabulary lookup."""
 		if field_type not in VOCABULARY_FIELDS:
+			log_event(
+				"vocabulary_lookup_skipped",
+				{"field_type": field_type, "reason": "unsupported_field_type"},
+				source="backend",
+			)
 			return None
 
 		if not text or not text.strip():
+			log_event("vocabulary_lookup_skipped", {"field_type": field_type, "reason": "empty_text"}, source="backend")
 			return None
 
 		result = None
@@ -80,9 +88,19 @@ class VocabularyLookupService:
 			result = self.lookup_document_type(text, language)
 
 		if result is None:
+			log_event(
+				"vocabulary_lookup_miss",
+				{"field_type": field_type, "language": language, "country": country, "text_preview": text[:180]},
+				source="backend",
+			)
 			return None
 
 		result["original_text"] = text
+		log_event(
+			"vocabulary_lookup_hit",
+			{"field_type": field_type, "language": language, "country": country, "normalised_form": result.get("normalised_form")},
+			source="backend",
+		)
 		return result
 
 	def lookup_legal_form(self, text: str, country: str) -> dict | None:

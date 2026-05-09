@@ -6,6 +6,8 @@ import os
 import sys
 from pathlib import Path
 
+from app.utils.session_trace import log_event
+
 SRC_DIR = Path(__file__).resolve().parents[3] / "src"
 if str(SRC_DIR) not in sys.path:
 	sys.path.insert(0, str(SRC_DIR))
@@ -43,20 +45,34 @@ def route_field(row: dict) -> dict:
 	field_type = row.get("field_type", "")
 	language = row.get("language", "")
 	country = row.get("country", "")
+	log_event(
+		"router_started",
+		{
+			"field_type": field_type,
+			"language": language,
+			"country": country,
+			"text_preview": text[:180],
+		},
+		source="backend",
+	)
 
 	if not field_type:
+		log_event("router_unresolved", {"reason": "missing_field_type"}, source="backend")
 		return _unresolved(text, field_type, language, reason="Missing field_type")
 
 	result = _try_strategy_b(text, field_type, language, country)
 	if result:
+		log_event("router_selected_strategy", {"strategy": "B", "method": result.get("processing_method")}, source="backend")
 		return result
 
 	result = _try_strategy_c(text, field_type, language, country)
 	if result:
+		log_event("router_selected_strategy", {"strategy": "C", "method": result.get("processing_method")}, source="backend")
 		return result
 
 	result = _try_strategy_a(text, field_type)
 	if result:
+		log_event("router_selected_strategy", {"strategy": "A", "method": result.get("processing_method")}, source="backend")
 		return result
 
 	for strategy_letter, module_name in (
@@ -75,14 +91,17 @@ def route_field(row: dict) -> dict:
 	if os.environ.get("LLM_ENABLED", "false").lower() == "true":
 		result = _try_stub("I", "llm_normalise")
 		if result:
+			log_event("router_selected_strategy", {"strategy": "I", "method": result.get("processing_method")}, source="backend")
 			return result
 
+	log_event("router_unresolved", {"reason": "all_strategies_missed", "field_type": field_type, "language": language}, source="backend")
 	return _unresolved(text, field_type, language)
 
 
 def _try_strategy_a(text: str, field_type: str) -> dict | None:
 	"""Call preserve logic from src rules engine and normalize method label."""
 	if field_type not in PRESERVE_FIELDS:
+		log_event("strategy_a_skipped", {"reason": "field_not_in_preserve", "field_type": field_type}, source="backend")
 		return None
 
 	try:
@@ -91,8 +110,10 @@ def _try_strategy_a(text: str, field_type: str) -> dict | None:
 		result = apply_rules(field_type, text)
 		if result:
 			result["processing_method"] = "PRESERVE"
+			log_event("strategy_a_hit", {"field_type": field_type}, source="backend")
 			return result
 	except Exception:
+		log_event("strategy_a_error", {"field_type": field_type}, source="backend")
 		pass
 
 	return {
@@ -119,12 +140,15 @@ def _try_strategy_b(text: str, field_type: str, language: str, country: str) -> 
 
 		cal = apply_calendar_rules(field_type, text, language=language, country=country)
 		if cal:
+			log_event("strategy_b_hit", {"variant": "calendar", "field_type": field_type}, source="backend")
 			return cal
 
 		num = apply_numeric_rules(field_type, text, language=language, country=country)
 		if num:
+			log_event("strategy_b_hit", {"variant": "numeric", "field_type": field_type}, source="backend")
 			return num
 	except Exception:
+		log_event("strategy_b_error", {"field_type": field_type}, source="backend")
 		pass
 
 	return None
@@ -143,8 +167,14 @@ def _try_strategy_c(text: str, field_type: str, language: str, country: str) -> 
 			tables_dir = Path(current_app.root_path).parent / "data" / "lookup_tables"
 			service = VocabularyLookupService(tables_dir)
 
-		return service.lookup(field_type, text, language=language, country=country)
+		result = service.lookup(field_type, text, language=language, country=country)
+		if result:
+			log_event("strategy_c_hit", {"field_type": field_type, "language": language}, source="backend")
+		else:
+			log_event("strategy_c_miss", {"field_type": field_type, "language": language, "text_preview": text[:180]}, source="backend")
+		return result
 	except Exception:
+		log_event("strategy_c_error", {"field_type": field_type, "language": language}, source="backend")
 		return None
 
 

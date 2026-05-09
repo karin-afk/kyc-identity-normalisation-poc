@@ -7,6 +7,8 @@ import logging
 
 from openai import OpenAI
 
+from app.utils.session_trace import log_event
+
 logger = logging.getLogger(__name__)
 
 FIELD_TYPES = [
@@ -79,6 +81,11 @@ def detect_field_type(text: str, language: str = "") -> tuple[str, float, str]:
     del language
 
     try:
+        log_event(
+            "field_detector_started",
+            {"text_length": len(text or ""), "text_preview": (text or "")[:180], "model": "gpt-4o-mini"},
+            source="backend",
+        )
         response = _get_client().chat.completions.create(
             model="gpt-4o-mini",
             max_tokens=60,
@@ -104,6 +111,7 @@ def detect_field_type(text: str, language: str = "") -> tuple[str, float, str]:
         )
 
         content = response.choices[0].message.content or "{}"
+        log_event("field_detector_raw_response", {"content": content}, source="backend")
         parsed = json.loads(content)
 
         field_type = parsed.get("field_type", "unstructured_text")
@@ -115,7 +123,18 @@ def detect_field_type(text: str, language: str = "") -> tuple[str, float, str]:
         if detected_language not in LANGUAGE_CODES:
             detected_language = "en"
 
+        log_event(
+            "field_detector_completed",
+            {
+                "field_type": field_type,
+                "detected_language": detected_language,
+                "confidence": confidence,
+            },
+            source="backend",
+        )
+
         return field_type, confidence, detected_language
     except Exception as e:
         logger.error(f"Field type detection failed: {e}", exc_info=True)
+        log_event("field_detector_error", {"error": str(e)}, source="backend")
         return "unstructured_text", 0.5, "en"

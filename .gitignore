@@ -10,3 +10,6 @@ data/geonames/allCountries.txt
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Runtime diagnostics
+logs/
