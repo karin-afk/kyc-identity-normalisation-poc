@@ -1,5 +1,6 @@
 <article class="result-card stack-16">
   <hr class="result-separator">
+  <!-- DEBUG: v2-new-llm-template -->
 
   {% set normalised = result.normalised_form if result.normalised_form is defined else (result.normalized_text if result.normalized_text is defined else result.get('normalised_form', result.get('normalized_text', ''))) %}
   {% set variants = result.allowed_variants if result.allowed_variants is defined else result.get('allowed_variants', []) %}

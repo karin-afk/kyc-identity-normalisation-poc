@@ -1,0 +1,121 @@
+{
+  "_note": "Canonical values: INCREASE, DECREASE, CONVERSION, SPLIT, CONSOLIDATION",
+  "en": {
+    "capital increase": "INCREASE",
+    "capital decrease": "DECREASE",
+    "conversion": "CONVERSION",
+    "share split": "SPLIT",
+    "stock split": "SPLIT",
+    "share consolidation": "CONSOLIDATION",
+    "reverse split": "CONSOLIDATION"
+  },
+  "ja": {
+    "増資": "INCREASE",
+    "減資": "DECREASE",
+    "転換": "CONVERSION",
+    "株式分割": "SPLIT",
+    "株式併合": "CONSOLIDATION"
+  },
+  "de": {
+    "kapitalerhöhung": "INCREASE",
+    "kapitalherabsetzung": "DECREASE",
+    "umwandlung": "CONVERSION",
+    "aktiensplit": "SPLIT",
+    "aktienzusammenlegung": "CONSOLIDATION"
+  },
+  "fr": {
+    "augmentation de capital": "INCREASE",
+    "réduction de capital": "DECREASE",
+    "conversion": "CONVERSION",
+    "division d'actions": "SPLIT",
+    "regroupement d'actions": "CONSOLIDATION"
+  },
+  "it": {
+    "aumento di capitale": "INCREASE",
+    "riduzione di capitale": "DECREASE",
+    "conversione": "CONVERSION",
+    "frazionamento azionario": "SPLIT",
+    "raggruppamento azionario": "CONSOLIDATION"
+  },
+  "es": {
+    "ampliación de capital": "INCREASE",
+    "reducción de capital": "DECREASE",
+    "conversión": "CONVERSION",
+    "desdoblamiento de acciones": "SPLIT",
+    "agrupación de acciones": "CONSOLIDATION"
+  },
+  "pt": {
+    "aumento de capital": "INCREASE",
+    "redução de capital": "DECREASE",
+    "conversão": "CONVERSION",
+    "desdobramento de ações": "SPLIT",
+    "grupamento de ações": "CONSOLIDATION"
+  },
+  "ar": {
+    "زيادة رأس المال": "INCREASE",
+    "تخفيض رأس المال": "DECREASE",
+    "تحويل": "CONVERSION",
+    "تجزئة الأسهم": "SPLIT",
+    "دمج الأسهم": "CONSOLIDATION"
+  },
+  "he": {
+    "הגדלת הון": "INCREASE",
+    "הפחתת הון": "DECREASE",
+    "המרה": "CONVERSION",
+    "פיצול מניות": "SPLIT",
+    "איחוד מניות": "CONSOLIDATION"
+  },
+  "tr": {
+    "sermaye artırımı": "INCREASE",
+    "sermaye azaltımı": "DECREASE",
+    "dönüşüm": "CONVERSION",
+    "hisse bölünmesi": "SPLIT",
+    "hisse birleştirme": "CONSOLIDATION"
+  },
+  "ru": {
+    "увеличение капитала": "INCREASE",
+    "уменьшение капитала": "DECREASE",
+    "конвертация": "CONVERSION",
+    "дробление акций": "SPLIT",
+    "консолидация акций": "CONSOLIDATION"
+  },
+  "uk": {
+    "збільшення капіталу": "INCREASE",
+    "зменшення капіталу": "DECREASE",
+    "конвертація": "CONVERSION",
+    "поділ акцій": "SPLIT",
+    "консолідація акцій": "CONSOLIDATION"
+  },
+  "el": {
+    "αύξηση κεφαλαίου": "INCREASE",
+    "μείωση κεφαλαίου": "DECREASE",
+    "μετατροπή": "CONVERSION",
+    "διάσπαση μετοχών": "SPLIT",
+    "συγκέντρωση μετοχών": "CONSOLIDATION"
+  },
+  "zh": {
+    "增资": "INCREASE",
+    "减资": "DECREASE",
+    "转换": "CONVERSION",
+    "拆股": "SPLIT",
+    "并股": "CONSOLIDATION"
+  },
+  "ko": {
+    "자본금 증가": "INCREASE",
+    "자본금 감소": "DECREASE",
+    "전환": "CONVERSION",
+    "주식분할": "SPLIT",
+    "주식병합": "CONSOLIDATION"
+  },
+  "th": {
+    "เพิ่มทุน": "INCREASE",
+    "ลดทุน": "DECREASE",
+    "แปลงสภาพ": "CONVERSION",
+    "แตกหุ้น": "SPLIT",
+    "รวมหุ้น": "CONSOLIDATION"
+  }
+}
+
+
+
+

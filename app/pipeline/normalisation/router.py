@@ -51,6 +51,10 @@ def route_field(row: dict) -> dict:
 	if result:
 		return result
 
+	result = _try_strategy_c(text, field_type, language, country)
+	if result:
+		return result
+
 	result = _try_strategy_a(text, field_type)
 	if result:
 		return result
@@ -124,6 +128,24 @@ def _try_strategy_b(text: str, field_type: str, language: str, country: str) -> 
 		pass
 
 	return None
+
+
+def _try_strategy_c(text: str, field_type: str, language: str, country: str) -> dict | None:
+	"""Apply Strategy C vocabulary lookup using app singleton service."""
+	try:
+		from flask import current_app
+
+		service = getattr(current_app, "vocab_service", None)
+		if service is None:
+			from app.pipeline.normalisation.vocabulary_lookup import VocabularyLookupService
+			from pathlib import Path
+
+			tables_dir = Path(current_app.root_path).parent / "data" / "lookup_tables"
+			service = VocabularyLookupService(tables_dir)
+
+		return service.lookup(field_type, text, language=language, country=country)
+	except Exception:
+		return None
 
 
 def _try_stub(strategy_letter: str, module_name: str) -> None:

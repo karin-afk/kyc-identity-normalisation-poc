@@ -1,0 +1,370 @@
+[
+  {
+    "_comment": "JAPAN — Passports issued by Ministry of Foreign Affairs. Driver licences issued by prefectural public safety commissions.",
+    "_note": "This file is a seed. New entries are added automatically to the verified repository when confirmed by a native speaker. Do not treat this as exhaustive."
+  },
+  {
+    "token": "外務省",
+    "language_code": "ja",
+    "country_code": "JP",
+    "field_type": "issuing_authority",
+    "romanised_form": "MINISTRY OF FOREIGN AFFAIRS",
+    "allowed_variants": ["MOFA JAPAN", "GAIMUSHO"]
+  },
+  {
+    "token": "法務省",
+    "language_code": "ja",
+    "country_code": "JP",
+    "field_type": "issuing_authority",
+    "romanised_form": "MINISTRY OF JUSTICE",
+    "allowed_variants": ["MOJ JAPAN", "HOMUSHO"]
+  },
+  {
+    "token": "警察庁",
+    "language_code": "ja",
+    "country_code": "JP",
+    "field_type": "issuing_authority",
+    "romanised_form": "NATIONAL POLICE AGENCY",
+    "allowed_variants": ["NPA JAPAN", "KEISATSUCHO"]
+  },
+  {
+    "token": "公安委員会",
+    "language_code": "ja",
+    "country_code": "JP",
+    "field_type": "issuing_authority",
+    "romanised_form": "PUBLIC SAFETY COMMISSION",
+    "allowed_variants": ["KOAN IINKAI"]
+  },
+  {
+    "token": "東京都公安委員会",
+    "language_code": "ja",
+    "country_code": "JP",
+    "field_type": "issuing_authority",
+    "romanised_form": "TOKYO METROPOLITAN PUBLIC SAFETY COMMISSION",
+    "allowed_variants": ["TOKYO PUBLIC SAFETY COMMISSION"]
+  },
+  {
+    "token": "大阪府公安委員会",
+    "language_code": "ja",
+    "country_code": "JP",
+    "field_type": "issuing_authority",
+    "romanised_form": "OSAKA PREFECTURAL PUBLIC SAFETY COMMISSION",
+    "allowed_variants": ["OSAKA PUBLIC SAFETY COMMISSION"]
+  },
+  {
+    "token": "法務局",
+    "language_code": "ja",
+    "country_code": "JP",
+    "field_type": "issuing_authority",
+    "romanised_form": "LEGAL AFFAIRS BUREAU",
+    "allowed_variants": ["HOMU KYOKU"]
+  },
+  {
+    "token": "東京法務局",
+    "language_code": "ja",
+    "country_code": "JP",
+    "field_type": "issuing_authority",
+    "romanised_form": "TOKYO LEGAL AFFAIRS BUREAU",
+    "allowed_variants": []
+  },
+  {
+    "token": "大阪法務局",
+    "language_code": "ja",
+    "country_code": "JP",
+    "field_type": "issuing_authority",
+    "romanised_form": "OSAKA LEGAL AFFAIRS BUREAU",
+    "allowed_variants": []
+  },
+  {
+    "token": "名古屋法務局",
+    "language_code": "ja",
+    "country_code": "JP",
+    "field_type": "issuing_authority",
+    "romanised_form": "NAGOYA LEGAL AFFAIRS BUREAU",
+    "allowed_variants": []
+  },
+
+  {
+    "_comment": "UNITED ARAB EMIRATES"
+  },
+  {
+    "token": "وزارة الداخلية",
+    "language_code": "ar",
+    "country_code": "AE",
+    "field_type": "issuing_authority",
+    "romanised_form": "MINISTRY OF INTERIOR",
+    "allowed_variants": ["MOI UAE", "WIZARAT AL-DAKHILIYA"]
+  },
+  {
+    "token": "الهيئة الاتحادية للهوية والجنسية",
+    "language_code": "ar",
+    "country_code": "AE",
+    "field_type": "issuing_authority",
+    "romanised_form": "FEDERAL AUTHORITY FOR IDENTITY AND CITIZENSHIP",
+    "allowed_variants": ["ICA UAE", "FAIC"]
+  },
+  {
+    "token": "هيئة الاتحادية للهوية والجنسية والجمارك وأمن المنافذ",
+    "language_code": "ar",
+    "country_code": "AE",
+    "field_type": "issuing_authority",
+    "romanised_form": "FEDERAL AUTHORITY FOR IDENTITY CITIZENSHIP CUSTOMS AND PORT SECURITY",
+    "allowed_variants": ["ICP UAE"]
+  },
+  {
+    "token": "دائرة التنمية الاقتصادية",
+    "language_code": "ar",
+    "country_code": "AE",
+    "field_type": "issuing_authority",
+    "romanised_form": "DEPARTMENT OF ECONOMIC DEVELOPMENT",
+    "allowed_variants": ["DED UAE"]
+  },
+  {
+    "token": "دائرة التنمية الاقتصادية - دبي",
+    "language_code": "ar",
+    "country_code": "AE",
+    "field_type": "issuing_authority",
+    "romanised_form": "DUBAI DEPARTMENT OF ECONOMIC DEVELOPMENT",
+    "allowed_variants": ["DUBAI DED", "DED DUBAI"]
+  },
+  {
+    "token": "هيئة تنظيم الاتصالات",
+    "language_code": "ar",
+    "country_code": "AE",
+    "field_type": "issuing_authority",
+    "romanised_form": "TELECOMMUNICATIONS REGULATORY AUTHORITY",
+    "allowed_variants": ["TRA UAE"]
+  },
+
+  {
+    "_comment": "SAUDI ARABIA"
+  },
+  {
+    "token": "وزارة الداخلية",
+    "language_code": "ar",
+    "country_code": "SA",
+    "field_type": "issuing_authority",
+    "romanised_form": "MINISTRY OF INTERIOR",
+    "allowed_variants": ["MOI SAUDI ARABIA", "WIZARAT AL-DAKHILIYA"]
+  },
+  {
+    "token": "الأحوال المدنية",
+    "language_code": "ar",
+    "country_code": "SA",
+    "field_type": "issuing_authority",
+    "romanised_form": "GENERAL DIRECTORATE OF CIVIL STATUS",
+    "allowed_variants": ["CIVIL STATUS SAUDI ARABIA", "GDCS"]
+  },
+  {
+    "token": "وزارة الخارجية",
+    "language_code": "ar",
+    "country_code": "SA",
+    "field_type": "issuing_authority",
+    "romanised_form": "MINISTRY OF FOREIGN AFFAIRS",
+    "allowed_variants": ["MOFA SAUDI ARABIA"]
+  },
+  {
+    "token": "وزارة التجارة",
+    "language_code": "ar",
+    "country_code": "SA",
+    "field_type": "issuing_authority",
+    "romanised_form": "MINISTRY OF COMMERCE",
+    "allowed_variants": ["MOC SAUDI ARABIA", "MINISTRY OF COMMERCE AND INVESTMENT"]
+  },
+
+  {
+    "_comment": "EGYPT"
+  },
+  {
+    "token": "وزارة الداخلية",
+    "language_code": "ar",
+    "country_code": "EG",
+    "field_type": "issuing_authority",
+    "romanised_form": "MINISTRY OF INTERIOR",
+    "allowed_variants": ["MOI EGYPT", "WIZARAT AL-DAKHILIYA"]
+  },
+  {
+    "token": "مصلحة الجوازات والهجرة والجنسية",
+    "language_code": "ar",
+    "country_code": "EG",
+    "field_type": "issuing_authority",
+    "romanised_form": "PASSPORTS IMMIGRATION AND NATIONALITY AUTHORITY",
+    "allowed_variants": ["PINA EGYPT"]
+  },
+  {
+    "token": "مصلحة السجل التجاري",
+    "language_code": "ar",
+    "country_code": "EG",
+    "field_type": "issuing_authority",
+    "romanised_form": "COMMERCIAL REGISTRY AUTHORITY",
+    "allowed_variants": ["CRA EGYPT"]
+  },
+  {
+    "token": "الهيئة العامة للاستثمار والمناطق الحرة",
+    "language_code": "ar",
+    "country_code": "EG",
+    "field_type": "issuing_authority",
+    "romanised_form": "GENERAL AUTHORITY FOR INVESTMENT AND FREE ZONES",
+    "allowed_variants": ["GAFI EGYPT"]
+  },
+
+  {
+    "_comment": "RUSSIA"
+  },
+  {
+    "token": "МВД России",
+    "language_code": "ru",
+    "country_code": "RU",
+    "field_type": "issuing_authority",
+    "romanised_form": "MINISTRY OF INTERNAL AFFAIRS OF RUSSIA",
+    "allowed_variants": ["MVD RUSSIA", "MIA RUSSIA"]
+  },
+  {
+    "token": "Министерство внутренних дел",
+    "language_code": "ru",
+    "country_code": "RU",
+    "field_type": "issuing_authority",
+    "romanised_form": "MINISTRY OF INTERNAL AFFAIRS",
+    "allowed_variants": ["MVD", "MIA"]
+  },
+  {
+    "token": "Федеральная миграционная служба",
+    "language_code": "ru",
+    "country_code": "RU",
+    "field_type": "issuing_authority",
+    "romanised_form": "FEDERAL MIGRATION SERVICE",
+    "allowed_variants": ["FMS RUSSIA"]
+  },
+  {
+    "token": "МИД России",
+    "language_code": "ru",
+    "country_code": "RU",
+    "field_type": "issuing_authority",
+    "romanised_form": "MINISTRY OF FOREIGN AFFAIRS OF RUSSIA",
+    "allowed_variants": ["MFA RUSSIA", "MID RUSSIA"]
+  },
+  {
+    "token": "Федеральная налоговая служба",
+    "language_code": "ru",
+    "country_code": "RU",
+    "field_type": "issuing_authority",
+    "romanised_form": "FEDERAL TAX SERVICE",
+    "allowed_variants": ["FNS RUSSIA", "FTS RUSSIA"]
+  },
+  {
+    "token": "ГИБДД",
+    "language_code": "ru",
+    "country_code": "RU",
+    "field_type": "issuing_authority",
+    "romanised_form": "STATE TRAFFIC SAFETY INSPECTORATE",
+    "allowed_variants": ["GIBDD", "TRAFFIC POLICE RUSSIA"]
+  },
+
+  {
+    "_comment": "GREECE"
+  },
+  {
+    "token": "Ελληνική Αστυνομία",
+    "language_code": "el",
+    "country_code": "GR",
+    "field_type": "issuing_authority",
+    "romanised_form": "HELLENIC POLICE",
+    "allowed_variants": ["GREEK POLICE", "ELLINIKI ASTYNOMIA"]
+  },
+  {
+    "token": "Υπουργείο Εξωτερικών",
+    "language_code": "el",
+    "country_code": "GR",
+    "field_type": "issuing_authority",
+    "romanised_form": "MINISTRY OF FOREIGN AFFAIRS",
+    "allowed_variants": ["MFA GREECE", "YPOURGEIO EXOTERIKON"]
+  },
+  {
+    "token": "Γενικό Εμπορικό Μητρώο",
+    "language_code": "el",
+    "country_code": "GR",
+    "field_type": "issuing_authority",
+    "romanised_form": "GENERAL COMMERCIAL REGISTRY",
+    "allowed_variants": ["GEMI GREECE", "GEMI"]
+  },
+
+  {
+    "_comment": "SOUTH KOREA"
+  },
+  {
+    "token": "외교부",
+    "language_code": "ko",
+    "country_code": "KR",
+    "field_type": "issuing_authority",
+    "romanised_form": "MINISTRY OF FOREIGN AFFAIRS",
+    "allowed_variants": ["MOFA KOREA", "WAEGYO-BU"]
+  },
+  {
+    "token": "행정안전부",
+    "language_code": "ko",
+    "country_code": "KR",
+    "field_type": "issuing_authority",
+    "romanised_form": "MINISTRY OF THE INTERIOR AND SAFETY",
+    "allowed_variants": ["MOIS KOREA"]
+  },
+  {
+    "token": "경찰청",
+    "language_code": "ko",
+    "country_code": "KR",
+    "field_type": "issuing_authority",
+    "romanised_form": "NATIONAL POLICE AGENCY",
+    "allowed_variants": ["NPA KOREA", "GYEONGCHALCHEONG"]
+  },
+  {
+    "token": "법원행정처",
+    "language_code": "ko",
+    "country_code": "KR",
+    "field_type": "issuing_authority",
+    "romanised_form": "NATIONAL COURT ADMINISTRATION",
+    "allowed_variants": ["NCA KOREA", "COURT REGISTRY KOREA"]
+  },
+
+  {
+    "_comment": "CHINA"
+  },
+  {
+    "token": "公安局",
+    "language_code": "zh",
+    "country_code": "CN",
+    "field_type": "issuing_authority",
+    "romanised_form": "PUBLIC SECURITY BUREAU",
+    "allowed_variants": ["PSB CHINA", "GONGAN JU"]
+  },
+  {
+    "token": "公安部",
+    "language_code": "zh",
+    "country_code": "CN",
+    "field_type": "issuing_authority",
+    "romanised_form": "MINISTRY OF PUBLIC SECURITY",
+    "allowed_variants": ["MPS CHINA", "GONGAN BU"]
+  },
+  {
+    "token": "外交部",
+    "language_code": "zh",
+    "country_code": "CN",
+    "field_type": "issuing_authority",
+    "romanised_form": "MINISTRY OF FOREIGN AFFAIRS",
+    "allowed_variants": ["MOFA CHINA", "WAIJIAO BU"]
+  },
+  {
+    "token": "国家市场监督管理总局",
+    "language_code": "zh",
+    "country_code": "CN",
+    "field_type": "issuing_authority",
+    "romanised_form": "STATE ADMINISTRATION FOR MARKET REGULATION",
+    "allowed_variants": ["SAMR CHINA"]
+  },
+  {
+    "token": "工商行政管理局",
+    "language_code": "zh",
+    "country_code": "CN",
+    "field_type": "issuing_authority",
+    "romanised_form": "ADMINISTRATION FOR INDUSTRY AND COMMERCE",
+    "allowed_variants": ["AIC CHINA", "SAIC CHINA"]
+  }
+]
