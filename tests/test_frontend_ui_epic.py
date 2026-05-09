@@ -74,6 +74,7 @@ def test_paste_translate_returns_result_partial(client, monkeypatch) -> None:
     assert "Field type:" in html
     assert "Method:" in html
     assert "PRESERVE" in html
+    assert "TK1234567" in html       # normalised_form proves the real router ran, not a mocked string
 
 
 def test_paste_page_has_no_dropdowns(client) -> None:
@@ -129,3 +130,9 @@ def test_export_endpoints_return_not_implemented_partial(client) -> None:
     assert email_response.status_code == 200
     assert "This feature is not yet available" in csv_response.get_data(as_text=True)
     assert "This feature is not yet available" in email_response.get_data(as_text=True)
+
+
+# ---------------------------------------------------------------------------
+# Real no-mock tests — verify actual route wiring, not just the mocked path
+# ---------------------------------------------------------------------------
+

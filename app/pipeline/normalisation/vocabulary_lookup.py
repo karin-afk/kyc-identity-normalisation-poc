@@ -16,6 +16,7 @@ VOCABULARY_FIELDS: set[str] = {
 	"capital_change_type",
 	"industry_code",
 	"document_type",
+	"issuing_authority",
 }
 
 ALLOWED_STATUS_VALUES = {
@@ -86,6 +87,8 @@ class VocabularyLookupService:
 			result = self.lookup_industry_code(text)
 		elif field_type == "document_type":
 			result = self.lookup_document_type(text, language)
+		elif field_type == "issuing_authority":
+			result = self.lookup_issuing_authority(text, language, country)
 
 		if result is None:
 			log_event(
@@ -182,6 +185,31 @@ class VocabularyLookupService:
 	def lookup_document_type(self, text: str, language: str) -> dict | None:
 		"""Case-insensitive document-type label lookup."""
 		return self._lookup_language_table(self.document_types, text, language, fallback="en")
+
+	def lookup_issuing_authority(self, text: str, language: str, country: str) -> dict | None:
+		"""Lookup issuing authority by country with any-country fallback."""
+		needle = _norm(text)
+		if not needle:
+			return None
+
+		candidate_countries = [country.upper()] if country else list(self.issuing_authorities.keys())
+
+		for cc in candidate_countries:
+			table = self.issuing_authorities.get(cc)
+			if not isinstance(table, dict):
+				continue
+			if needle in table:
+				return self._build_result(table[needle])
+
+		# No country hint — scan all countries
+		if country:
+			for cc, table in self.issuing_authorities.items():
+				if not isinstance(table, dict):
+					continue
+				if needle in table:
+					return self._build_result(table[needle])
+
+		return None
 
 	def lookup_share_class(self, text: str, language: str) -> dict | None:
 		"""Case-insensitive share-class lookup."""

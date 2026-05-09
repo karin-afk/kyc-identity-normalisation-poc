@@ -79,3 +79,51 @@ def test_document_type_values_are_canonical():
             continue
         for _, canonical in mapping.items():
             assert canonical in ALLOWED_DOCUMENT_TYPE_LABELS
+
+
+def test_lookup_issuing_authority_japanese_with_country():
+    svc = _service()
+    result = svc.lookup("issuing_authority", "東京都公安委員会", language="ja", country="JP")
+    assert result is not None
+    assert result["processing_method"] == "VOCABULARY"
+    assert result["normalised_form"] == "TOKYO METROPOLITAN PUBLIC SAFETY COMMISSION"
+
+
+def test_lookup_issuing_authority_japanese_no_country():
+    """Should still resolve when no country is provided via any-country scan."""
+    svc = _service()
+    result = svc.lookup("issuing_authority", "東京都公安委員会", language="ja", country="")
+    assert result is not None
+    assert result["normalised_form"] == "TOKYO METROPOLITAN PUBLIC SAFETY COMMISSION"
+
+
+def test_lookup_issuing_authority_arabic_uae():
+    svc = _service()
+    result = svc.lookup("issuing_authority", "وزارة الداخلية", language="ar", country="AE")
+    assert result is not None
+    assert result["normalised_form"] == "MINISTRY OF INTERIOR"
+
+
+def test_lookup_issuing_authority_unknown_returns_none():
+    svc = _service()
+    result = svc.lookup("issuing_authority", "Unknown Fictional Authority XYZ", language="en", country="GB")
+    assert result is None
+
+
+def test_router_routes_issuing_authority_via_strategy_c():
+    """End-to-end: router should resolve a known Japanese issuing authority via Strategy C.
+    Requires an app context because _try_strategy_c() uses current_app."""
+    from app import create_app
+    from app.pipeline.normalisation.router import route_field
+
+    app = create_app("testing")
+    with app.app_context():
+        result = route_field({
+            "original_text": "東京都公安委員会",
+            "field_type": "issuing_authority",
+            "language": "ja",
+            "country": "JP",
+        })
+    assert result["processing_method"] == "VOCABULARY"
+    assert result["normalised_form"] == "TOKYO METROPOLITAN PUBLIC SAFETY COMMISSION"
+    assert result["review_required"] is False
