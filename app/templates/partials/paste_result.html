@@ -8,7 +8,9 @@
   {% set language = result.language if result.language is defined else result.get('language', '-') %}
   {% set review_required = result.review_required if result.review_required is defined else result.get('review_required', False) %}
   {% set detected_field_type = detected_field_type if detected_field_type is defined else result.get('detected_field_type') %}
-  {% set field_type_confidence = field_type_confidence if field_type_confidence is defined else result.get('field_type_confidence') %}
+  {% set detected_language = result.get('detected_language') %}
+  {% set detected_language_label = result.get('detected_language_label') %}
+  {% set classification_confidence = result.get('classification_confidence') %}
 
   <div class="kv-row">
     <div class="section-label">Original</div>
@@ -27,10 +29,22 @@
   </div>
   {% endif %}
 
-  <div class="meta">Method: {{ method }} · Confidence: {{ (confidence * 100)|round|int if confidence is number and confidence <= 1 else confidence }}{% if confidence is number and confidence <= 1 %}%{% endif %} · Language: {{ language }}</div>
+  {% if detected_language %}
+  <div class="meta">Language: {{ detected_language_label if detected_language_label else detected_language }} ({{ detected_language }})</div>
+  {% endif %}
 
   {% if detected_field_type %}
-  <div class="meta">Field type auto-detected as: {{ detected_field_type|replace('_', ' ')|title }} ({{ (field_type_confidence * 100)|round|int }}% confidence) - resubmit with a specific type selected if incorrect.</div>
+  <div class="meta">Field type: {{ detected_field_type|replace('_', ' ')|title }}</div>
+  {% endif %}
+
+  <div class="meta">Method: {{ method }} · Confidence: {{ (confidence * 100)|round|int if confidence is number and confidence <= 1 else confidence }}{% if confidence is number and confidence <= 1 %}%{% endif %}</div>
+
+  {% if classification_confidence is number %}
+  <div class="meta">Classification confidence: {{ (classification_confidence * 100)|round|int }}%</div>
+  {% endif %}
+
+  {% if not detected_language %}
+  <div class="meta">Language: {{ language }}</div>
   {% endif %}
 
   {% if review_required %}

@@ -59,25 +59,45 @@ def test_upload_process_returns_not_implemented_partial(client) -> None:
     assert "This feature is not yet available" in html
 
 
-def test_paste_translate_returns_result_partial(client) -> None:
+def test_paste_translate_returns_result_partial(client, monkeypatch) -> None:
+    from app.pipeline.normalisation import field_type_detector
+
+    monkeypatch.setattr(field_type_detector, "detect_field_type", lambda text, language="": ("passport_no", 0.93, "en"))
+
     response = client.post(
         "/paste/translate",
-        data={"original_text": "TK1234567", "field_type": "passport_no", "language": "en"},
+        data={"original_text": "TK1234567"},
     )
     html = response.get_data(as_text=True)
     assert response.status_code == 200
+    assert "Language:" in html
+    assert "Field type:" in html
     assert "Method:" in html
     assert "PRESERVE" in html
 
 
-def test_paste_translate_auto_detect_email(client) -> None:
+def test_paste_page_has_no_dropdowns(client) -> None:
+    html = client.get("/paste/").get_data(as_text=True)
+    assert "id=\"field-type\"" not in html
+    assert "id=\"paste-language\"" not in html
+
+
+def test_paste_translate_missing_key_degrades_gracefully(client, monkeypatch) -> None:
+    from app.pipeline.normalisation import field_type_detector
+
+    monkeypatch.setattr(
+        field_type_detector,
+        "detect_field_type",
+        lambda text, language="": ("unstructured_text", 0.5, "en"),
+    )
+
     response = client.post(
         "/paste/translate",
-        data={"original_text": "john.doe@example.com", "field_type": "auto", "language": ""},
+        data={"original_text": "random unknown content"},
     )
     html = response.get_data(as_text=True)
     assert response.status_code == 200
-    assert "Field type auto-detected as:" in html
+    assert "Awaiting native speaker review" in html
 
 
 def test_review_detail_returns_not_implemented_partial(client) -> None:
