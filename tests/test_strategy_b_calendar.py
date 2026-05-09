@@ -162,3 +162,35 @@ def test_returns_none_for_non_numeric_field():
 
 def test_returns_none_for_preserve_field():
     assert apply_numeric_rules("passport_no", "1234") is None
+
+
+# ---------------------------------------------------------------------------
+# Content-driven path: unstructured_text + pure non-ASCII digit glyphs
+# ---------------------------------------------------------------------------
+
+
+def test_arabic_indic_digits_in_unstructured_text_converts():
+    """Arabic-Indic digits pasted as unstructured_text must convert to ASCII, preserving separators."""
+    result = apply_numeric_rules("unstructured_text", "\u0660,\u0661,\u0662,\u0663,\u0664,\u0665,\u0666,\u0667,\u0668,\u0669", language="ar")
+    assert result is not None
+    assert result["normalised_form"] == "0,1,2,3,4,5,6,7,8,9"
+    assert result["processing_method"] == "NUMERIC"
+
+
+def test_extended_arabic_indic_digits_in_unstructured_text_converts():
+    """Extended Arabic-Indic (Persian) digits must also convert."""
+    result = apply_numeric_rules("unstructured_text", "\u06f1\u06f2\u06f3", language="fa")
+    assert result is not None
+    assert result["normalised_form"] == "123"
+
+
+def test_arabic_text_in_unstructured_text_does_not_convert():
+    """Non-digit Arabic text must NOT be intercepted by the numeric path."""
+    result = apply_numeric_rules("unstructured_text", "\u0645\u062d\u0645\u062f \u0639\u0644\u064a", language="ar")
+    assert result is None
+
+
+def test_preserve_field_with_arabic_indic_digits_not_intercepted():
+    """id_no with Arabic-Indic digits must NOT be intercepted (PRESERVE takes priority via router)."""
+    result = apply_numeric_rules("id_no", "\u0661\u0662\u0663\u0664\u0665\u0666\u0667")
+    assert result is None
