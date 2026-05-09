@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
+import logging
 
 from openai import OpenAI
+
+logger = logging.getLogger(__name__)
 
 FIELD_TYPES = [
     "person_name",
@@ -113,5 +116,6 @@ def detect_field_type(text: str, language: str = "") -> tuple[str, float, str]:
             detected_language = "en"
 
         return field_type, confidence, detected_language
-    except Exception:
+    except Exception as e:
+        logger.error(f"Field type detection failed: {e}", exc_info=True)
         return "unstructured_text", 0.5, "en"

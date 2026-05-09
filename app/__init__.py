@@ -5,10 +5,14 @@ KYC Identity Normalisation - Flask application factory.
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 from flask import Flask, redirect, url_for
 
 from app.config import config
 from app.extensions import db, migrate
+
+# Load environment variables from .env file before anything else
+load_dotenv()
 
 
 def create_app(config_name: str | None = None) -> Flask:
@@ -30,6 +34,7 @@ def create_app(config_name: str | None = None) -> Flask:
 
     db.init_app(app)
     migrate.init_app(app, db)
+    _register_services(app)
 
     _register_blueprints(app)
     _register_cli(app)
@@ -58,6 +63,13 @@ def _register_cli(app: Flask) -> None:
     from app.cli.seed_repository import seed_repository_cmd
 
     app.cli.add_command(seed_repository_cmd)
+
+
+def _register_services(app: Flask) -> None:
+    from app.pipeline.normalisation.vocabulary_lookup import VocabularyLookupService
+
+    tables_dir = Path(app.root_path).parent / "data" / "lookup_tables"
+    app.vocab_service = VocabularyLookupService(tables_dir)  # type: ignore[attr-defined]
 
 
 def _register_context_processors(app: Flask) -> None:
