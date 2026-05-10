@@ -71,9 +71,14 @@ def _register_cli(app: Flask) -> None:
 
 def _register_services(app: Flask) -> None:
     from app.pipeline.normalisation.vocabulary_lookup import VocabularyLookupService
+    from app.pipeline.normalisation.geographic_lookup import GeographicLookupService
 
     tables_dir = Path(app.root_path).parent / "data" / "lookup_tables"
     app.vocab_service = VocabularyLookupService(tables_dir)  # type: ignore[attr-defined]
+
+    geonames_path = app.config.get("GEONAMES_DATA_PATH") or None
+    cache_dir = Path(app.root_path).parent / "data" / "geo_cache"
+    app.geo_service = GeographicLookupService(geonames_path=geonames_path, cache_dir=cache_dir)  # type: ignore[attr-defined]
 
 
 def _register_context_processors(app: Flask) -> None:
