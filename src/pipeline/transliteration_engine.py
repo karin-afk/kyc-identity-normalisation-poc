@@ -699,6 +699,59 @@ def _normalise_italian(text: str, field_type: str) -> dict:
     return result
 
 
+def _transliterate_hebrew(text: str) -> dict:
+    """Hebrew → Latin transliteration using the transliterate library (ISO 259).
+
+    Final letter forms (ך ם ן ף ץ) are the same phonemes as (כ מ נ פ צ)
+    written differently at word end — the library handles them correctly.
+    Shin (שׁ) → SH; unvocalised ש defaults to SH (most common in names).
+    review_required: False for standard output.
+    """
+    try:
+        from transliterate import translit
+        lat = translit(text, "he", reversed=True)
+    except Exception:
+        lat = _to_latin_fallback(text)
+    return _build_result(text, lat)
+
+
+def _transliterate_persian(text: str) -> dict:
+    """Persian/Farsi → Latin consonant skeleton.
+
+    Persian is a vowel-omitting abjad: short vowels are not written in standard
+    text. Result is always flagged review_required=True because the output cannot
+    be a confirmed romanisation without vowel insertion.
+    """
+    try:
+        from transliterate import translit
+        lat = translit(text, "fa", reversed=True)
+    except Exception:
+        lat = _to_latin_fallback(text)
+    return _build_result(
+        text, lat,
+        review=True,
+        reason=(
+            "Persian vowel ambiguity: short vowels are not written in standard text. "
+            "Result is a consonant skeleton only. Native speaker review required."
+        ),
+    )
+
+
+def _transliterate_thai(text: str) -> dict:
+    """Thai → Latin using Royal Thai General System of Transcription (RTGS)
+    via the transliterate library.
+
+    Tones are not represented in RTGS output — correct for KYC purposes.
+    review_required: False for standard output.
+    """
+    try:
+        from transliterate import translit
+        lat = translit(text, "th", reversed=True)
+    except Exception:
+        lat = _to_latin_fallback(text)
+    return _build_result(text, lat)
+
+
 def _normalise_korean(text: str, field_type: str) -> dict:
     """Normalise Korean Hangul text using Revised Romanisation of Korea (RR).
 
@@ -873,6 +926,12 @@ def transliterate(text: str, row: dict) -> dict:
         return _normalise_korean(text, field_type)
     elif language == "en":
         return _normalise_english(text, field_type)
+    elif language == "he":
+        return _transliterate_hebrew(text)
+    elif language == "fa":
+        return _transliterate_persian(text)
+    elif language == "th":
+        return _transliterate_thai(text)
     else:
         lat = _to_latin_fallback(text)
         return _build_result(

@@ -75,6 +75,11 @@ def route_field(row: dict) -> dict:
 		log_event("router_selected_strategy", {"strategy": "D", "method": result.get("processing_method")}, source="backend")
 		return result
 
+	result = _try_strategy_f(text, field_type, language, country)
+	if result:
+		log_event("router_selected_strategy", {"strategy": "F", "method": result.get("processing_method")}, source="backend")
+		return result
+
 	result = _try_strategy_a(text, field_type)
 	if result:
 		log_event("router_selected_strategy", {"strategy": "A", "method": result.get("processing_method")}, source="backend")
@@ -84,7 +89,6 @@ def route_field(row: dict) -> dict:
 		("B", "calendar_rules"),
 		("C", "vocabulary_lookup"),
 		("E", "repository_lookup"),
-		("F", "transliteration"),
 		("G", "character_map_normaliser"),
 		("H", "nmt_translator"),
 	):
@@ -195,6 +199,16 @@ def _try_strategy_d(text: str, field_type: str, language: str, country: str) -> 
 		return result
 	except Exception as exc:
 		log_event("strategy_d_error", {"field_type": field_type, "language": language, "error": str(exc)}, source="backend")
+		return None
+
+
+def _try_strategy_f(text: str, field_type: str, language: str,
+					country: str = "") -> dict | None:
+	"""Strategy F — Transliteration. Wraps src/pipeline/transliteration_engine."""
+	try:
+		from app.pipeline.normalisation.transliteration import apply_transliteration
+		return apply_transliteration(text, language, field_type, country)
+	except Exception:
 		return None
 
 
