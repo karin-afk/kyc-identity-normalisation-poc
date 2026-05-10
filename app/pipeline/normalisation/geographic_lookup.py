@@ -1,107 +1,707 @@
-﻿"""
-Strategy D — Geographic Lookup.
+"""
+Strategy D — Geographic Lookup v2 (GeoNames-backed).
 
-Resolves country names, nationality demonyms, and place names from
-authoritative reference data. All lookups are in-memory — no database
-queries, no API calls at request time.
+Resolves country names, city names, and nationality terms from authoritative
+GeoNames data. All lookups are in-memory after index build.
 
-Three indexes are built at startup:
-  1. Country index — maps country names in any script/language to English
-     name and ISO codes. Built from pycountry + babel.
-  2. City index — maps city and town names to English form and country.
-     Built from GeoNames full dataset if available, geonamescache otherwise.
-  3. Subdivision index — maps province, region, and prefecture names to
-     English form. Built from pycountry ISO 3166-2 subdivisions.
+Index build strategy:
+  1. Country data    — countryInfo.txt + pycountry fallback
+  2. Country aliases — babel localised territory names (all target languages)
+  3. City canonical  — cities15000.txt (places with population ≥ 15,000)
+  4. City aliases    — alternateNamesV2.txt filtered to cities15000 geoids
+  5. Admin1 regions  — admin1CodesASCII.txt
 
-Startup time is approximately 10–30 seconds on first run while indexes build.
-Indexes are held in memory for the lifetime of the process.
+First build: 30–90 seconds (738 MB alternateNamesV2.txt read).
+Subsequent starts: pickle cache loads in < 2 seconds.
 """
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import pickle
+import threading
 import unicodedata
 from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-_GEOGRAPHIC_FIELDS: frozenset[str] = frozenset(
-    ["nationality", "country", "country_of_residence", "place_of_birth", "city"]
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+
+# app/pipeline/normalisation/ → app/pipeline/ → app/ → project root
+_PROJECT_ROOT = Path(__file__).resolve().parents[3]
+_DATA_DIR = _PROJECT_ROOT / "data" / "geonames"
+_CACHE_FILE = _PROJECT_ROOT / "app" / "data" / "geo_cache" / "geo_index_v2_full.pkl"
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+TARGET_LANGUAGES: frozenset[str] = frozenset(
+    {
+        "ar", "be", "bg", "da", "de", "el", "en", "es", "fa",
+        "fr", "he", "it", "ja", "ko", "nl", "no", "pl", "pt",
+        "ru", "sv", "th", "tr", "uk", "zh",
+        "abbr",   # country/airport abbreviations
+        "iata",   # IATA airport codes (useful for city matching)
+        "",       # unlabelled entries (transliterations etc.)
+    }
 )
 
-_PROCESSING_METHOD = "GEOGRAPHIC"
-_CACHE_VERSION = "1"
+# Locales fed to babel for country name localisation
+_BABEL_LOCALES: list[str] = [
+    "ar", "zh", "zh_TW", "ja", "ko", "ru", "uk", "el",
+    "de", "fr", "es", "it", "tr", "he", "th", "pt", "nl",
+    "pl", "sv", "no", "da", "fa", "be", "bg",
+]
 
-# Common English aliases not in pycountry's primary name
-_COUNTRY_ALIASES: dict[str, str] = {
-    "russia": "RU",
-    "south korea": "KR",
-    "north korea": "KP",
-    "taiwan": "TW",
-    "iran": "IR",
-    "syria": "SY",
-    "bolivia": "BO",
-    "venezuela": "VE",
-    "moldova": "MD",
-    "tanzania": "TZ",
-    "vietnam": "VN",
-    "ivory coast": "CI",
-    "democratic republic of the congo": "CD",
-    "republic of the congo": "CG",
+NATIONALITY_FIELDS: frozenset[str] = frozenset(
+    {
+        "nationality",
+        "country_of_birth",
+        "country_of_residence",
+        "country_of_incorporation",
+        "country_of_registration",
+    }
+)
+
+ADDRESS_FIELDS: frozenset[str] = frozenset(
+    {
+        "address",
+        "registered_address",
+        "business_address",
+        "place_of_birth",
+        "city",
+        "region",
+    }
+)
+
+GEOGRAPHIC_FIELDS: frozenset[str] = NATIONALITY_FIELDS | ADDRESS_FIELDS
+
+# ---------------------------------------------------------------------------
+# Module-level singleton indexes
+# ---------------------------------------------------------------------------
+
+_ALIAS_INDEX: dict[str, dict] = {}
+"""normalised_text → {english_name, country_code, feature, [geonameid, admin1_code]}"""
+
+_CANONICAL_INDEX: dict[int, dict] = {}
+"""geonameid → {name_en, country_code, admin1_code, feature}"""
+
+_COUNTRY_BY_CODE: dict[str, dict] = {}
+"""ISO2 → {name, iso3, geonameid}"""
+
+_ADMIN1_INDEX: dict[str, str] = {}
+"""'CC.A1' → english_name  (e.g. 'JP.13' → 'Tokyo')"""
+
+_INDEX_BUILT = False
+_BUILD_LOCK = threading.Lock()
+
+# ---------------------------------------------------------------------------
+# Supplementary nationality adjective aliases
+#
+# GeoNames stores place *names*, not nationality adjectives/demonyms. Common
+# adjectival forms (Arabic: سعودي, Russian: саудовский, etc.) are not in
+# babel territory data either. This curated dict covers forms that appear
+# regularly in KYC nationality fields.  Key = NFC-lowercased adjective.
+# ---------------------------------------------------------------------------
+
+_SUPPLEMENTARY_NATIONALITY_ALIASES: dict[str, str] = {
+    # Arabic masculine adjective (nisba) forms
+    "سعودي": "SA",     # Saudi → Saudi Arabia
+    "ياباني": "JP",    # Japanese → Japan
+    "صيني": "CN",      # Chinese → China
+    "مصري": "EG",      # Egyptian → Egypt
+    "أمريكي": "US",    # American → United States
+    "بريطاني": "GB",   # British → United Kingdom
+    "فرنسي": "FR",     # French → France
+    "ألماني": "DE",    # German → Germany
+    "إيطالي": "IT",    # Italian → Italy
+    "إسباني": "ES",    # Spanish → Spain
+    "تركي": "TR",      # Turkish → Turkey
+    "هندي": "IN",      # Indian → India
+    "باكستاني": "PK",  # Pakistani → Pakistan
+    "إماراتي": "AE",   # Emirati → United Arab Emirates
+    "كويتي": "KW",     # Kuwaiti → Kuwait
+    "قطري": "QA",      # Qatari → Qatar
+    "بحريني": "BH",    # Bahraini → Bahrain
+    "عُماني": "OM",    # Omani → Oman
+    "عماني": "OM",     # (without hamza above ain) Omani → Oman
+    "أردني": "JO",     # Jordanian → Jordan
+    "لبناني": "LB",    # Lebanese → Lebanon
+    "سوري": "SY",      # Syrian → Syria
+    "عراقي": "IQ",     # Iraqi → Iraq
+    "إيراني": "IR",    # Iranian → Iran
+    "مغربي": "MA",     # Moroccan → Morocco
+    "تونسي": "TN",     # Tunisian → Tunisia
+    "جزائري": "DZ",    # Algerian → Algeria
+    "ليبي": "LY",      # Libyan → Libya
+    "يمني": "YE",      # Yemeni → Yemen
+    "سوداني": "SD",    # Sudanese → Sudan
+    "روسي": "RU",      # Russian → Russia (ar adjective)
+    "كوري": "KR",      # Korean → South Korea (ar adjective)
+    # Turkish adjectival forms (commonly omit country suffix)
+    "suudi": "SA",     # Saudi (tr)
+    "japon": "JP",     # Japanese (tr)
+    "çinli": "CN",     # Chinese (tr)
+    "alman": "DE",     # German (tr)
+    "fransız": "FR",   # French (tr)
+    "ingiliz": "GB",   # British (tr)
+    "amerikalı": "US", # American (tr)
+    "rus": "RU",       # Russian (tr)
+    "İranlı": "IR",    # Iranian (tr)
+    "iranlı": "IR",    # Iranian (tr, normalised)
 }
 
+# ---------------------------------------------------------------------------
+# Text normalisation
+# ---------------------------------------------------------------------------
 
-def _normalise_key(text: str) -> str:
-    """Lowercase + NFKD strip accents + collapse whitespace."""
-    nfkd = unicodedata.normalize("NFKD", text)
-    ascii_text = "".join(c for c in nfkd if not unicodedata.combining(c))
-    return " ".join(ascii_text.lower().split())
+
+def _normalise_text(text: str) -> str:
+    """
+    Lowercase + NFC unicode normalisation.
+
+    NFC is used (not NFKD) to preserve meaningful diacritics and non-Latin
+    scripts (Arabic, CJK, Cyrillic). Trailing/leading whitespace is stripped.
+    """
+    return unicodedata.normalize("NFC", text.strip().lower())
+
+
+# ---------------------------------------------------------------------------
+# Index builders
+# ---------------------------------------------------------------------------
+
+
+def _build_country_data() -> dict[str, dict]:
+    """
+    Build ISO2 → {name, iso3, geonameid} from countryInfo.txt.
+    Falls back to pycountry for any missing entries.
+    """
+    result: dict[str, dict] = {}
+
+    country_info_path = _DATA_DIR / "countryInfo.txt"
+    if country_info_path.exists() and country_info_path.stat().st_size > 100:
+        try:
+            with country_info_path.open(encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    if line.startswith("#"):
+                        continue
+                    parts = line.rstrip("\n").split("\t")
+                    if len(parts) < 17:
+                        continue
+                    iso2 = parts[0].strip()
+                    iso3 = parts[1].strip()
+                    name = parts[4].strip()
+                    try:
+                        geonameid = int(parts[16].strip())
+                    except (ValueError, IndexError):
+                        geonameid = 0
+                    if iso2 and name:
+                        result[iso2] = {"name": name, "iso3": iso3, "geonameid": geonameid}
+            log.info("countryInfo.txt: %d countries loaded", len(result))
+        except Exception as exc:
+            log.warning("countryInfo.txt parse error: %s", exc)
+
+    # Fill gaps (or entire dict if file missing/empty) from pycountry
+    try:
+        import pycountry
+
+        for c in pycountry.countries:
+            if c.alpha_2 not in result:
+                result[c.alpha_2] = {
+                    "name": c.name,
+                    "iso3": getattr(c, "alpha_3", ""),
+                    "geonameid": 0,
+                }
+        log.info("Country data after pycountry fill: %d entries", len(result))
+    except ImportError:
+        log.warning("pycountry not available — country data may be incomplete")
+
+    return result
+
+
+def _build_index() -> tuple[dict, dict, dict, dict]:
+    """
+    Build all four indexes from GeoNames data files.
+
+    Returns:
+        (alias_index, canonical_index, country_by_code, admin1_index)
+    """
+    log.info("Building geographic index from GeoNames data — this may take 30–90 seconds...")
+
+    country_by_code = _build_country_data()
+    country_geoid_set: set[int] = {
+        v["geonameid"] for v in country_by_code.values() if v.get("geonameid")
+    }
+
+    # ── Step 1: Canonical city index from cities15000.txt ──────────────────
+    canonical_index: dict[int, dict] = {}
+    cities_path = _DATA_DIR / "cities15000.txt"
+    if cities_path.exists():
+        try:
+            with cities_path.open(encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    parts = line.rstrip("\n").split("\t")
+                    if len(parts) < 15:
+                        continue
+                    try:
+                        geonameid = int(parts[0])
+                    except ValueError:
+                        continue
+                    ascii_name = parts[2].strip()
+                    country_code = parts[8].strip()
+                    admin1_code = parts[10].strip()
+                    if ascii_name:
+                        canonical_index[geonameid] = {
+                            "name_en": ascii_name,
+                            "country_code": country_code,
+                            "admin1_code": admin1_code,
+                            "feature": "city",
+                        }
+            log.info("Canonical city index from cities15000.txt: %d entries", len(canonical_index))
+        except Exception as exc:
+            log.error("cities15000.txt parse error: %s", exc)
+    else:
+        log.warning("cities15000.txt not found at %s — city lookups will be empty", cities_path)
+
+    city_geoid_set: set[int] = set(canonical_index.keys())
+
+    # ── Step 2: Country alias index from babel ─────────────────────────────
+    alias_index: dict[str, dict] = {}
+
+    try:
+        import pycountry
+        from babel import Locale
+        from babel.core import UnknownLocaleError
+
+        for c in pycountry.countries:
+            iso2 = c.alpha_2
+            canonical_name = country_by_code.get(iso2, {}).get("name") or c.name
+            entry = {
+                "english_name": canonical_name,
+                "country_code": iso2,
+                "feature": "country",
+            }
+            # English name variants
+            for form in (
+                c.name,
+                getattr(c, "common_name", None),
+                getattr(c, "official_name", None),
+                iso2,
+                getattr(c, "alpha_3", None),
+            ):
+                if form:
+                    alias_index[_normalise_text(form)] = entry
+
+            # Babel localised forms
+            for loc_str in _BABEL_LOCALES:
+                try:
+                    loc = Locale.parse(loc_str)
+                    localised = loc.territories.get(iso2)
+                    if localised:
+                        alias_index[_normalise_text(localised)] = entry
+                except (UnknownLocaleError, ValueError, KeyError):
+                    pass
+                except Exception:
+                    pass
+
+        log.info("Country alias index from babel: %d entries", len(alias_index))
+    except ImportError as exc:
+        log.warning("babel/pycountry not available for country index: %s", exc)
+
+    # ── Supplementary nationality adjective aliases (demonym/adjectival forms) ─
+    try:
+        import pycountry
+
+        supp_count = 0
+        for raw_text, iso2 in _SUPPLEMENTARY_NATIONALITY_ALIASES.items():
+            key = _normalise_text(raw_text)
+            if key and key not in alias_index:
+                c = pycountry.countries.get(alpha_2=iso2)
+                canonical_name = country_by_code.get(iso2, {}).get("name") or (c.name if c else iso2)
+                alias_index[key] = {
+                    "english_name": canonical_name,
+                    "country_code": iso2,
+                    "feature": "country",
+                }
+                supp_count += 1
+        log.info("Supplementary nationality alias entries added: %d", supp_count)
+    except ImportError:
+        pass
+
+    # Index canonical city English names (so "Tokyo", "Moscow" etc. resolve directly)
+    for geonameid, record in canonical_index.items():
+        key = _normalise_text(record["name_en"])
+        if key and key not in alias_index:
+            alias_index[key] = {
+                "english_name": record["name_en"],
+                "country_code": record["country_code"],
+                "feature": "city",
+                "geonameid": geonameid,
+                "admin1_code": record.get("admin1_code", ""),
+            }
+
+    # ── Step 3: alternateNamesV2.txt — multilingual city aliases ──────────
+    alternate_path = _DATA_DIR / "alternateNamesV2.txt"
+    known_geoids = city_geoid_set | country_geoid_set
+    if alternate_path.exists() and known_geoids:
+        # Pre-build country geoid → ISO2 reverse map for fast lookup
+        geoid_to_iso2: dict[int, str] = {
+            v["geonameid"]: k for k, v in country_by_code.items() if v.get("geonameid")
+        }
+        try:
+            new_alias_count = 0
+            with alternate_path.open(encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    parts = line.rstrip("\n").split("\t")
+                    if len(parts) < 4:
+                        continue
+                    try:
+                        geonameid = int(parts[1])
+                    except ValueError:
+                        continue
+
+                    if geonameid not in known_geoids:
+                        continue
+
+                    isolanguage = parts[2]
+                    if isolanguage not in TARGET_LANGUAGES:
+                        continue
+
+                    alternate_name = parts[3].strip()
+                    if not alternate_name:
+                        continue
+
+                    key = _normalise_text(alternate_name)
+                    if not key:
+                        continue
+
+                    # Build entry from canonical source
+                    if geonameid in canonical_index:
+                        record = canonical_index[geonameid]
+                        entry = {
+                            "english_name": record["name_en"],
+                            "country_code": record.get("country_code", ""),
+                            "feature": "city",
+                            "geonameid": geonameid,
+                            "admin1_code": record.get("admin1_code", ""),
+                        }
+                    elif geonameid in geoid_to_iso2:
+                        iso2 = geoid_to_iso2[geonameid]
+                        entry = {
+                            "english_name": country_by_code[iso2]["name"],
+                            "country_code": iso2,
+                            "feature": "country",
+                        }
+                    else:
+                        continue
+
+                    if key not in alias_index:
+                        alias_index[key] = entry
+                        new_alias_count += 1
+
+            log.info(
+                "alternateNamesV2.txt: +%d new aliases (total alias index: %d entries)",
+                new_alias_count,
+                len(alias_index),
+            )
+        except Exception as exc:
+            log.error("alternateNamesV2.txt parse error: %s", exc)
+    elif not alternate_path.exists():
+        log.warning(
+            "alternateNamesV2.txt not found at %s — multilingual city aliases unavailable",
+            alternate_path,
+        )
+
+    # ── Step 4: admin1CodesASCII.txt ──────────────────────────────────────
+    admin1_index: dict[str, str] = {}
+    admin1_path = _DATA_DIR / "admin1CodesASCII.txt"
+    if admin1_path.exists():
+        try:
+            with admin1_path.open(encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    parts = line.rstrip("\n").split("\t")
+                    if len(parts) < 2:
+                        continue
+                    code = parts[0].strip()   # e.g. "JP.13"
+                    name = parts[1].strip()
+                    if code and name:
+                        admin1_index[code] = name
+            log.info("Admin1 index: %d entries", len(admin1_index))
+        except Exception as exc:
+            log.warning("admin1CodesASCII.txt parse error: %s", exc)
+
+    log.info(
+        "Geographic index ready: %d aliases, %d canonical city entries, %d countries, %d admin1 regions",
+        len(alias_index),
+        len(canonical_index),
+        len(country_by_code),
+        len(admin1_index),
+    )
+    return alias_index, canonical_index, country_by_code, admin1_index
+
+
+def _load_or_build_index() -> tuple[dict, dict, dict, dict]:
+    """Load from pickle if fresh, otherwise build from source files and cache."""
+    source_files = [
+        _DATA_DIR / "cities15000.txt",
+        _DATA_DIR / "alternateNamesV2.txt",
+        _DATA_DIR / "countryInfo.txt",
+        _DATA_DIR / "admin1CodesASCII.txt",
+    ]
+
+    if _CACHE_FILE.exists():
+        try:
+            cache_mtime = _CACHE_FILE.stat().st_mtime
+            all_fresh = all(
+                not p.exists() or cache_mtime > p.stat().st_mtime
+                for p in source_files
+            )
+            if all_fresh:
+                with _CACHE_FILE.open("rb") as f:
+                    data = pickle.load(f)  # noqa: S301 — written by this process only
+                if isinstance(data, tuple) and len(data) == 4:
+                    log.info(
+                        "Geographic index loaded from cache: %d aliases, %d canonical entries",
+                        len(data[0]),
+                        len(data[1]),
+                    )
+                    return data  # type: ignore[return-value]
+                log.warning("Cache format mismatch — rebuilding")
+        except Exception as exc:
+            log.warning("Cache load failed (%s) — rebuilding", exc)
+
+    result = _build_index()
+    try:
+        _CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with _CACHE_FILE.open("wb") as f:
+            pickle.dump(result, f, protocol=pickle.HIGHEST_PROTOCOL)
+        log.info("Geographic index cached to %s", _CACHE_FILE)
+    except Exception as exc:
+        log.warning("Cache save failed: %s", exc)
+
+    return result
+
+
+def _ensure_index() -> None:
+    """Build/load the geographic index exactly once. Thread-safe double-check locking."""
+    global _INDEX_BUILT, _ALIAS_INDEX, _CANONICAL_INDEX, _COUNTRY_BY_CODE, _ADMIN1_INDEX
+    if _INDEX_BUILT:
+        return
+    with _BUILD_LOCK:
+        if _INDEX_BUILT:  # double-check after acquiring lock
+            return
+        _ALIAS_INDEX, _CANONICAL_INDEX, _COUNTRY_BY_CODE, _ADMIN1_INDEX = (
+            _load_or_build_index()
+        )
+        _INDEX_BUILT = True
+
+
+# ---------------------------------------------------------------------------
+# Demonym resolver
+# ---------------------------------------------------------------------------
+
+
+def _resolve_demonym_to_country(english_name: str, country_code: str) -> str | None:
+    """
+    Convert a demonym or adjectival English name to the canonical country name.
+
+    Uses the ISO2 country_code from the GeoNames record when available
+    (most reliable), then falls back to pycountry fuzzy search.
+
+    Examples:
+        "GERMAN"   + "DE" → "GERMANY"
+        "JAPANESE" + "JP" → "JAPAN"
+        "SAUDI"    + "SA" → "SAUDI ARABIA"
+    """
+    # Primary: use country_code from the GeoNames record (ISO2 → pycountry)
+    if country_code and len(country_code) == 2:
+        try:
+            import pycountry
+
+            c = pycountry.countries.get(alpha_2=country_code.upper())
+            if c:
+                return c.name.upper()
+        except Exception:
+            pass
+
+        # Also check COUNTRY_BY_CODE (from countryInfo.txt)
+        entry = _COUNTRY_BY_CODE.get(country_code.upper())
+        if entry:
+            return entry["name"].upper()
+
+    # Fallback: pycountry fuzzy match on the English name
+    try:
+        import pycountry
+
+        results = pycountry.countries.search_fuzzy(english_name)
+        if results:
+            return results[0].name.upper()
+    except Exception:
+        pass
+
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Result builder
+# ---------------------------------------------------------------------------
+
+
+def _build_result(original: str, normalised: str, confidence: float) -> dict:
+    return {
+        "original_text": original,
+        "normalised_form": normalised,
+        "allowed_variants": [],
+        "processing_method": "GEOGRAPHIC",
+        "confidence": confidence,
+        "review_required": confidence < 0.85,
+        "review_reason": (
+            None
+            if confidence >= 0.85
+            else "Low confidence geographic match — verify"
+        ),
+        "should_use_in_screening": True,
+        "latin_transliteration": None,
+        "analyst_english_rendering": normalised,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Partial match (address fields only)
+# ---------------------------------------------------------------------------
+
+
+def _partial_match(key: str) -> dict | None:
+    """Prefix scan of alias index. Only called for address-type lookups."""
+    for k, v in _ALIAS_INDEX.items():
+        if k and (key.startswith(k) or k.startswith(key)):
+            return v
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+
+def lookup_geographic(
+    text: str,
+    field_type: str,
+    language: str = "",
+    country: str = "",
+) -> dict | None:
+    """
+    Look up a geographic term and return its canonical English form.
+
+    Args:
+        text:       The raw input text (country name, city, nationality term).
+        field_type: Classifier-assigned field type (must be in GEOGRAPHIC_FIELDS).
+        language:   BCP-47 language code hint from the GPT classifier.
+        country:    Country context hint (ISO2 or English name).
+
+    Returns:
+        Normalisation result dict, or None if no match found.
+
+    Lookup order:
+        1. Exact match in ALIAS_INDEX (normalised key)
+        2. For nationality fields: resolve to canonical country name via pycountry
+        3. For address fields with no exact match: prefix scan (confidence 0.75)
+    """
+    if not text or field_type not in GEOGRAPHIC_FIELDS:
+        return None
+
+    _ensure_index()
+
+    normalised = _normalise_text(text)
+    if not normalised:
+        return None
+
+    # Step 1: exact alias lookup
+    match = _ALIAS_INDEX.get(normalised)
+    if match:
+        english_name = match["english_name"]
+        confidence = 0.92
+
+        # Step 2: for nationality fields, resolve via pycountry to canonical country name
+        # This converts demonyms (GERMAN → GERMANY) and ensures consistent output.
+        if field_type in NATIONALITY_FIELDS:
+            resolved = _resolve_demonym_to_country(english_name, match.get("country_code", ""))
+            if resolved:
+                english_name = resolved
+                confidence = 0.88
+
+        return _build_result(text, english_name.upper(), confidence)
+
+    # Step 3: for address fields, try prefix scan
+    if field_type in ADDRESS_FIELDS and len(normalised) > 5:
+        partial = _partial_match(normalised)
+        if partial:
+            return _build_result(text, partial["english_name"].upper(), 0.75)
+
+    return None
+
+
+def validate_hierarchy(city: str, region: str, country: str) -> tuple[bool, str | None]:
+    """
+    Validate that a city belongs to the stated region and country.
+
+    Returns:
+        (True, None)           — valid or cannot be checked
+        (False, reason_str)    — mismatch detected
+
+    Example:
+        validate_hierarchy("Tokyo", "Osaka", "Japan") →
+        (False, "Tokyo is in Tokyo, not Osaka")
+    """
+    _ensure_index()
+
+    city_key = _normalise_text(city)
+    city_match = _ALIAS_INDEX.get(city_key)
+    if not city_match or city_match.get("feature") != "city":
+        return (True, None)  # cannot validate — pass through
+
+    record_iso2 = city_match.get("country_code", "")
+    record_country = _COUNTRY_BY_CODE.get(record_iso2, {})
+    record_country_name = record_country.get("name", record_iso2).upper()
+
+    if country.upper() not in (record_country_name, record_iso2.upper()):
+        return (False, f"{city} is in {record_country_name}, not {country}")
+
+    geonameid = city_match.get("geonameid")
+    record = _CANONICAL_INDEX.get(geonameid) if geonameid else None
+    if record:
+        admin1_code = record.get("admin1_code", "")
+        admin1_key = f"{record_iso2}.{admin1_code}"
+        admin1_english = _ADMIN1_INDEX.get(admin1_key, "")
+        if admin1_english and region.upper() not in admin1_english.upper():
+            return (False, f"{city} is in {admin1_english}, not {region}")
+
+    return (True, None)
+
+
+# ---------------------------------------------------------------------------
+# Legacy shim — kept so app/__init__.py works without changes
+# ---------------------------------------------------------------------------
 
 
 class GeographicLookupService:
-    """In-memory geographic normalisation service (Strategy D)."""
+    """
+    Thin compatibility shim over the module-level lookup_geographic().
 
-    TARGET_LOCALES: list[str] = [
-        "ar", "zh", "zh_TW", "ja", "ko", "ru", "uk", "el",
-        "de", "fr", "es", "it", "tr", "he", "th", "pt", "nl",
-        "pl", "sv", "no", "da",
-    ]
+    The class-based approach has been replaced by a module-level singleton
+    pattern for thread-safety and simpler wiring. This shim exists only so
+    app/__init__.py (which calls GeographicLookupService()) continues to work
+    during the migration. It triggers _ensure_index() at construction time so
+    the cache is pre-warmed at app startup.
+    """
 
-    def __init__(self, geonames_path: str | None = None, cache_dir: Path | str | None = None) -> None:
-        self._country_index: dict[str, dict] = {}   # normalised_key → {name_en, iso2, iso3}
-        self._nationality_index: dict[str, dict] = {}  # normalised_key → {english_nationality, iso2}
-        self._city_index: dict[str, dict] = {}      # normalised_key → {name_en, country_code}
-        self._subdivision_index: dict[str, dict] = {}  # normalised_key → {name_en, country_code, type}
-        self._iso2_to_nationality: dict[str, str] = {}
-
-        cache_file = self._resolve_cache_file(geonames_path, cache_dir)
-        if cache_file.exists():
-            try:
-                self._load_from_cache(cache_file)
-                return
-            except Exception as exc:
-                log.warning("Cache load failed (%s) — rebuilding indexes", exc)
-                self._country_index = {}
-                self._nationality_index = {}
-                self._city_index = {}
-                self._subdivision_index = {}
-                self._iso2_to_nationality = {}
-
-        self._build_country_index()
-        self._build_nationality_index()
-        self._build_city_index(geonames_path)
-        self._build_subdivision_index()
-
-        try:
-            self._save_to_cache(cache_file)
-        except Exception as exc:
-            log.warning("Cache save failed: %s", exc)
-
-    # ------------------------------------------------------------------
-    # Public entry point
-    # ------------------------------------------------------------------
+    def __init__(self, geonames_path: str | None = None, cache_dir=None) -> None:
+        # Pre-warm the index at app startup (background thread would be nicer,
+        # but synchronous is simpler and avoids request-time latency on first hit).
+        _ensure_index()
 
     def lookup(
         self,
@@ -110,407 +710,4 @@ class GeographicLookupService:
         language: str = "",
         country: str = "",
     ) -> dict | None:
-        """Route to the correct sub-lookup based on field_type. Returns None if no match."""
-        if not text or field_type not in _GEOGRAPHIC_FIELDS:
-            return None
-
-        if field_type == "nationality":
-            return self.lookup_nationality(text, language)
-
-        if field_type in ("country", "country_of_residence"):
-            return self.lookup_country(text)
-
-        if field_type in ("place_of_birth", "city"):
-            return self.lookup_place(text)
-
-        return None
-
-    # ------------------------------------------------------------------
-    # Country lookup
-    # ------------------------------------------------------------------
-
-    def lookup_country(self, text: str) -> dict | None:
-        """Match a country name in any script/language to its English name and ISO codes."""
-        if not text:
-            return None
-
-        # 1. Exact normalised match
-        key = _normalise_key(text)
-        entry = self._country_index.get(key)
-        if entry:
-            return self._build_result(
-                entry["name_en"].upper(), 0.99,
-                iso2=entry["iso2"], iso3=entry["iso3"],
-            )
-
-        # 2. ASCII-only normalised match (already done above since _normalise_key strips accents)
-        # Try raw lowercase as fallback
-        raw_key = text.strip().lower()
-        entry = self._country_index.get(raw_key)
-        if entry:
-            return self._build_result(
-                entry["name_en"].upper(), 0.97,
-                iso2=entry["iso2"], iso3=entry["iso3"],
-            )
-
-        # 3. pycountry fuzzy search (confidence gate: only use if high confidence)
-        try:
-            import pycountry
-            matches = pycountry.countries.search_fuzzy(text)
-            if matches:
-                m = matches[0]
-                return self._build_result(
-                    m.name.upper(), 0.90,
-                    iso2=m.alpha_2, iso3=m.alpha_3,
-                )
-        except Exception:
-            pass
-
-        return None
-
-    # ------------------------------------------------------------------
-    # Nationality lookup
-    # ------------------------------------------------------------------
-
-    def lookup_nationality(self, text: str, language: str = "") -> dict | None:
-        """Resolve a nationality demonym in any language to its English form."""
-        if not text:
-            return None
-
-        key = _normalise_key(text)
-        entry = self._nationality_index.get(key)
-        if entry:
-            return self._build_result(
-                entry["english_nationality"].upper(), 0.95,
-                iso2=entry["iso2"],
-            )
-
-        # Fallback: treat input as country name and derive nationality
-        country_result = self.lookup_country(text)
-        if country_result:
-            iso2 = country_result.get("iso2", "")
-            nat_entry = self._iso2_to_nationality.get(iso2)
-            if nat_entry:
-                return self._build_result(
-                    nat_entry.upper(), 0.88,
-                    iso2=iso2,
-                )
-
-        return None
-
-    # ------------------------------------------------------------------
-    # Place name lookup
-    # ------------------------------------------------------------------
-
-    def lookup_place(self, text: str) -> dict | None:
-        """Match a city/town/village name to its English form and country."""
-        if not text:
-            return None
-
-        key = _normalise_key(text)
-
-        # 1. GeoNames / geonamescache city index
-        entry = self._city_index.get(key)
-        if entry:
-            return self._build_result(
-                entry["name_en"].upper(), 0.95,
-                country_code=entry["country_code"],
-            )
-
-        # 2. Subdivision index (prefecture, province, state)
-        entry = self._subdivision_index.get(key)
-        if entry:
-            return self._build_result(
-                entry["name_en"].upper(), 0.90,
-                country_code=entry["country_code"],
-                subdivision_type=entry.get("subdivision_type"),
-            )
-
-        return None
-
-    # ------------------------------------------------------------------
-    # Index builders
-    # ------------------------------------------------------------------
-
-    def _build_country_index(self) -> None:
-        """Index country names from pycountry + babel across all TARGET_LOCALES."""
-        import pycountry
-        try:
-            from babel import Locale
-            from babel.core import UnknownLocaleError
-        except ImportError:
-            Locale = None
-            UnknownLocaleError = Exception
-
-        self._iso2_to_nationality: dict[str, str] = {}
-
-        for country in pycountry.countries:
-            iso2 = country.alpha_2
-            iso3 = country.alpha_3
-            name_en = country.name
-
-            entry = {"name_en": name_en, "iso2": iso2, "iso3": iso3}
-
-            # Index English primary name and common name
-            self._country_index[_normalise_key(name_en)] = entry
-            if hasattr(country, "common_name") and country.common_name:
-                self._country_index[_normalise_key(country.common_name)] = entry
-            if hasattr(country, "official_name") and country.official_name:
-                self._country_index[_normalise_key(country.official_name)] = entry
-
-            # Index babel localised names
-            if Locale is not None:
-                for locale_str in self.TARGET_LOCALES:
-                    try:
-                        locale = Locale.parse(locale_str)
-                        localised = locale.territories.get(iso2)
-                        if localised:
-                            self._country_index[_normalise_key(localised)] = entry
-                    except (UnknownLocaleError, ValueError, KeyError):
-                        pass
-                    except Exception as exc:
-                        log.warning("babel error for %s/%s: %s", locale_str, iso2, exc)
-
-        # Hard-code common English aliases
-        for alias, iso2 in _COUNTRY_ALIASES.items():
-            try:
-                import pycountry
-                c = pycountry.countries.get(alpha_2=iso2)
-                if c:
-                    self._country_index[alias] = {
-                        "name_en": c.name, "iso2": c.alpha_2, "iso3": c.alpha_3
-                    }
-            except Exception:
-                pass
-
-        log.info("Country index built: %d entries", len(self._country_index))
-
-    def _build_nationality_index(self) -> None:
-        """Build nationality demonym index using countryinfo."""
-        try:
-            from countryinfo import CountryInfo
-            import pycountry
-        except ImportError:
-            log.warning("countryinfo not installed — nationality index will be empty")
-            return
-
-        for country in pycountry.countries:
-            iso2 = country.alpha_2
-            try:
-                info = CountryInfo(iso2)
-                demonym = info.demonym()
-                if demonym:
-                    self._iso2_to_nationality[iso2] = demonym
-                    key = _normalise_key(demonym)
-                    self._nationality_index[key] = {
-                        "english_nationality": demonym,
-                        "iso2": iso2,
-                    }
-            except Exception:
-                pass
-
-        log.info("Nationality index built: %d entries", len(self._nationality_index))
-
-    def _build_city_index(self, geonames_path: str | None) -> None:
-        """Build city/place index from GeoNames file or geonamescache fallback."""
-        path = Path(geonames_path) if geonames_path else None
-
-        if path and path.exists():
-            self._load_geonames_file(path)
-        else:
-            if geonames_path:
-                log.warning(
-                    "GeoNames file not found at %s. Falling back to geonamescache "
-                    "(~25,000 cities). Place-of-birth lookups for small towns and "
-                    "villages will not resolve automatically.", geonames_path
-                )
-            else:
-                log.info("No GeoNames path provided. Using geonamescache fallback.")
-            self._load_geonamescache()
-
-    def _load_geonames_file(self, path: Path) -> None:
-        """Parse GeoNames allCountries.txt (tab-separated, 19 columns)."""
-        count = 0
-        try:
-            with path.open(encoding="utf-8", errors="replace") as fh:
-                for line in fh:
-                    parts = line.rstrip("\n").split("\t")
-                    if len(parts) < 15:
-                        continue
-                    name = parts[1]
-                    ascii_name = parts[2]
-                    alternate_names_raw = parts[3]
-                    country_code = parts[8]
-                    try:
-                        population = int(parts[14])
-                    except (ValueError, IndexError):
-                        population = 0
-
-                    if not name or not ascii_name or population <= 0:
-                        continue
-
-                    entry = {"name_en": ascii_name, "country_code": country_code}
-
-                    for candidate in [name, ascii_name]:
-                        k = _normalise_key(candidate)
-                        if k:
-                            self._city_index[k] = entry
-
-                    if alternate_names_raw:
-                        for alt in alternate_names_raw.split(","):
-                            alt = alt.strip()
-                            if alt:
-                                k = _normalise_key(alt)
-                                if k and k not in self._city_index:
-                                    self._city_index[k] = entry
-
-                    count += 1
-
-            log.info("GeoNames city index built from file: %d places", count)
-        except Exception as exc:
-            log.error("Failed to load GeoNames file: %s — falling back to geonamescache", exc)
-            self._load_geonamescache()
-
-    def _load_geonamescache(self) -> None:
-        """Load city data from bundled geonamescache (~25,000 cities)."""
-        try:
-            import geonamescache
-            gc = geonamescache.GeonamesCache()
-            # Collect with population so ambiguous names resolve to the larger city
-            candidates: dict[str, tuple[int, dict]] = {}
-            for city in gc.get_cities().values():
-                name = city.get("name", "")
-                country_code = city.get("countrycode", "")
-                population = city.get("population", 0) or 0
-                if not name:
-                    continue
-                entry = {"name_en": name, "country_code": country_code}
-                k = _normalise_key(name)
-                if k:
-                    existing_pop = candidates.get(k, (-1, None))[0]
-                    if population > existing_pop:
-                        candidates[k] = (population, entry)
-            for k, (_, entry) in candidates.items():
-                self._city_index[k] = entry
-            log.info("City index built from geonamescache: %d entries", len(self._city_index))
-        except Exception as exc:
-            log.error("geonamescache load failed: %s", exc)
-
-    def _build_subdivision_index(self) -> None:
-        """Index pycountry ISO 3166-2 subdivision names + babel localisations."""
-        try:
-            import pycountry
-            from babel import Locale
-            from babel.core import UnknownLocaleError
-        except ImportError:
-            log.warning("pycountry/babel not available — subdivision index empty")
-            return
-
-        for sub in pycountry.subdivisions:
-            iso2 = sub.country_code
-            name_en = sub.name
-            sub_type = sub.type
-
-            entry = {"name_en": name_en, "country_code": iso2, "subdivision_type": sub_type}
-            k = _normalise_key(name_en)
-            if k:
-                self._subdivision_index[k] = entry
-
-            # Also index babel localisations
-            for locale_str in self.TARGET_LOCALES:
-                try:
-                    locale = Locale.parse(locale_str)
-                    territories = locale.territories
-                    # Subdivisions don't always have territory data; try anyway
-                    localised = territories.get(sub.code.replace(f"{iso2}-", ""))
-                    if localised:
-                        lk = _normalise_key(localised)
-                        if lk and lk not in self._subdivision_index:
-                            self._subdivision_index[lk] = entry
-                except (UnknownLocaleError, ValueError, KeyError):
-                    pass
-                except Exception:
-                    pass
-
-        log.info("Subdivision index built: %d entries", len(self._subdivision_index))
-
-    # ------------------------------------------------------------------
-    # Disk cache helpers
-    # ------------------------------------------------------------------
-
-    def _resolve_cache_file(self, geonames_path: str | None, cache_dir: Path | str | None) -> Path:
-        """Return the path to the pickle cache file for this configuration."""
-        if cache_dir is None:
-            # Auto-detect: project root is 4 levels above this file
-            # (app/pipeline/normalisation/ → app/pipeline/ → app/ → project root)
-            cache_dir = Path(__file__).resolve().parents[3] / "data" / "geo_cache"
-        cache_dir = Path(cache_dir)
-
-        if geonames_path:
-            p = Path(geonames_path)
-            if p.exists():
-                mtime = int(p.stat().st_mtime)
-                size = p.stat().st_size
-                source_key = hashlib.md5(
-                    f"{geonames_path}:{mtime}:{size}".encode()
-                ).hexdigest()[:8]
-                source_label = f"file_{source_key}"
-            else:
-                source_label = "geonamescache"
-        else:
-            source_label = "geonamescache"
-
-        return cache_dir / f"geo_index_v{_CACHE_VERSION}_{source_label}.pkl"
-
-    def _load_from_cache(self, cache_file: Path) -> None:
-        """Deserialise all four indexes from a pickle file."""
-        with cache_file.open("rb") as f:
-            data = pickle.load(f)  # noqa: S301 — file written by this process only
-        self._country_index = data["country"]
-        self._nationality_index = data["nationality"]
-        self._city_index = data["city"]
-        self._subdivision_index = data["subdivision"]
-        self._iso2_to_nationality = data["iso2_to_nationality"]
-        log.info(
-            "Geographic indexes loaded from cache %s "
-            "(%d countries, %d nationalities, %d cities, %d subdivisions)",
-            cache_file.name,
-            len(self._country_index),
-            len(self._nationality_index),
-            len(self._city_index),
-            len(self._subdivision_index),
-        )
-
-    def _save_to_cache(self, cache_file: Path) -> None:
-        """Serialise all four indexes to a pickle file."""
-        data = {
-            "country": self._country_index,
-            "nationality": self._nationality_index,
-            "city": self._city_index,
-            "subdivision": self._subdivision_index,
-            "iso2_to_nationality": self._iso2_to_nationality,
-        }
-        cache_file.parent.mkdir(parents=True, exist_ok=True)
-        with cache_file.open("wb") as f:
-            pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
-        log.info("Geographic indexes saved to cache: %s", cache_file)
-
-    # ------------------------------------------------------------------
-    # Result builder
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _build_result(normalised_form: str, confidence: float, **extra) -> dict:
-        return {
-            "normalised_form": normalised_form,
-            "allowed_variants": [],
-            "processing_method": _PROCESSING_METHOD,
-            "confidence": confidence,
-            "review_required": confidence < 0.90,
-            "review_reason": (
-                None if confidence >= 0.90
-                else "Geographic lookup confidence below threshold"
-            ),
-            "should_use_in_screening": True,
-            **extra,
-        }
+        return lookup_geographic(text, field_type, language=language, country=country)

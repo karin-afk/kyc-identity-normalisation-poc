@@ -142,6 +142,9 @@ _EXAMPLES = json.dumps([
     {"input": "Chen Wei", "output": {"field_type": "person_name", "language_code": "zh", "confidence": 0.85}},
     {"input": "Kärntnerstraße 22, 1010 Wien", "output": {"field_type": "registered_address", "language_code": "de", "confidence": 0.94}},
     {"input": "輸出入業及び国内商業", "output": {"field_type": "nature_of_business", "language_code": "ja", "confidence": 0.92}},
+    {"input": "中国", "output": {"field_type": "nationality", "language_code": "zh", "confidence": 0.93}},
+    {"input": "ألمانيا", "output": {"field_type": "nationality", "language_code": "ar", "confidence": 0.92}},
+    {"input": "سعودي", "output": {"field_type": "nationality", "language_code": "ar", "confidence": 0.91}},
 ], indent=2)
 
 _SYSTEM_PROMPT = f"""You are a KYC document data classifier. Your only job is to identify:

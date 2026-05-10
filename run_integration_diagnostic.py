@@ -307,6 +307,219 @@ TEST_CASES = [
      None, "UNRESOLVED",
      "Arabic names cannot be deterministically transliterated — correct to route to review"),
 
+# ── Compound names (harder than single tokens) ─────────────────────────────
+    ("F.6", "Japanese full name surname + given",
+     "田中 太郎",
+     "person_name", "ja",
+     "TANAKA TARO", ["TRANSLITERATION", "TRANSLITERATE"],
+     "Compound Japanese name — expected to fail until Epic 06 wired"),
+
+    ("F.7", "Russian full name with patronymic",
+     "Иванова Наталья Александровна",
+     "person_name", "ru",
+     "IVANOVA NATALYA ALEKSANDROVNA", ["TRANSLITERATION", "TRANSLITERATE"],
+     "Russian three-part name — expected to fail until Epic 06 wired"),
+
+    ("F.8", "Chinese full name",
+     "王小明",
+     "person_name", "zh",
+     "WANG XIAOMING", ["TRANSLITERATION", "TRANSLITERATE"],
+     "Already in suite but keeping for reference"),
+
+    ("F.9", "Greek full name",
+     "Νίκος Παπαδόπουλος",
+     "person_name", "el",
+     "NIKOS PAPADOPOULOS", ["TRANSLITERATION", "TRANSLITERATE"],
+     "Compound Greek name — expected to fail until Epic 06 wired"),
+
+    ("F.10", "Korean full name",
+     "이민준",
+     "person_name", "ko",
+     "I MINJUN", ["TRANSLITERATION", "TRANSLITERATE"],
+     "Korean name romanisation"),
+
+    # ── Legal form embedded in company name (suffix extraction) ────────────────
+    ("C.10", "Japanese legal form at end of company name",
+     "三菱商事株式会社",
+     "company_name", "ja",
+     "KK", "VOCABULARY",
+     "Suffix 株式会社 must be extracted from full company name string"),
+
+    ("C.11", "German legal form at end of company name",
+     "Müller & Söhne GmbH",
+     "company_name", "de",
+     "GMBH", "VOCABULARY",
+     "Suffix GmbH must be extracted from full string"),
+
+    ("C.12", "Russian legal form at end of company name",
+     "Газпром ПАО",
+     "company_name", "ru",
+     "PJSC", "VOCABULARY",
+     "ПАО = PJSC suffix extraction"),
+
+    # ── Date format variants not in current suite ──────────────────────────────
+    ("B.12", "Thai date day-first format",
+     "08/05/2568",
+     "date_of_birth", "th",
+     "2025-05-08", "CALENDAR",
+     "Day-first Thai Buddhist date — common on Thai IDs"),
+
+    ("B.13", "Thai date with พ.ศ. label",
+     "พ.ศ. 2568",
+     "issue_date", "th",
+     "2025", "CALENDAR",
+     "Year-only Thai date with era label"),
+
+    ("B.14", "Hijri date day-first Arabic-Indic",
+     "١٤/٠٣/١٤٤٥",
+     "date_of_birth", "ar",
+     "2023-09-29", "CALENDAR",
+     "Day-first Hijri date format common on Gulf documents"),
+
+    ("B.15", "Hebrew date spelled out",
+     "15 תשרי 5786",
+     "date_of_birth", "he",
+     "2025-10-17", "CALENDAR",
+     "Hebrew date with month name spelled out"),
+
+    # ── Identifiers not yet tested ─────────────────────────────────────────────
+    ("A.4", "IBAN",
+     "GB29 NWBK 6016 1331 9268 19",
+     "iban", "en",
+     "GB29 NWBK 6016 1331 9268 19", "PRESERVE",
+     "IBAN must be preserved verbatim"),
+
+    ("A.5", "Tax ID with country prefix",
+     "DE811100090",
+     "tax_id", "de",
+     "DE811100090", "PRESERVE",
+     "German VAT number preserved verbatim"),
+
+    ("A.6", "LEI code",
+     "529900T8BM49AURSDO55",
+     "lei_code", "en",
+     "529900T8BM49AURSDO55", "PRESERVE",
+     "Legal Entity Identifier — 20 char alphanumeric"),
+
+    # ── Financial values with currency symbols ─────────────────────────────────
+    ("B.16", "Japanese yen amount",
+     "¥1,234,567",
+     "share_capital", "ja",
+     "1234567", "NUMERIC",
+     "JPY amount — currency extracted, number normalised"),
+
+    ("B.17", "Euro European format",
+     "€2.500.000,00",
+     "share_capital", "de",
+     "2500000.00", "NUMERIC",
+     "EUR amount in European format"),
+
+    ("B.18", "Saudi Riyal",
+     "﷼500,000",
+     "share_capital", "ar",
+     "500000", "NUMERIC",
+     "SAR amount"),
+
+    # ── Geography variants ─────────────────────────────────────────────────────
+    ("D.5", "Country name in Chinese",
+     "中国",
+     "nationality", "zh",
+     "CHINA", "GEOGRAPHIC",
+     "China in Chinese"),
+
+    ("D.6", "Country name in Korean",
+     "미국",
+     "nationality", "ko",
+     "UNITED STATES", "GEOGRAPHIC",
+     "USA in Korean"),
+
+    ("D.7", "Nationality adjective in Arabic",
+     "سعودي",
+     "nationality", "ar",
+     "SAUDI ARABIA", "GEOGRAPHIC",
+     "Saudi nationality adjective — resolves to country name, not adjectival form"),
+
+    # ── Status terms not in current suite ──────────────────────────────────────
+    ("C.13", "Russian status active",
+     "действующая",
+     "status", "ru",
+     "ACTIVE", "VOCABULARY",
+     "Russian feminine active status"),
+
+    ("C.14", "French status dissolved",
+     "dissoute",
+     "status", "fr",
+     "DISSOLVED", "VOCABULARY",
+     "French feminine dissolved status"),
+
+    ("C.15", "Chinese status active",
+     "存续",
+     "status", "zh",
+     "ACTIVE", "VOCABULARY",
+     "Chinese active/ongoing status — appears on SAMR extracts"),
+
+    ("C.16", "Chinese status struck off",
+     "吊销",
+     "status", "zh",
+     "STRUCK_OFF", "VOCABULARY",
+     "Chinese administrative revocation — distinct from voluntary dissolution"),
+
+    # ── Role titles not in current suite ──────────────────────────────────────
+    ("C.17", "Arabic role general manager",
+     "مدير عام",
+     "role", "ar",
+     "GENERAL MANAGER", "VOCABULARY",
+     "Common Gulf company role"),
+
+    ("C.18", "Russian role general director",
+     "Генеральный директор",
+     "role", "ru",
+     "GENERAL DIRECTOR", "VOCABULARY",
+     "Standard Russian company role on registry extracts"),
+
+    ("C.19", "French role manager",
+     "Gérant",
+     "role", "fr",
+     "MANAGER", "VOCABULARY",
+     "French SARL manager role"),
+
+    # ── Character map variants (expected to fail until Epic 07) ───────────────
+    ("G.8", "French accented name",
+     "Élodie Lefèvre",
+     "person_name", "fr",
+     "ELODIE LEFEVRE", "CHARACTER_MAP",
+     "French accents stripped — expected to fail until Epic 07"),
+
+    ("G.9", "Dutch van particle",
+     "van den Berg",
+     "person_name", "nl",
+     "VAN DEN BERG", "CHARACTER_MAP",
+     "Dutch noble particle preserved — expected to fail until Epic 07"),
+
+    ("G.10", "Norwegian o-stroke",
+     "Bjørnstad",
+     "person_name", "no",
+     "BJORNSTAD", "CHARACTER_MAP",
+     "ø→O — expected to fail until Epic 07"),
+
+    # ── Edge cases ─────────────────────────────────────────────────────────────
+    ("E.1", "Short ambiguous string",
+     "SA",
+     "legal_form", "fr",
+     "SA", "VOCABULARY",
+     "SA is both a legal form and a country code — field type resolves the ambiguity"),
+
+    ("E.2", "Mixed script company name",
+     "Sony株式会社",
+     "company_name", "ja",
+     "KK", "VOCABULARY",
+     "Latin + kanji mixed — legal form suffix must be extracted"),
+
+    ("E.3", "Number that looks like a date",
+     "20250508",
+     "date_of_birth", "en",
+     "2025-05-08", "CALENDAR",
+     "ISO 8601 compact format without separators"),
 ]
 
 
