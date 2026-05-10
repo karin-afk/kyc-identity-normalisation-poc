@@ -46,11 +46,13 @@ def translate():
     """Translate/normalise pasted text and return an HTMX partial."""
     try:
         text = request.form.get("original_text", request.form.get("text", "")).strip()
+        language_hint = request.form.get("language_hint", "").strip()
         log_event(
             "paste_translate_received",
             {
                 "text_length": len(text),
                 "text_preview": text[:120],
+                "language_hint": language_hint or None,
             },
             source="backend",
         )
@@ -64,7 +66,7 @@ def translate():
 
         from app.pipeline.normalisation.field_type_detector import detect_field_type
 
-        field_type, classification_confidence, language = detect_field_type(text)
+        field_type, classification_confidence, language = detect_field_type(text, language_hint=language_hint)
         log_event(
             "field_type_detected",
             {

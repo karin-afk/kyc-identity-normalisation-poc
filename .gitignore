@@ -3,6 +3,8 @@ data/images/
 data/output/
 data/geonames/allCountries.txt
 data/geo_cache/
+app/data/geo_cache/
+uploads/
 
 # Environment / secrets
 .env

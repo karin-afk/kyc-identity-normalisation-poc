@@ -183,16 +183,11 @@ def _try_strategy_c(text: str, field_type: str, language: str, country: str) -> 
 
 
 def _try_strategy_d(text: str, field_type: str, language: str, country: str) -> dict | None:
-	"""Apply Strategy D geographic lookup using app singleton service."""
+	"""Strategy D — GeoNames geographic lookup."""
 	try:
-		from flask import current_app
+		from app.pipeline.normalisation.geographic_lookup import lookup_geographic
 
-		service = getattr(current_app, "geo_service", None)
-		if service is None:
-			from app.pipeline.normalisation.geographic_lookup import GeographicLookupService
-			service = GeographicLookupService(geonames_path=None)
-
-		result = service.lookup(field_type, text, language=language, country=country)
+		result = lookup_geographic(text, field_type, language=language, country=country)
 		if result:
 			log_event("strategy_d_hit", {"field_type": field_type, "language": language}, source="backend")
 		else:
