@@ -77,7 +77,8 @@ def _register_services(app: Flask) -> None:
     app.vocab_service = VocabularyLookupService(tables_dir)  # type: ignore[attr-defined]
 
     geonames_path = app.config.get("GEONAMES_DATA_PATH") or None
-    app.geo_service = GeographicLookupService(geonames_path=geonames_path)  # type: ignore[attr-defined]
+    cache_dir = Path(app.root_path).parent / "data" / "geo_cache"
+    app.geo_service = GeographicLookupService(geonames_path=geonames_path, cache_dir=cache_dir)  # type: ignore[attr-defined]
 
 
 def _register_context_processors(app: Flask) -> None:

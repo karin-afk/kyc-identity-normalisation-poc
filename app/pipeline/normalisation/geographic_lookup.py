@@ -19,7 +19,9 @@ Indexes are held in memory for the lifetime of the process.
 
 from __future__ import annotations
 
+import hashlib
 import logging
+import pickle
 import unicodedata
 from pathlib import Path
 
@@ -30,6 +32,7 @@ _GEOGRAPHIC_FIELDS: frozenset[str] = frozenset(
 )
 
 _PROCESSING_METHOD = "GEOGRAPHIC"
+_CACHE_VERSION = "1"
 
 # Common English aliases not in pycountry's primary name
 _COUNTRY_ALIASES: dict[str, str] = {
@@ -66,16 +69,35 @@ class GeographicLookupService:
         "pl", "sv", "no", "da",
     ]
 
-    def __init__(self, geonames_path: str | None = None) -> None:
+    def __init__(self, geonames_path: str | None = None, cache_dir: Path | str | None = None) -> None:
         self._country_index: dict[str, dict] = {}   # normalised_key → {name_en, iso2, iso3}
         self._nationality_index: dict[str, dict] = {}  # normalised_key → {english_nationality, iso2}
         self._city_index: dict[str, dict] = {}      # normalised_key → {name_en, country_code}
         self._subdivision_index: dict[str, dict] = {}  # normalised_key → {name_en, country_code, type}
+        self._iso2_to_nationality: dict[str, str] = {}
+
+        cache_file = self._resolve_cache_file(geonames_path, cache_dir)
+        if cache_file.exists():
+            try:
+                self._load_from_cache(cache_file)
+                return
+            except Exception as exc:
+                log.warning("Cache load failed (%s) — rebuilding indexes", exc)
+                self._country_index = {}
+                self._nationality_index = {}
+                self._city_index = {}
+                self._subdivision_index = {}
+                self._iso2_to_nationality = {}
 
         self._build_country_index()
         self._build_nationality_index()
         self._build_city_index(geonames_path)
         self._build_subdivision_index()
+
+        try:
+            self._save_to_cache(cache_file)
+        except Exception as exc:
+            log.warning("Cache save failed: %s", exc)
 
     # ------------------------------------------------------------------
     # Public entry point
@@ -411,6 +433,67 @@ class GeographicLookupService:
                     pass
 
         log.info("Subdivision index built: %d entries", len(self._subdivision_index))
+
+    # ------------------------------------------------------------------
+    # Disk cache helpers
+    # ------------------------------------------------------------------
+
+    def _resolve_cache_file(self, geonames_path: str | None, cache_dir: Path | str | None) -> Path:
+        """Return the path to the pickle cache file for this configuration."""
+        if cache_dir is None:
+            # Auto-detect: project root is 3 levels above this file
+            # (app/pipeline/normalisation/ → app/pipeline/ → app/ → project root)
+            cache_dir = Path(__file__).parent.parent.parent / "data" / "geo_cache"
+        cache_dir = Path(cache_dir)
+
+        if geonames_path:
+            p = Path(geonames_path)
+            if p.exists():
+                mtime = int(p.stat().st_mtime)
+                size = p.stat().st_size
+                source_key = hashlib.md5(
+                    f"{geonames_path}:{mtime}:{size}".encode()
+                ).hexdigest()[:8]
+                source_label = f"file_{source_key}"
+            else:
+                source_label = "geonamescache"
+        else:
+            source_label = "geonamescache"
+
+        return cache_dir / f"geo_index_v{_CACHE_VERSION}_{source_label}.pkl"
+
+    def _load_from_cache(self, cache_file: Path) -> None:
+        """Deserialise all four indexes from a pickle file."""
+        with cache_file.open("rb") as f:
+            data = pickle.load(f)  # noqa: S301 — file written by this process only
+        self._country_index = data["country"]
+        self._nationality_index = data["nationality"]
+        self._city_index = data["city"]
+        self._subdivision_index = data["subdivision"]
+        self._iso2_to_nationality = data["iso2_to_nationality"]
+        log.info(
+            "Geographic indexes loaded from cache %s "
+            "(%d countries, %d nationalities, %d cities, %d subdivisions)",
+            cache_file.name,
+            len(self._country_index),
+            len(self._nationality_index),
+            len(self._city_index),
+            len(self._subdivision_index),
+        )
+
+    def _save_to_cache(self, cache_file: Path) -> None:
+        """Serialise all four indexes to a pickle file."""
+        data = {
+            "country": self._country_index,
+            "nationality": self._nationality_index,
+            "city": self._city_index,
+            "subdivision": self._subdivision_index,
+            "iso2_to_nationality": self._iso2_to_nationality,
+        }
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        with cache_file.open("wb") as f:
+            pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+        log.info("Geographic indexes saved to cache: %s", cache_file)
 
     # ------------------------------------------------------------------
     # Result builder

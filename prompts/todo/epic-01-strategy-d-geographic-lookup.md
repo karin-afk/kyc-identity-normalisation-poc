@@ -103,11 +103,31 @@ No mocks. Call `route_field()` or the service directly with real inputs. Assert 
 
 ### 6. Run tests and commit
 
-- [ ] Run `& "C:\Python314\python.exe" -m pytest tests/test_strategy_d_geographic.py -v` — all 25 tests must pass.
-- [ ] Run full suite `& "C:\Python314\python.exe" -m pytest -q` — no regressions against current 162-test baseline.
-- [ ] `git add` only: `app/pipeline/normalisation/geographic_lookup.py`, `app/pipeline/normalisation/router.py`, `app/__init__.py`, `requirements.txt`, `tests/test_strategy_d_geographic.py`, `tests/test_e2e_pipeline.py`.
-- [ ] Commit: `feat(strategy-d): implement geographic lookup service with country, nationality, and place indexes`.
-- [ ] Push to `origin/feat/fix-strategy-d-geographic` (new branch from `dev`).
+- [x] Run `& "C:\Python314\python.exe" -m pytest tests/test_strategy_d_geographic.py -v` — all 25 tests must pass.
+- [x] Run full suite `& "C:\Python314\python.exe" -m pytest -q` — no regressions against current 162-test baseline.
+- [x] `git add` only: `app/pipeline/normalisation/geographic_lookup.py`, `app/pipeline/normalisation/router.py`, `app/__init__.py`, `requirements.txt`, `tests/test_strategy_d_geographic.py`, `tests/test_e2e_pipeline.py`.
+- [x] Commit: `feat(strategy-d): implement geographic lookup service with country, nationality, and place indexes`.
+- [x] Push to `origin/feat/strategy-d-geographic-lookup` (new branch from `dev`).
+
+---
+
+### 7. Disk cache for geographic indexes ✅ IMPLEMENTED
+
+Avoids the ~30-second index rebuild on every server restart by persisting the four
+in-memory dictionaries to a pickle file after the first build.
+
+- [x] Add `import hashlib` and `import pickle` to `geographic_lookup.py`.
+- [x] Add `_CACHE_VERSION = "1"` constant — bump this whenever index-building logic changes to force a rebuild.
+- [x] Extend `GeographicLookupService.__init__` with `cache_dir: Path | str | None = None` parameter.
+- [x] On startup: resolve cache file path → if exists, load and return early; if missing or corrupt, rebuild then save.
+- [x] `_resolve_cache_file()` — encodes geonames source (file mtime+size hash, or `"geonamescache"`) and `_CACHE_VERSION` in the filename so stale caches are never silently reused.
+- [x] `_load_from_cache()` — deserialises all five dicts (`country`, `nationality`, `city`, `subdivision`, `iso2_to_nationality`) from the pickle file.
+- [x] `_save_to_cache()` — creates `data/geo_cache/` if absent, serialises with `pickle.HIGHEST_PROTOCOL`.
+- [x] Update `app/__init__.py` `_register_services()` to pass `cache_dir = Path(app.root_path).parent / "data" / "geo_cache"` explicitly.
+- [x] Add `data/geo_cache/` to `.gitignore` (cache files are machine-generated and must not be committed).
+
+**Result:** First startup builds indexes and writes `data/geo_cache/geo_index_v1_geonamescache.pkl`.
+Every subsequent restart loads from that file in under one second.
 
 ---
 

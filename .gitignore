@@ -2,6 +2,7 @@
 data/images/
 data/output/
 data/geonames/allCountries.txt
+data/geo_cache/
 
 # Environment / secrets
 .env
