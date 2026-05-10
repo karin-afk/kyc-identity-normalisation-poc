@@ -441,9 +441,9 @@ class GeographicLookupService:
     def _resolve_cache_file(self, geonames_path: str | None, cache_dir: Path | str | None) -> Path:
         """Return the path to the pickle cache file for this configuration."""
         if cache_dir is None:
-            # Auto-detect: project root is 3 levels above this file
+            # Auto-detect: project root is 4 levels above this file
             # (app/pipeline/normalisation/ → app/pipeline/ → app/ → project root)
-            cache_dir = Path(__file__).parent.parent.parent / "data" / "geo_cache"
+            cache_dir = Path(__file__).resolve().parents[3] / "data" / "geo_cache"
         cache_dir = Path(cache_dir)
 
         if geonames_path:

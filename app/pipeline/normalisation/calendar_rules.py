@@ -3,16 +3,11 @@
 from __future__ import annotations
 
 import re
-import sys
 from pathlib import Path
 
 from convertdate import hebrew, persian
 
-SRC_DIR = Path(__file__).resolve().parents[3] / "src"
-if str(SRC_DIR) not in sys.path:
-	sys.path.insert(0, str(SRC_DIR))
-
-from pipeline.numeric_rules import (
+from .numeric_rules import (
 	normalise_all_digits,
 	normalise_parenthetical_negative,
 )
