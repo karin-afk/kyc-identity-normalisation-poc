@@ -51,6 +51,21 @@ That is the complete amendment. The only database change is adding country_code 
 
 ---
 
+Block 4b — Strategy D: Geographic lookup#Paste thisExpected normalised formMethodPass?D.1ألمانياGERMANYGEOGRAPHICD.2日本JAPANGEOGRAPHICD.3대한민국SOUTH KOREAGEOGRAPHICD.4ГерманияGERMANYGEOGRAPHICD.5ΓερμανίαGERMANYGEOGRAPHICD.6إماراتيEMIRATIGEOGRAPHICD.7日本人JAPANESEGEOGRAPHICD.8القاهرةCAIROGEOGRAPHIC
+
+What to check: Country names in any script resolve to their English form. Nationality demonyms resolve correctly.
+If D.x fail: GeographicLookupService may not have built its index — check that pycountry and babel are installed and that the service initialises without error on startup.
+
+---
+Block 4c — Strategy F: Transliteration
+#Paste thisExpected normalised formVariants includeMethodPass?F.1НатальяNATALYANATALJA, NATALIYATRANSLITERATIONF.2АлександрALEKSANDRALEXANDER, ALEKSANDERTRANSLITERATIONF.3ΙωάννηςIOANNISYANNIS, GIANNISTRANSLITERATIONF.4ΝίκοςNIKOSNIKOTRANSLITERATIONF.5TANAKA—paste as 田中TRANSLITERATIONF.6王小明WANG XIAOMINGWANG XIAO MINGTRANSLITERATIONF.7이민준I MINJUNLEE MINJUN, YI MINJUNTRANSLITERATION
+Note for F.5: Paste 田中 (the kanji), not the romanisation. Expected result is TANAKA.
+Note on Arabic: محمد will NOT return TRANSLITERATION — it routes to UNRESOLVED because Arabic short vowels cannot be recovered deterministically. This is correct Phase 1 behaviour.
+If F.1 returns NATALJA instead of NATALYA: The BGN/PCGN post-processing corrections are not applied. Check _BGN_PCGN_CORRECTIONS in the transliteration module.
+If F.3–F.4 fail: Greek handler may not be wired or the transliterate library has a Greek mode issue. Run: pytest tests/test_transliteration.py -v -k greek
+
+---
+
 ### `person_name_tokens.json`
 
 A JSON array of common person name tokens across six languages, with their confirmed romanisations and variant list. Apply BGN/PCGN romanisation standards throughout. Each entry is a single token — a given name or a surname — not a full name.

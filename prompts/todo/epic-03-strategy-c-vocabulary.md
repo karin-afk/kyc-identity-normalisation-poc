@@ -1,5 +1,7 @@
 # Epic 03 — Normalisation Strategy C: Vocabulary Lookup
 
+**Status: IMPLEMENTED**
+
 ## Execution Todo Checklist (this run)
 
 - [x] Complete and validate lookup data files in `data/lookup_tables/`:

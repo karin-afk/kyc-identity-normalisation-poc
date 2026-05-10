@@ -1,5 +1,10 @@
 # Epic 04 — Strategy D: Geographic Lookup
 
+**Status: ✅ IMPLEMENTED** — committed `44b8edb` on `feat/integration-diagnostic` (2026-05-10)
+
+> This epic was superseded by `epic-04-strategy-d-geonames-upgrade.md`, which documents the actual implementation.
+> The module-level singleton approach replaced the class-based design described here.
+
 ## Todo list
 
 ### 0. Prerequisites — verify what already exists before writing any code

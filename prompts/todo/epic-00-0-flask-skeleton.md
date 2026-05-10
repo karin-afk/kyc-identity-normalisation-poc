@@ -1,5 +1,7 @@
 # Epic 00 — Flask Package Skeleton
 
+**Status: IMPLEMENTED**
+
 ## Purpose
 
 This epic creates the `app/` package structure that all subsequent epics write into. It does not implement any features — it creates the scaffolding, import boundaries, configuration system, and empty placeholder modules that make all subsequent `from app.pipeline.normalisation...` imports valid.

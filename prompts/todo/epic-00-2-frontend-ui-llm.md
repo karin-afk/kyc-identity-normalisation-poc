@@ -1,3 +1,5 @@
+**Status: IMPLEMENTED**
+
 For the model — GPT-4o-mini. It is more than sufficient for a classification task (selecting from a fixed list of field types and a fixed list of language codes). It is fast, cheap, and reliable for structured output. GPT-4o is overkill for this — you are not doing translation or reasoning, just classification.
 
 Copilot instructions — Paste tab LLM classification

@@ -1,5 +1,7 @@
 # Epic — Strategy D: GeoNames Upgrade
 
+**Status: ✅ IMPLEMENTED** — committed `44b8edb` on `feat/integration-diagnostic` (2026-05-10)
+
 ## Save to: `prompts/todo/epic-strategy-d-geonames-upgrade.md`
 
 ---
