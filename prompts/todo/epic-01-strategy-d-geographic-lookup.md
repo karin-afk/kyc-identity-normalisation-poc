@@ -1,5 +1,116 @@
 # Epic 04 — Strategy D: Geographic Lookup
 
+## Todo list
+
+### 0. Prerequisites — verify what already exists before writing any code
+
+- [ ] Confirm `ProcessingMethod.GEOGRAPHIC` is defined in `app/pipeline/normalisation/field_types.py`. If missing, add it alongside the existing `ProcessingMethod` entries.
+- [ ] Confirm `STRATEGY_CONFIDENCE` dict exists in `field_types.py` and has a `"GEOGRAPHIC"` key. If missing, add entry (suggested value: `0.90`).
+- [ ] Confirm `GEOGRAPHIC_FIELDS = ["nationality", "country", "country_of_residence", "place_of_birth", "city"]` is defined in `field_types.py`. It is referenced in `epic-01-strategy-a-preserve.md` but verify it is present in the actual file.
+- [ ] Confirm `GEONAMES_DATA_PATH` is present in `app/config.py` for all three configs (`development`, `testing`, `production`). The key already exists in `app.config` per `test_epic00_data_contracts.py` — just verify the default value for `testing` is `""` or `None` (not a real path).
+- [ ] Confirm `data/geonames/` directory exists or add it to `.gitignore` (the file itself is 1.5 GB and must not be committed).
+- [ ] Add four libraries to `requirements.txt`: `pycountry>=24.6.1`, `babel>=2.16.0`, `geonamescache>=1.6.0`, `countryinfo>=0.1.2`.
+- [ ] Run `C:\Python314\python.exe -m pip install pycountry babel geonamescache countryinfo` to install them locally.
+
+---
+
+### 1. Implement `app/pipeline/normalisation/geographic_lookup.py`
+
+The file currently contains a 4-line stub. Replace it entirely.
+
+- [ ] Define class `GeographicLookupService` with class attribute `TARGET_LOCALES` (21 locales as specified).
+- [ ] Implement `__init__(self, geonames_path=None)`: initialise four empty index dicts, then call all four `_build_*` methods in order.
+- [ ] Implement `lookup(field_type, text, language, country)`: gate on `GEOGRAPHIC_FIELDS`; route to `lookup_nationality`, `lookup_country`, or `lookup_place` based on field type; return `None` for unrecognised fields.
+- [ ] Implement `lookup_country(text)`: try (1) normalised exact match in `_country_index`, (2) NFKD + ASCII + lowercase match, (3) `pycountry.countries.search_fuzzy()` with confidence >= 0.90 threshold. Return `None` if all three miss.
+- [ ] Implement `lookup_nationality(text, language)`: check `_nationality_index`; if miss, fall back to `lookup_country()` and derive demonym from result. Return `None` if both miss.
+- [ ] Implement `lookup_place(text)`: try (1) `_city_index` exact match, (2) geonamescache fallback, (3) `_subdivision_index`. Return `None` if all three miss.
+- [ ] Implement `_build_country_index()`: for each ISO 3166-1 country, use babel to generate country name in each `TARGET_LOCALE`; index every generated name (lowercased) → `{name_en, iso2, iso3}`. Add hard-coded common English aliases (Russia/Russian Federation, South Korea/Republic of Korea, etc.). Swallow babel errors per locale with a `log.warning`, do not raise.
+- [ ] Implement `_build_nationality_index()`: use countryinfo to get demonym per country; index normalised demonym → `{english_nationality, iso2}`.
+- [ ] Implement `_build_city_index(geonames_path)`: if file exists, parse `allCountries.txt` (tab-separated, 19 columns, 0-based); index `name` (col 1), `asciiname` (col 2), and each `alternatename` (col 3 comma-split) for rows with `population > 0`; skip rows where name or asciiname is empty. If file is absent, log the specified warning and load `geonamescache.GeonamesCache().get_cities()` instead.
+- [ ] Implement `_build_subdivision_index()`: use `pycountry.subdivisions` to index subdivision names → `{name_en, country_code, subdivision_type}`.
+- [ ] Implement `@staticmethod _build_result(normalised_form, confidence, **extra)`: return the standard result dict as specified, with `processing_method = ProcessingMethod.GEOGRAPHIC`, `review_required = confidence < 0.90`, `should_use_in_screening = True`.
+
+---
+
+### 2. Wire `GeographicLookupService` into the router
+
+- [ ] In `router.py`, add `_try_strategy_d(text, field_type, language, country)` following the same pattern as `_try_strategy_c` — import the service instance, call `service.lookup()`, handle `None` return.
+- [ ] In `route_field()`, call `_try_strategy_d()` after `_try_strategy_c()` and before the existing `_try_stub()` loop.
+- [ ] Remove `"D"` / `"geographic_lookup"` from the `_try_stub()` loop (it is currently in the loop at line 81 of `router.py`).
+- [ ] Add `log_event("router_selected_strategy", {"strategy": "D", ...})` on successful match, consistent with Strategy B and C logging.
+
+---
+
+### 3. Wire service instantiation into the app factory
+
+- [ ] In `app/__init__.py` / `create_app()`, instantiate `GeographicLookupService` once after the app is configured, reading `geonames_path = app.config.get("GEONAMES_DATA_PATH") or None`.
+- [ ] Store the instance on the app (e.g. `app.geo_service = GeographicLookupService(geonames_path)`) so `_try_strategy_d()` can retrieve it via `current_app.geo_service`.
+- [ ] For `testing` config, confirm instantiation completes without error when `GEONAMES_DATA_PATH` is empty (geonamescache fallback path).
+
+---
+
+### 4. Write `tests/test_strategy_d_geographic.py` (Category 1 — strategy unit tests)
+
+No mocks. Call `route_field()` or the service directly with real inputs. Assert on exact values.
+
+**Country lookup (9 tests):**
+- [ ] `test_country_english_name` — `"Germany"` → `iso2 == "DE"`
+- [ ] `test_country_arabic` — `"ألمانيا"` → `normalised_form == "GERMANY"`
+- [ ] `test_country_japanese` — `"日本"` → `normalised_form == "JAPAN"`, `iso2 == "JP"`
+- [ ] `test_country_korean` — `"대한민국"` → `normalised_form == "SOUTH KOREA"` (or canonical English form from pycountry)
+- [ ] `test_country_russian` — `"Германия"` → `normalised_form == "GERMANY"`
+- [ ] `test_country_greek` — `"Γερμανία"` → `normalised_form == "GERMANY"`
+- [ ] `test_country_common_alias` — `"Russia"` → resolves to Russian Federation entry, `iso2 == "RU"`
+- [ ] `test_country_no_match_returns_none` — `"Ruritania"` → `None`
+- [ ] `test_country_result_has_iso2_and_iso3` — result dict contains both `iso2` and `iso3` keys
+
+**Nationality lookup (4 tests):**
+- [ ] `test_nationality_english` — `"Japanese"` → `normalised_form == "JAPANESE"`
+- [ ] `test_nationality_arabic_demonym` — `"ياباني"` → `normalised_form == "JAPANESE"`
+- [ ] `test_nationality_fallback_to_country` — `"Japan"` resolves via country → `normalised_form == "JAPANESE"`
+- [ ] `test_nationality_no_match_returns_none` — random string → `None`
+
+**Place lookup (5 tests):**
+- [ ] `test_city_english` — `"Tokyo"` → `country_code == "JP"`
+- [ ] `test_city_japanese` — `"東京"` → `normalised_form == "TOKYO"`
+- [ ] `test_city_arabic` — `"القاهرة"` → `normalised_form == "CAIRO"`
+- [ ] `test_city_alternate_name` — `"Moskva"` → `normalised_form == "MOSCOW"`
+- [ ] `test_city_fallback_without_geonames_file` — service instantiated with `geonames_path=None`, `"Tokyo"` still resolves
+
+**Subdivision lookup (2 tests):**
+- [ ] `test_subdivision_japanese_prefecture` — `"東京都"` → `normalised_form == "TOKYO"`
+- [ ] `test_subdivision_german_state` — `"Bayern"` → `normalised_form == "BAVARIA"`
+
+**Router integration (2 tests):**
+- [ ] `test_returns_none_for_non_geographic_field` — `route_field({"original_text": "GmbH", "field_type": "legal_form", "country": "DE"})` → `processing_method != "GEOGRAPHIC"`
+- [ ] `test_returns_none_for_name_field` — `route_field({"original_text": "محمد", "field_type": "person_name"})` → `processing_method != "GEOGRAPHIC"`
+
+**Index building (3 tests):**
+- [ ] `test_service_initialises_without_geonames` — `GeographicLookupService(geonames_path=None)` completes without exception
+- [ ] `test_service_initialises_with_geonames(tmp_path)` — write a minimal 2-row TSV to `tmp_path / "allCountries.txt"`, confirm service loads it without exception
+- [ ] `test_country_index_covers_target_locales` — after init, Arabic `"ألمانيا"`, Japanese `"日本"`, Russian `"Германия"` all resolve (checks the index was actually built)
+
+---
+
+### 5. Extend `tests/test_e2e_pipeline.py` (Category 3 — end-to-end, zero mocks)
+
+- [ ] `test_e2e_country_arabic` — `process_field_row({"original_text": "ألمانيا", "field_type": "country", "language": "ar"})` → `normalised_form == "GERMANY"`, `processing_method == "GEOGRAPHIC"`
+- [ ] `test_e2e_country_japanese` — `"日本"` + `field_type="country"` → `normalised_form == "JAPAN"`
+- [ ] `test_e2e_nationality_english` — `"Japanese"` + `field_type="nationality"` → `normalised_form == "JAPANESE"`
+- [ ] `test_e2e_place_of_birth_japanese` — `"東京"` + `field_type="place_of_birth"` → `normalised_form == "TOKYO"`
+
+---
+
+### 6. Run tests and commit
+
+- [ ] Run `& "C:\Python314\python.exe" -m pytest tests/test_strategy_d_geographic.py -v` — all 25 tests must pass.
+- [ ] Run full suite `& "C:\Python314\python.exe" -m pytest -q` — no regressions against current 162-test baseline.
+- [ ] `git add` only: `app/pipeline/normalisation/geographic_lookup.py`, `app/pipeline/normalisation/router.py`, `app/__init__.py`, `requirements.txt`, `tests/test_strategy_d_geographic.py`, `tests/test_e2e_pipeline.py`.
+- [ ] Commit: `feat(strategy-d): implement geographic lookup service with country, nationality, and place indexes`.
+- [ ] Push to `origin/feat/fix-strategy-d-geographic` (new branch from `dev`).
+
+---
+
 ## What you need to provide
 
 ### Download: GeoNames full dataset

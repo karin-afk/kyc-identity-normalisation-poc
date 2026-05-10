@@ -70,6 +70,11 @@ def route_field(row: dict) -> dict:
 		log_event("router_selected_strategy", {"strategy": "C", "method": result.get("processing_method")}, source="backend")
 		return result
 
+	result = _try_strategy_d(text, field_type, language, country)
+	if result:
+		log_event("router_selected_strategy", {"strategy": "D", "method": result.get("processing_method")}, source="backend")
+		return result
+
 	result = _try_strategy_a(text, field_type)
 	if result:
 		log_event("router_selected_strategy", {"strategy": "A", "method": result.get("processing_method")}, source="backend")
@@ -78,7 +83,6 @@ def route_field(row: dict) -> dict:
 	for strategy_letter, module_name in (
 		("B", "calendar_rules"),
 		("C", "vocabulary_lookup"),
-		("D", "geographic_lookup"),
 		("E", "repository_lookup"),
 		("F", "transliteration"),
 		("G", "character_map_normaliser"),
@@ -175,6 +179,27 @@ def _try_strategy_c(text: str, field_type: str, language: str, country: str) -> 
 		return result
 	except Exception:
 		log_event("strategy_c_error", {"field_type": field_type, "language": language}, source="backend")
+		return None
+
+
+def _try_strategy_d(text: str, field_type: str, language: str, country: str) -> dict | None:
+	"""Apply Strategy D geographic lookup using app singleton service."""
+	try:
+		from flask import current_app
+
+		service = getattr(current_app, "geo_service", None)
+		if service is None:
+			from app.pipeline.normalisation.geographic_lookup import GeographicLookupService
+			service = GeographicLookupService(geonames_path=None)
+
+		result = service.lookup(field_type, text, language=language, country=country)
+		if result:
+			log_event("strategy_d_hit", {"field_type": field_type, "language": language}, source="backend")
+		else:
+			log_event("strategy_d_miss", {"field_type": field_type, "language": language, "text_preview": text[:180]}, source="backend")
+		return result
+	except Exception as exc:
+		log_event("strategy_d_error", {"field_type": field_type, "language": language, "error": str(exc)}, source="backend")
 		return None
 
 

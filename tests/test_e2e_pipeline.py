@@ -180,3 +180,52 @@ def test_e2e_unresolved_arabic_person_name(app_ctx):
     assert result["processing_method"] == "UNRESOLVED"
     assert result["review_required"] is True
     assert result["should_use_in_screening"] is False
+
+
+# ---------------------------------------------------------------------------
+# Strategy D — GEOGRAPHIC
+# ---------------------------------------------------------------------------
+
+
+def test_e2e_country_arabic(app_ctx):
+    """Arabic country name resolves to English via Strategy D."""
+    result = process_field_row({
+        "original_text": "\u0623\u0644\u0645\u0627\u0646\u064a\u0627",  # ألمانيا
+        "field_type": "country",
+        "language": "ar",
+    })
+    assert result["processing_method"] == "GEOGRAPHIC"
+    assert result["normalised_form"] == "GERMANY"
+
+
+def test_e2e_country_japanese(app_ctx):
+    """Japanese country name resolves to English via Strategy D."""
+    result = process_field_row({
+        "original_text": "\u65e5\u672c",  # 日本
+        "field_type": "country",
+        "language": "ja",
+    })
+    assert result["processing_method"] == "GEOGRAPHIC"
+    assert result["normalised_form"] == "JAPAN"
+
+
+def test_e2e_nationality_english(app_ctx):
+    """English nationality demonym resolves via Strategy D."""
+    result = process_field_row({
+        "original_text": "Japanese",
+        "field_type": "nationality",
+        "language": "en",
+    })
+    assert result["processing_method"] == "GEOGRAPHIC"
+    assert result["normalised_form"] == "JAPANESE"
+
+
+def test_e2e_place_of_birth_japanese(app_ctx):
+    """English place name resolves to English form via Strategy D."""
+    result = process_field_row({
+        "original_text": "Tokyo",
+        "field_type": "place_of_birth",
+        "language": "ja",
+    })
+    assert result["processing_method"] == "GEOGRAPHIC"
+    assert result["normalised_form"] == "TOKYO"
