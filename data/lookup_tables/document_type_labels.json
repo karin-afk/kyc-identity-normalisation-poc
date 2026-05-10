@@ -1,0 +1,102 @@
+{
+  "_note": "Canonical labels: national_id, drivers_licence, passport, company_registry_local, company_registry_foreign, business_registration, aoa, financial_statement, shareholder_table, unknown",
+  "en": {
+    "passport": "passport",
+    "national id": "national_id",
+    "identity card": "national_id",
+    "driving license": "drivers_licence",
+    "driver's license": "drivers_licence",
+    "residence permit": "national_id",
+    "certificate of incorporation": "company_registry_local",
+    "commercial register extract": "company_registry_local",
+    "articles of association": "aoa",
+    "financial statement": "financial_statement",
+    "bank statement": "financial_statement",
+    "shareholder register": "shareholder_table",
+    "utility bill": "unknown",
+    "proof of address": "unknown"
+  },
+  "ja": {
+    "旅券": "passport",
+    "パスポート": "passport",
+    "個人番号カード": "national_id",
+    "運転免許証": "drivers_licence",
+    "在留カード": "national_id",
+    "登記事項証明書": "company_registry_local",
+    "定款": "aoa",
+    "決算書": "financial_statement",
+    "株主名簿": "shareholder_table"
+  },
+  "ar": {
+    "جواز سفر": "passport",
+    "بطاقة هوية": "national_id",
+    "بطاقة الهوية الوطنية": "national_id",
+    "رخصة قيادة": "drivers_licence",
+    "تصريح إقامة": "national_id",
+    "شهادة السجل التجاري": "company_registry_local",
+    "عقد التأسيس": "aoa",
+    "القوائم المالية": "financial_statement",
+    "سجل المساهمين": "shareholder_table"
+  },
+  "de": {
+    "reisepass": "passport",
+    "personalausweis": "national_id",
+    "führerschein": "drivers_licence",
+    "aufenthaltstitel": "national_id",
+    "handelsregisterauszug": "company_registry_local",
+    "satzung": "aoa",
+    "jahresabschluss": "financial_statement",
+    "gesellschafterliste": "shareholder_table"
+  },
+  "fr": {
+    "passeport": "passport",
+    "carte nationale d'identité": "national_id",
+    "permis de conduire": "drivers_licence",
+    "titre de séjour": "national_id",
+    "extrait kbis": "company_registry_local",
+    "statuts": "aoa",
+    "états financiers": "financial_statement",
+    "registre des actionnaires": "shareholder_table"
+  },
+  "es": {
+    "pasaporte": "passport",
+    "documento nacional de identidad": "national_id",
+    "dni": "national_id",
+    "permiso de conducir": "drivers_licence",
+    "permiso de residencia": "national_id",
+    "registro mercantil": "company_registry_local",
+    "estatutos": "aoa",
+    "estados financieros": "financial_statement",
+    "registro de accionistas": "shareholder_table"
+  },
+  "zh": {
+    "护照": "passport",
+    "身份证": "national_id",
+    "驾驶证": "drivers_licence",
+    "居留许可": "national_id",
+    "公司注册证": "company_registry_local",
+    "公司章程": "aoa",
+    "财务报表": "financial_statement",
+    "股东名册": "shareholder_table"
+  },
+  "ko": {
+    "여권": "passport",
+    "주민등록증": "national_id",
+    "운전면허증": "drivers_licence",
+    "체류허가증": "national_id",
+    "법인등기부등본": "company_registry_local",
+    "정관": "aoa",
+    "재무제표": "financial_statement",
+    "주주명부": "shareholder_table"
+  },
+  "ru": {
+    "паспорт": "passport",
+    "национальное удостоверение личности": "national_id",
+    "водительское удостоверение": "drivers_licence",
+    "вид на жительство": "national_id",
+    "выписка из торгового реестра": "company_registry_local",
+    "устав": "aoa",
+    "финансовая отчетность": "financial_statement",
+    "реестр акционеров": "shareholder_table"
+  }
+}

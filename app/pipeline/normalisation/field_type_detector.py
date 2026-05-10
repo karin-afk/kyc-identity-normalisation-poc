@@ -1,59 +1,140 @@
-"""Deterministic field type detector for sentence tab auto mode."""
+"""LLM-based field/language classifier for sentence normalisation."""
 
 from __future__ import annotations
 
-import re
+import json
+import logging
+
+from openai import OpenAI
+
+from app.utils.session_trace import log_event
+
+logger = logging.getLogger(__name__)
+
+FIELD_TYPES = [
+    "person_name",
+    "company_name",
+    "address",
+    "date_of_birth",
+    "nationality",
+    "legal_form",
+    "status",
+    "role",
+    "nature_of_business",
+    "issuing_authority",
+    "unstructured_text",
+]
+
+LANGUAGE_CODES = [
+    "ar",
+    "be",
+    "bg",
+    "da",
+    "de",
+    "el",
+    "en",
+    "es",
+    "fa",
+    "fr",
+    "he",
+    "it",
+    "ja",
+    "ko",
+    "nl",
+    "no",
+    "pl",
+    "pt",
+    "ru",
+    "sv",
+    "th",
+    "tr",
+    "uk",
+    "zh",
+]
+
+_client: OpenAI | None = None
 
 
-def detect_field_type(text: str, language: str = "") -> tuple[str, float]:
-    """Infer likely KYC field type from pasted text."""
-    text_stripped = text.strip()
-
-    if re.match(r"^[\w._%+\-]+@[\w.\-]+\.[a-zA-Z]{2,}$", text_stripped):
-        return ("email", 0.95)
-
-    date_patterns = [
-        r"\d{1,2}[/\-.]\d{1,2}[/\-.]\d{2,4}",
-        r"\d{4}[/\-.]\d{1,2}[/\-.]\d{1,2}",
-        r"[٠-٩]{1,2}[/\-.][٠-٩]{1,2}[/\-.][٠-٩]{2,4}",
-        r"令和|平成|昭和|大正|明治",
-        r"\d{1,2}\s+\w+\s+\d{4}",
-        r"\d{4}年\d{1,2}月\d{1,2}日",
-    ]
-    for pattern in date_patterns:
-        if re.search(pattern, text_stripped):
-            return ("date_of_birth", 0.85)
-
-    if re.match(r"^[A-Z0-9][A-Z0-9\-]{5,19}$", text_stripped.upper()) and " " not in text_stripped:
-        return ("id_number", 0.85)
-
-    street_keywords = [
-        "street", "road", "avenue", "boulevard", "lane", "drive", "place",
-        "rue", "via", "calle", "strasse", "straße", "ulica", "улица",
-        "شارع", "طريق", "通り", "路", "街", "로",
-    ]
-    lower_text = text_stripped.lower()
-    if any(kw in lower_text for kw in street_keywords):
-        return ("address", 0.85)
-
-    tokens = text_stripped.split()
-    if 1 <= len(tokens) <= 4 and not _has_sentence_structure(text_stripped):
-        latin_legal_suffixes = {
-            "llc", "ltd", "inc", "corp", "plc", "gmbh", "sarl", "sas", "sa",
-            "bv", "nv", "ag", "kg", "oy", "ab", "as", "srl", "spa",
-        }
-        last_token = tokens[-1].lower().rstrip(".")
-        if last_token in latin_legal_suffixes:
-            return ("company_name", 0.90)
-        return ("person_name", 0.80)
-
-    if len(tokens) > 8 or _has_sentence_structure(text_stripped):
-        return ("nature_of_business", 0.60)
-
-    return ("unstructured_text", 0.50)
+def _get_client() -> OpenAI:
+    global _client
+    if _client is None:
+        _client = OpenAI()
+    return _client
 
 
-def _has_sentence_structure(text: str) -> bool:
-    has_verb_indicators = bool(re.search(r"\b(is|are|was|were|has|have|the|and|of|in)\b", text, re.I))
-    has_punctuation = bool(re.search(r"[,;:।。、]", text))
-    return has_verb_indicators or has_punctuation
+def _coerce_confidence(value: object) -> float:
+    try:
+        confidence = float(value)
+    except (TypeError, ValueError):
+        return 0.5
+    return max(0.0, min(1.0, confidence))
+
+
+def detect_field_type(text: str, language: str = "") -> tuple[str, float, str]:
+    """Classify pasted text with GPT-4o-mini.
+
+    Returns:
+        (field_type, confidence, language_code)
+
+    On any error, returns a safe fallback so processing can continue.
+    """
+    del language
+
+    try:
+        log_event(
+            "field_detector_started",
+            {"text_length": len(text or ""), "text_preview": (text or "")[:180], "model": "gpt-4o-mini"},
+            source="backend",
+        )
+        response = _get_client().chat.completions.create(
+            model="gpt-4o-mini",
+            max_tokens=60,
+            temperature=0,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a KYC data classifier. Given a text snippet, "
+                        "return ONLY a JSON object with three fields: "
+                        "'field_type' (one of: "
+                        + ", ".join(FIELD_TYPES)
+                        + "), "
+                        "'language_code' (ISO 639-1, one of: "
+                        + ", ".join(LANGUAGE_CODES)
+                        + "), "
+                        "'confidence' (float 0.0-1.0). "
+                        "No explanation. No markdown. JSON only."
+                    ),
+                },
+                {"role": "user", "content": (text or "")[:500]},
+            ],
+        )
+
+        content = response.choices[0].message.content or "{}"
+        log_event("field_detector_raw_response", {"content": content}, source="backend")
+        parsed = json.loads(content)
+
+        field_type = parsed.get("field_type", "unstructured_text")
+        detected_language = parsed.get("language_code", "en")
+        confidence = _coerce_confidence(parsed.get("confidence", 0.5))
+
+        if field_type not in FIELD_TYPES:
+            field_type = "unstructured_text"
+        if detected_language not in LANGUAGE_CODES:
+            detected_language = "en"
+
+        log_event(
+            "field_detector_completed",
+            {
+                "field_type": field_type,
+                "detected_language": detected_language,
+                "confidence": confidence,
+            },
+            source="backend",
+        )
+
+        return field_type, confidence, detected_language
+    except Exception as e:
+        logger.error(f"Field type detection failed: {e}", exc_info=True)
+        log_event("field_detector_error", {"error": str(e)}, source="backend")
+        return "unstructured_text", 0.5, "en"

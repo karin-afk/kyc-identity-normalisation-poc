@@ -56,9 +56,13 @@ class Config:
     CELERY_RESULT_BACKEND: str = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
     CELERY_TASK_TIME_LIMIT: int = int(os.environ.get("CELERY_TASK_TIME_LIMIT", 300))
 
+    SESSION_TRACE_ENABLED: bool = os.environ.get("SESSION_TRACE_ENABLED", "true").lower() == "true"
+    SESSION_LOG_DIR: str = os.environ.get("SESSION_LOG_DIR", str(BASE_DIR / "logs" / "sessions"))
+
 
 class DevelopmentConfig(Config):
     DEBUG: bool = True
+    TEMPLATES_AUTO_RELOAD: bool = True
     SQLALCHEMY_DATABASE_URI: str = os.environ.get(
         "DATABASE_URL", "sqlite:///kyc_dev.db"
     )

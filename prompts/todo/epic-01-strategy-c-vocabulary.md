@@ -1,5 +1,43 @@
 # Epic 03 — Normalisation Strategy C: Vocabulary Lookup
 
+## Execution Todo Checklist (this run)
+
+- [x] Complete and validate lookup data files in `data/lookup_tables/`:
+  - [x] `legal_forms.json` (verify required country coverage)
+  - [x] `status_terms.json` (verify canonical status values only)
+  - [x] `role_titles.json`
+  - [x] `street_types.json`
+  - [x] `industry_codes.json` (populate starter NACE/SIC_UK/ISIC mappings)
+  - [x] `issuing_authorities.json` (create and populate starter country mappings)
+  - [x] `share_classes.json`
+  - [x] `capital_change_types.json` (populate canonical change labels)
+  - [x] `document_type_labels.json` (create and populate internal labels)
+- [x] Implement `app/pipeline/normalisation/vocabulary_lookup.py` service:
+  - [x] table loading with startup validation
+  - [x] case-insensitive lookup helpers
+  - [x] standard result dict builder
+  - [x] language/country fallback behavior
+- [x] Plug Strategy C into router and orchestrator flow:
+  - [x] call vocabulary service after Strategy B and before unresolved fallback
+  - [x] wire service instantiation in app startup (`app/__init__.py`)
+  - [x] make router consume shared singleton service
+- [x] Add and update tests:
+  - [x] add `tests/test_strategy_c_vocabulary.py`
+  - [x] update `tests/test_router.py` for Strategy C routing expectations
+  - [x] add data validation tests for canonical status/document values
+- [x] Run targeted tests and fix regressions
+- [x] Run Flask on `127.0.0.1:5001` for manual verification
+- [x] Provide copy/paste examples for Strategy C checks in Sentence tab
+
+## Assessment and open data notes
+
+- Current repo state is close but not complete for this epic:
+  - `capital_change_types.json` is empty
+  - `industry_codes.json` is empty
+  - `issuing_authorities.json` does not exist under `data/lookup_tables/`
+  - `document_type_labels.json` does not exist under `data/lookup_tables/`
+- Execution below will create/complete these files with a validated starter dataset and keep all canonical value constraints enforced by tests.
+
 ## What you need to provide
 
 Nine JSON files containing the lookup dictionaries. Copilot builds the service class that loads and queries them — you provide the data.

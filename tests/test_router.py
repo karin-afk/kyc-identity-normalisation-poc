@@ -2,6 +2,7 @@
 
 import pytest
 
+from app import create_app
 from app.pipeline.normalisation.field_type_detector import detect_field_type
 from app.pipeline.normalisation.router import route_field
 from app.pipeline.orchestrator import process_document_file, process_field_row
@@ -63,41 +64,49 @@ def test_unresolved_for_non_preserve_fields(field_type):
     assert result["should_use_in_screening"] is False
 
 
-def test_detect_email():
-    ft, conf = detect_field_type("john.doe@example.com")
-    assert ft == "email"
-    assert conf >= 0.90
+def test_detect_field_type_parses_llm_json(monkeypatch):
+    from app.pipeline.normalisation import field_type_detector
 
+    class _FakeCompletions:
+        @staticmethod
+        def create(**kwargs):
+            class _Message:
+                content = '{"field_type": "person_name", "language_code": "ja", "confidence": 0.91}'
 
-def test_detect_date_iso():
-    ft, _ = detect_field_type("1985-03-12")
-    assert ft == "date_of_birth"
+            class _Choice:
+                message = _Message()
 
+            class _Response:
+                choices = [_Choice()]
 
-def test_detect_date_japanese_era():
-    ft, _ = detect_field_type("令和5年7月3日")
-    assert ft == "date_of_birth"
+            return _Response()
 
+    class _FakeChat:
+        completions = _FakeCompletions()
 
-def test_detect_person_name_short():
-    ft, _ = detect_field_type("田中 太郎")
+    class _FakeClient:
+        chat = _FakeChat()
+
+    monkeypatch.setattr(field_type_detector, "_get_client", lambda: _FakeClient())
+
+    ft, conf, language = detect_field_type("田中 太郎")
     assert ft == "person_name"
+    assert conf == pytest.approx(0.91)
+    assert language == "ja"
 
 
-def test_detect_company_with_ltd():
-    ft, conf = detect_field_type("Acme Corp Ltd")
-    assert ft == "company_name"
-    assert conf >= 0.85
+def test_detect_field_type_fallback_on_error(monkeypatch):
+    from app.pipeline.normalisation import field_type_detector
 
+    def _raise():
+        raise RuntimeError("no key")
 
-def test_detect_address_street_keyword():
-    ft, _ = detect_field_type("123 Main Street London")
-    assert ft == "address"
+    monkeypatch.setattr(field_type_detector, "_get_client", _raise)
 
-
-def test_detect_fallback():
-    ft, _ = detect_field_type("x")
-    assert ft in ("person_name", "unstructured_text")
+    ft, conf, language = detect_field_type("anything")
+    assert ft == "unstructured_text"
+    assert conf == pytest.approx(0.5)
+    assert language == "en"
 
 
 def test_orchestrator_preserve():
@@ -146,6 +155,22 @@ def test_strategy_b_numeric_in_router():
     )
     assert result["processing_method"] == "NUMERIC"
     assert result["normalised_form"] == "-4191"
+
+
+def test_strategy_c_vocabulary_in_router_with_app_context():
+    app = create_app("testing")
+    with app.app_context():
+        result = route_field(
+            {
+                "original_text": "GmbH",
+                "field_type": "legal_form",
+                "language": "de",
+                "country": "DE",
+            }
+        )
+    assert result["processing_method"] == "VOCABULARY"
+    assert result["normalised_form"] == "GMBH"
+    assert result["review_required"] is False
 
 
 def test_orchestrator_document_file_raises_not_implemented():

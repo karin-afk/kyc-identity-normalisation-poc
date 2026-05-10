@@ -44,6 +44,14 @@ FINANCIAL_NUMERIC_FIELDS: set[str] = {
 }
 
 _HAS_DIGIT_RE = re.compile(r"\d")
+# Matches any non-ASCII digit script: Arabic-Indic, extended Arabic-Indic, full-width, Thai, Devanagari
+_NON_ASCII_DIGIT_RE = re.compile(
+	r"[\u0660-\u0669\u06f0-\u06f9\uff10-\uff19\u0e50-\u0e59\u0966-\u096f]"
+)
+# Matches strings composed entirely of non-ASCII digits, ASCII digits, and common separators
+_ALL_DIGIT_CONTENT_RE = re.compile(
+	r"^[\u0660-\u0669\u06f0-\u06f9\uff10-\uff19\u0e50-\u0e59\u0966-\u096f\d\s,.\/\-]+$"
+)
 _THAI_DATE_RE = re.compile(r"^(\d{1,4})[\/\-.](\d{1,2})[\/\-.](\d{1,4})$")
 _MINGUO_DATE_RE = re.compile(r"^(\d{2,3})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$")
 _SOLAR_HIJRI_RE = re.compile(r"^(1[34]\d{2})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$")
@@ -105,9 +113,36 @@ def apply_numeric_rules(
 	language: str = "",
 	country: str = "",
 ) -> dict | None:
-	"""Apply Strategy B numeric normalisation for financial numeric fields."""
+	"""Apply Strategy B numeric normalisation for financial numeric fields.
+
+	For fields whose type is unstructured_text (i.e. the LLM classifier could not
+	identify a specific field type), also fires when the text consists entirely of
+	non-ASCII digits and separators, converting the digit glyphs to ASCII without
+	financial number formatting.
+	"""
 	if field_type not in FINANCIAL_NUMERIC_FIELDS:
-		return None
+		# Content-driven path: fire for unstructured_text when the value is pure
+		# digit glyphs (e.g. Arabic-Indic digits pasted without a known field context).
+		# Preserve fields (id_no, passport_no, etc.) never reach this because they
+		# are not classified as unstructured_text by the field detector.
+		if field_type != "unstructured_text":
+			return None
+		raw = (text or "").strip()
+		if not raw or not (_NON_ASCII_DIGIT_RE.search(raw) and _ALL_DIGIT_CONTENT_RE.match(raw)):
+			return None
+		converted = normalise_all_digits(raw)
+		return {
+			"original_text": raw,
+			"normalised_form": converted,
+			"allowed_variants": [],
+			"processing_method": "NUMERIC",
+			"confidence": 0.9,
+			"review_required": False,
+			"review_reason": None,
+			"should_use_in_screening": True,
+			"original_calendar": None,
+			"currency_code": "",
+		}
 
 	raw_text = text or ""
 	if not raw_text.strip():
