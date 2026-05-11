@@ -36,6 +36,9 @@ def app_context():
     app = create_app("testing")
     ctx = app.app_context()
     ctx.push()
+    # Explicitly warm the geographic index for this test session
+    from app.pipeline.normalisation.geographic_lookup import _ensure_index
+    _ensure_index()
     yield
     ctx.pop()
 

@@ -80,6 +80,11 @@ def route_field(row: dict) -> dict:
 		log_event("router_selected_strategy", {"strategy": "F", "method": result.get("processing_method")}, source="backend")
 		return result
 
+	result = _try_strategy_g(text, field_type, language)
+	if result:
+		log_event("router_selected_strategy", {"strategy": "G", "method": result.get("processing_method")}, source="backend")
+		return result
+
 	result = _try_strategy_a(text, field_type)
 	if result:
 		log_event("router_selected_strategy", {"strategy": "A", "method": result.get("processing_method")}, source="backend")
@@ -89,7 +94,6 @@ def route_field(row: dict) -> dict:
 		("B", "calendar_rules"),
 		("C", "vocabulary_lookup"),
 		("E", "repository_lookup"),
-		("G", "character_map_normaliser"),
 		("H", "nmt_translator"),
 	):
 		result = _try_stub(strategy_letter, module_name)
@@ -208,6 +212,14 @@ def _try_strategy_f(text: str, field_type: str, language: str,
 	try:
 		from app.pipeline.normalisation.transliteration import apply_transliteration
 		return apply_transliteration(text, language, field_type, country)
+	except Exception:
+		return None
+
+
+def _try_strategy_g(text: str, field_type: str, language: str) -> dict | None:
+	try:
+		from app.pipeline.normalisation.character_map_normaliser import apply_character_map
+		return apply_character_map(text, language, field_type)
 	except Exception:
 		return None
 

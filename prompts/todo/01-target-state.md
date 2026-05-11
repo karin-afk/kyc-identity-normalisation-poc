@@ -235,7 +235,7 @@ Review task creation for unresolved fields, round-robin assignment to native spe
 **Epic 8 — Document upload UI and results**
 Upload form, async processing with HTMX status polling, results screen (original + English side by side with per-field provenance), Word and CSV download, email-to-self, and document history page.
 
-**Epic 9 — Text paste tab**
+**Epic 9 — Text paste tab** - done
 Paste interface with field type dropdown and language hint, same normalisation router as the document pipeline, inline results, escalate-to-review button, 2,000-character limit, paste session recorded for audit.
 
 **Epic 10 — Audit logging**
