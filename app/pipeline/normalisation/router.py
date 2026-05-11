@@ -60,6 +60,11 @@ def route_field(row: dict) -> dict:
 		log_event("router_unresolved", {"reason": "missing_field_type"}, source="backend")
 		return _unresolved(text, field_type, language, reason="Missing field_type")
 
+	result = _try_strategy_a(text, field_type)
+	if result:
+		log_event("router_selected_strategy", {"strategy": "A", "method": result.get("processing_method")}, source="backend")
+		return result
+
 	result = _try_strategy_b(text, field_type, language, country)
 	if result:
 		log_event("router_selected_strategy", {"strategy": "B", "method": result.get("processing_method")}, source="backend")
@@ -75,19 +80,14 @@ def route_field(row: dict) -> dict:
 		log_event("router_selected_strategy", {"strategy": "D", "method": result.get("processing_method")}, source="backend")
 		return result
 
-	result = _try_strategy_f(text, field_type, language, country)
-	if result:
-		log_event("router_selected_strategy", {"strategy": "F", "method": result.get("processing_method")}, source="backend")
-		return result
-
 	result = _try_strategy_g(text, field_type, language)
 	if result:
 		log_event("router_selected_strategy", {"strategy": "G", "method": result.get("processing_method")}, source="backend")
 		return result
 
-	result = _try_strategy_a(text, field_type)
+	result = _try_strategy_f(text, field_type, language, country)
 	if result:
-		log_event("router_selected_strategy", {"strategy": "A", "method": result.get("processing_method")}, source="backend")
+		log_event("router_selected_strategy", {"strategy": "F", "method": result.get("processing_method")}, source="backend")
 		return result
 
 	for strategy_letter, module_name in (
