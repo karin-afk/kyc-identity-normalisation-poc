@@ -1,6 +1,6 @@
 # KYC Integration Diagnostic Report
 
-**Run date:** 2026-05-11 01:09:59
+**Run date:** 2026-05-11 00:43:20
 **Examples:** 74
 **Pipeline:** `detect_field_type()` → `process_field_row()` → `route_field()` → strategy
 **Mocks:** None — all calls are real
@@ -10,8 +10,8 @@
 
 | Result | Count |
 |---|---|
-| ✅ Pass | 49 |
-| ❌ Fail | 25 |
+| ✅ Pass | 46 |
+| ❌ Fail | 28 |
 | Total | 74 |
 
 | ID | Description | Result |
@@ -19,8 +19,8 @@
 | E.3 | Number that looks like a date | ❌ FAIL |
 | E.2 | Mixed script company name | ❌ FAIL |
 | E.1 | Short ambiguous string | ❌ FAIL |
-| G.10 | Norwegian o-stroke | ✅ PASS |
-| G.9 | Dutch van particle | ✅ PASS |
+| G.10 | Norwegian o-stroke | ❌ FAIL |
+| G.9 | Dutch van particle | ❌ FAIL |
 | G.8 | French accented name | ❌ FAIL |
 | C.19 | French role manager | ✅ PASS |
 | C.18 | Russian role general director | ✅ PASS |
@@ -32,11 +32,11 @@
 | D.7 | Nationality adjective in Arabic | ✅ PASS |
 | D.6 | Country name in Korean | ✅ PASS |
 | D.5 | Country name in Chinese | ✅ PASS |
-| B.18 | Saudi Riyal | ❌ FAIL |
-| B.17 | Euro European format | ❌ FAIL |
-| B.16 | Japanese yen amount | ❌ FAIL |
-| A.6 | LEI code | ✅ PASS |
-| A.5 | Tax ID with country prefix | ✅ PASS |
+| B.18 | Saudi Riyal | ✅ PASS |
+| B.17 | Euro European format | ✅ PASS |
+| B.16 | Japanese yen amount | ✅ PASS |
+| A.6 | LEI code | ❌ FAIL |
+| A.5 | Tax ID with country prefix | ❌ FAIL |
 | A.4 | IBAN | ❌ FAIL |
 | B.15 | Hebrew date spelled out | ❌ FAIL |
 | B.14 | Hijri date day-first Arabic-Indic | ❌ FAIL |
@@ -51,8 +51,8 @@
 | F.7 | Russian full name with patronymic | ✅ PASS |
 | F.6 | Japanese full name surname + given | ✅ PASS |
 | I.1 | Arabic person name (unresolved) | ❌ FAIL |
-| G.7 | Portuguese tilde | ✅ PASS |
-| G.6 | Scandinavian Æ | ✅ PASS |
+| G.7 | Portuguese tilde | ❌ FAIL |
+| G.6 | Scandinavian Æ | ❌ FAIL |
 | G.5 | Polish ł | ❌ FAIL |
 | G.4 | Turkish dotted I | ❌ FAIL |
 | G.3 | Spanish ñ | ❌ FAIL |
@@ -71,25 +71,25 @@
 | C.8 | German status dissolved | ✅ PASS |
 | C.7 | Japanese role representative director | ✅ PASS |
 | C.6 | Japanese role director | ✅ PASS |
-| C.5 | Arabic status dissolved | ✅ PASS |
+| C.5 | Arabic status dissolved | ❌ FAIL |
 | C.4 | Japanese status active | ✅ PASS |
 | C.3 | Russian LLC | ✅ PASS |
 | C.2 | German GmbH | ✅ PASS |
 | C.1 | Japanese legal form KK | ✅ PASS |
 | B.11 | Arabic-Indic digits | ✅ PASS |
-| B.10 | Swiss apostrophe number format | ❌ FAIL |
-| B.9 | European number format | ❌ FAIL |
-| B.8 | Full-width parenthetical negative | ❌ FAIL |
-| B.7 | Japanese triangle negative | ❌ FAIL |
+| B.10 | Swiss apostrophe number format | ✅ PASS |
+| B.9 | European number format | ✅ PASS |
+| B.8 | Full-width parenthetical negative | ✅ PASS |
+| B.7 | Japanese triangle negative | ✅ PASS |
 | B.6 | Minguo (Taiwan ROC) date | ❌ FAIL |
 | B.5 | Solar Hijri date | ✅ PASS |
 | B.4 | Hijri date with Arabic-Indic digits | ✅ PASS |
 | B.3 | Japanese Showa era date | ✅ PASS |
 | B.2 | Japanese Reiwa era date | ✅ PASS |
 | B.1 | Thai Buddhist Era date | ✅ PASS |
-| A.3 | Email address | ✅ PASS |
-| A.2 | Registration number | ✅ PASS |
-| A.1 | Passport number | ✅ PASS |
+| A.3 | Email address | ❌ FAIL |
+| A.2 | Registration number | ❌ FAIL |
+| A.1 | Passport number | ❌ FAIL |
 
 ---
 
@@ -113,7 +113,7 @@
 | **field_type** | `passport_no` | `passport_no` | ✅ match |
 | **language** | `en` | `en` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `2.29s` | — |
+| **latency** | — | `2.38s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -127,20 +127,22 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `PRESERVE` |
+| processing_method | `TRANSLITERATE` |
 | normalised_form | `TK1234567` |
-| confidence | `1.00` |
+| confidence | `0.90` |
 | review_required | `False` |
-| latency | `0.02s` |
+| latency | `0.04s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `PRESERVE` | `PRESERVE` | ✅ PASS |
+| **method** | `PRESERVE` | `TRANSLITERATE` | ❌ FAIL |
 | **normalised_form** | `TK1234567` | `TK1234567` | ✅ PASS |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** Got 'TRANSLITERATE', expected one of ['PRESERVE']. Check router.py strategy wiring.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -162,7 +164,7 @@
 | **field_type** | `registration_no` | `registration_no` | ✅ match |
 | **language** | `en` | `de` | ⚠️ mismatch |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.92s` | — |
+| **latency** | — | `0.87s` | — |
 
 > ⚠️ **Classification mismatch on language.** GPT-4o-mini returned `de` but expected `en`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
@@ -178,9 +180,9 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `PRESERVE` |
+| processing_method | `TRANSLITERATE` |
 | normalised_form | `DE123456789` |
-| confidence | `1.00` |
+| confidence | `0.90` |
 | review_required | `False` |
 | latency | `0.00s` |
 
@@ -188,10 +190,12 @@
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `PRESERVE` | `PRESERVE` | ✅ PASS |
+| **method** | `PRESERVE` | `TRANSLITERATE` | ❌ FAIL |
 | **normalised_form** | `DE123456789` | `DE123456789` | ✅ PASS |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** Got 'TRANSLITERATE', expected one of ['PRESERVE']. Check router.py strategy wiring.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -227,20 +231,22 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `PRESERVE` |
-| normalised_form | `test.user@example.com` |
-| confidence | `1.00` |
+| processing_method | `TRANSLITERATE` |
+| normalised_form | `TEST.USER@EXAMPLE.COM` |
+| confidence | `0.90` |
 | review_required | `False` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `PRESERVE` | `PRESERVE` | ✅ PASS |
-| **normalised_form** | `test.user@example.com` | `test.user@example.com` | ✅ PASS |
+| **method** | `PRESERVE` | `TRANSLITERATE` | ❌ FAIL |
+| **normalised_form** | `test.user@example.com` | `TEST.USER@EXAMPLE.COM` | ✅ PASS |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** Got 'TRANSLITERATE', expected one of ['PRESERVE']. Check router.py strategy wiring.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -262,7 +268,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `th` | `th` | ✅ match |
 | **confidence** | — | `0.93` | — |
-| **latency** | — | `0.96s` | — |
+| **latency** | — | `0.72s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -280,7 +286,7 @@
 | normalised_form | `2025-05-08` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.04s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -311,7 +317,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.02s` | — |
+| **latency** | — | `0.98s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -329,7 +335,7 @@
 | normalised_form | `2023-07-03` |
 | confidence | `0.95` |
 | review_required | `True` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -360,7 +366,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.20s` | — |
+| **latency** | — | `1.32s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -378,7 +384,7 @@
 | normalised_form | `1985-03-12` |
 | confidence | `0.95` |
 | review_required | `True` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -409,7 +415,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.42s` | — |
+| **latency** | — | `1.86s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -458,7 +464,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `fa` | `fa` | ✅ match |
 | **confidence** | — | `0.91` | — |
-| **latency** | — | `0.96s` | — |
+| **latency** | — | `0.94s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -507,7 +513,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.88` | — |
-| **latency** | — | `1.14s` | — |
+| **latency** | — | `0.69s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -525,7 +531,7 @@
 | normalised_form | `114/5/8` |
 | confidence | `0.95` |
 | review_required | `True` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -558,7 +564,7 @@
 | **field_type** | `total_assets` | `total_assets` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.94` | — |
-| **latency** | — | `1.11s` | — |
+| **latency** | — | `1.12s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -572,9 +578,9 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `PRESERVE` |
-| normalised_form | `△4,191` |
-| confidence | `1.00` |
+| processing_method | `NUMERIC` |
+| normalised_form | `-4191` |
+| confidence | `0.95` |
 | review_required | `False` |
 | latency | `0.00s` |
 
@@ -582,12 +588,10 @@
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NUMERIC` | `PRESERVE` | ❌ FAIL |
-| **normalised_form** | `-4191` | `△4,191` | ❌ FAIL |
+| **method** | `NUMERIC` | `NUMERIC` | ✅ PASS |
+| **normalised_form** | `-4191` | `-4191` | ✅ PASS |
 
-> ❌ **Method failure diagnosis:** Field type 'total_assets' is in the PRESERVE_FIELDS list but should not be. Check PRESERVE_FIELDS in router.py or preserve.py.
-
-### Overall: ❌ FAIL
+### Overall: ✅ PASS
 
 ---
 
@@ -606,39 +610,39 @@
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **field_type** | `total_assets` | `total_assets` | ✅ match |
+| **field_type** | `total_assets` | `net_assets` | ⚠️ mismatch |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.94` | — |
 | **latency** | — | `1.02s` | — |
+
+> ⚠️ **Classification mismatch on field_type.** GPT-4o-mini returned `net_assets` but expected `total_assets`. The router will process the field as `net_assets` which may select the wrong strategy.
 
 ### Step 2 — Orchestrator + Router
 
 **Row passed to orchestrator:**
 
 ```json
-{"original_text": "（4,191）", "field_type": "total_assets", "language": "ja"}
+{"original_text": "（4,191）", "field_type": "net_assets", "language": "ja"}
 ```
 
 **Router result:**
 
 | Field | Value |
 |---|---|
-| processing_method | `PRESERVE` |
-| normalised_form | `（4,191）` |
-| confidence | `1.00` |
+| processing_method | `NUMERIC` |
+| normalised_form | `-4191` |
+| confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NUMERIC` | `PRESERVE` | ❌ FAIL |
-| **normalised_form** | `-4191` | `（4,191）` | ❌ FAIL |
+| **method** | `NUMERIC` | `NUMERIC` | ✅ PASS |
+| **normalised_form** | `-4191` | `-4191` | ✅ PASS |
 
-> ❌ **Method failure diagnosis:** Field type 'total_assets' is in the PRESERVE_FIELDS list but should not be. Check PRESERVE_FIELDS in router.py or preserve.py.
-
-### Overall: ❌ FAIL
+### Overall: ✅ PASS
 
 ---
 
@@ -660,7 +664,7 @@
 | **field_type** | `total_assets` | `total_assets` | ✅ match |
 | **language** | `de` | `en` | ⚠️ mismatch |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.12s` | — |
+| **latency** | — | `1.43s` | — |
 
 > ⚠️ **Classification mismatch on language.** GPT-4o-mini returned `en` but expected `de`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
@@ -676,9 +680,9 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `PRESERVE` |
-| normalised_form | `1.234.567,89` |
-| confidence | `1.00` |
+| processing_method | `NUMERIC` |
+| normalised_form | `1234567.89` |
+| confidence | `0.95` |
 | review_required | `False` |
 | latency | `0.00s` |
 
@@ -686,12 +690,10 @@
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NUMERIC` | `PRESERVE` | ❌ FAIL |
-| **normalised_form** | `1234567.89` | `1.234.567,89` | ❌ FAIL |
+| **method** | `NUMERIC` | `NUMERIC` | ✅ PASS |
+| **normalised_form** | `1234567.89` | `1234567.89` | ✅ PASS |
 
-> ❌ **Method failure diagnosis:** Field type 'total_assets' is in the PRESERVE_FIELDS list but should not be. Check PRESERVE_FIELDS in router.py or preserve.py.
-
-### Overall: ❌ FAIL
+### Overall: ✅ PASS
 
 ---
 
@@ -729,22 +731,20 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `PRESERVE` |
-| normalised_form | `1'234'567.89` |
-| confidence | `1.00` |
+| processing_method | `NUMERIC` |
+| normalised_form | `1234567.89` |
+| confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.02s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NUMERIC` | `PRESERVE` | ❌ FAIL |
-| **normalised_form** | `1234567.89` | `1'234'567.89` | ❌ FAIL |
+| **method** | `NUMERIC` | `NUMERIC` | ✅ PASS |
+| **normalised_form** | `1234567.89` | `1234567.89` | ✅ PASS |
 
-> ❌ **Method failure diagnosis:** Field type 'total_assets' is in the PRESERVE_FIELDS list but should not be. Check PRESERVE_FIELDS in router.py or preserve.py.
-
-### Overall: ❌ FAIL
+### Overall: ✅ PASS
 
 ---
 
@@ -766,7 +766,7 @@
 | **field_type** | `id_no` | `id_no` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.61s` | — |
+| **latency** | — | `0.91s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -784,7 +784,7 @@
 | normalised_form | `٠١٢٣٤٥٦٧٨٩` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -815,7 +815,7 @@
 | **field_type** | `legal_form` | `legal_form` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.01s` | — |
+| **latency** | — | `0.84s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -863,8 +863,8 @@
 |---|---|---|---|
 | **field_type** | `legal_form` | `legal_form` | ✅ match |
 | **language** | `de` | `de` | ✅ match |
-| **confidence** | — | `0.85` | — |
-| **latency** | — | `1.73s` | — |
+| **confidence** | — | `0.95` | — |
+| **latency** | — | `0.82s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -913,7 +913,7 @@
 | **field_type** | `legal_form` | `legal_form` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.93s` | — |
+| **latency** | — | `1.61s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -931,7 +931,7 @@
 | normalised_form | `LLC` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -962,7 +962,7 @@
 | **field_type** | `status` | `status` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `1.19s` | — |
+| **latency** | — | `1.12s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -980,7 +980,7 @@
 | normalised_form | `ACTIVE` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1008,37 +1008,41 @@
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **field_type** | `status` | `status` | ✅ match |
+| **field_type** | `status` | `unstructured_text` | ⚠️ mismatch |
 | **language** | `ar` | `ar` | ✅ match |
-| **confidence** | — | `0.95` | — |
-| **latency** | — | `0.91s` | — |
+| **confidence** | — | `0.85` | — |
+| **latency** | — | `0.92s` | — |
+
+> ⚠️ **Classification mismatch on field_type.** GPT-4o-mini returned `unstructured_text` but expected `status`. The router will process the field as `unstructured_text` which may select the wrong strategy.
 
 ### Step 2 — Orchestrator + Router
 
 **Row passed to orchestrator:**
 
 ```json
-{"original_text": "منتهي", "field_type": "status", "language": "ar"}
+{"original_text": "منتهي", "field_type": "unstructured_text", "language": "ar"}
 ```
 
 **Router result:**
 
 | Field | Value |
 |---|---|
-| processing_method | `VOCABULARY` |
-| normalised_form | `DISSOLVED` |
-| confidence | `1.00` |
-| review_required | `False` |
+| processing_method | `UNRESOLVED` |
+| normalised_form | `None` |
+| confidence | `0.00` |
+| review_required | `True` |
 | latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `VOCABULARY` | `VOCABULARY` | ✅ PASS |
-| **normalised_form** | `DISSOLVED` | `DISSOLVED` | ✅ PASS |
+| **method** | `VOCABULARY` | `UNRESOLVED` | ❌ FAIL |
+| **normalised_form** | `DISSOLVED` | `None` | ❌ FAIL |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** GPT-4o-mini classified as 'unstructured_text' instead of 'status'. The router received the wrong field type and could not find a matching strategy.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -1060,7 +1064,7 @@
 | **field_type** | `role` | `role` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `0.90s` | — |
+| **latency** | — | `1.02s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1078,7 +1082,7 @@
 | normalised_form | `DIRECTOR` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1127,7 +1131,7 @@
 | normalised_form | `REPRESENTATIVE DIRECTOR` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1158,7 +1162,7 @@
 | **field_type** | `status` | `status` | ✅ match |
 | **language** | `de` | `de` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.91s` | — |
+| **latency** | — | `1.22s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1176,7 +1180,7 @@
 | normalised_form | `DISSOLVED` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1207,7 +1211,7 @@
 | **field_type** | `legal_form` | `legal_form` | ✅ match |
 | **language** | `el` | `el` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.12s` | — |
+| **latency** | — | `1.34s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1256,7 +1260,7 @@
 | **field_type** | `nationality` | `nationality` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `1.31s` | — |
+| **latency** | — | `0.64s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1305,7 +1309,7 @@
 | **field_type** | `nationality` | `nationality` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.21s` | — |
+| **latency** | — | `0.96s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1323,7 +1327,7 @@
 | normalised_form | `JAPAN` |
 | confidence | `0.88` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1354,7 +1358,7 @@
 | **field_type** | `nationality` | `nationality` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.01s` | — |
+| **latency** | — | `0.92s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1372,7 +1376,7 @@
 | normalised_form | `GERMANY` |
 | confidence | `0.88` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1403,7 +1407,7 @@
 | **field_type** | `nationality` | `nationality` | ✅ match |
 | **language** | `el` | `el` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `1.39s` | — |
+| **latency** | — | `0.89s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1421,7 +1425,7 @@
 | normalised_form | `GERMANY` |
 | confidence | `0.88` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1452,7 +1456,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.93s` | — |
+| **latency** | — | `0.74s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1470,7 +1474,7 @@
 | normalised_form | `NATALYA` |
 | confidence | `0.90` |
 | review_required | `False` |
-| latency | `0.05s` |
+| latency | `0.04s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1501,7 +1505,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.10s` | — |
+| **latency** | — | `0.95s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1550,7 +1554,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `el` | `el` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.11s` | — |
+| **latency** | — | `0.84s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1599,7 +1603,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.01s` | — |
+| **latency** | — | `0.87s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1617,7 +1621,7 @@
 | normalised_form | `TANAKA` |
 | confidence | `0.70` |
 | review_required | `True` |
-| latency | `0.37s` |
+| latency | `0.34s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1648,7 +1652,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.84s` | — |
+| **latency** | — | `1.14s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1666,7 +1670,7 @@
 | normalised_form | `WANG XIAOMING` |
 | confidence | `0.70` |
 | review_required | `True` |
-| latency | `0.23s` |
+| latency | `0.21s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1697,7 +1701,7 @@
 | **field_type** | `person_name` | `family_name` | ⚠️ mismatch |
 | **language** | `de` | `de` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `1.10s` | — |
+| **latency** | — | `0.92s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** GPT-4o-mini returned `family_name` but expected `person_name`. The router will process the field as `family_name` which may select the wrong strategy.
 
@@ -1751,7 +1755,7 @@
 | **field_type** | `person_name` | `address` | ⚠️ mismatch |
 | **language** | `de` | `de` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.91s` | — |
+| **latency** | — | `0.71s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** GPT-4o-mini returned `address` but expected `person_name`. The router will process the field as `address` which may select the wrong strategy.
 
@@ -1804,7 +1808,7 @@
 | **field_type** | `person_name` | `family_name` | ⚠️ mismatch |
 | **language** | `es` | `es` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.84s` | — |
+| **latency** | — | `1.02s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** GPT-4o-mini returned `family_name` but expected `person_name`. The router will process the field as `family_name` which may select the wrong strategy.
 
@@ -1857,8 +1861,8 @@
 |---|---|---|---|
 | **field_type** | `person_name` | `city` | ⚠️ mismatch |
 | **language** | `tr` | `tr` | ✅ match |
-| **confidence** | — | `0.85` | — |
-| **latency** | — | `1.80s` | — |
+| **confidence** | — | `0.95` | — |
+| **latency** | — | `0.84s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** GPT-4o-mini returned `city` but expected `person_name`. The router will process the field as `city` which may select the wrong strategy.
 
@@ -1911,7 +1915,7 @@
 | **field_type** | `person_name` | `city` | ⚠️ mismatch |
 | **language** | `pl` | `pl` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `1.01s` | — |
+| **latency** | — | `0.78s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** GPT-4o-mini returned `city` but expected `person_name`. The router will process the field as `city` which may select the wrong strategy.
 
@@ -1964,7 +1968,7 @@
 | **field_type** | `person_name` | `company_name` | ⚠️ mismatch |
 | **language** | `da` | `da` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `1.11s` | — |
+| **latency** | — | `1.53s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** GPT-4o-mini returned `company_name` but expected `person_name`. The router will process the field as `company_name` which may select the wrong strategy.
 
@@ -1980,20 +1984,22 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `CHARACTER_MAP` |
+| processing_method | `TRANSLITERATE` |
 | normalised_form | `AERO` |
-| confidence | `0.95` |
-| review_required | `False` |
+| confidence | `0.70` |
+| review_required | `True` |
 | latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `CHARACTER_MAP` | `CHARACTER_MAP` | ✅ PASS |
+| **method** | `CHARACTER_MAP` | `TRANSLITERATE` | ❌ FAIL |
 | **normalised_form** | `AERO` | `AERO` | ✅ PASS |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** Expected CHARACTER_MAP but got TRANSLITERATE. Check that character_map_normaliser.py is wired in _try_strategy_g() and that language 'da' is in LANGUAGE_CHAR_MAPS.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -2015,7 +2021,7 @@
 | **field_type** | `person_name` | `given_name` | ⚠️ mismatch |
 | **language** | `pt` | `pt` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.81s` | — |
+| **latency** | — | `0.91s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** GPT-4o-mini returned `given_name` but expected `person_name`. The router will process the field as `given_name` which may select the wrong strategy.
 
@@ -2031,20 +2037,22 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `CHARACTER_MAP` |
+| processing_method | `TRANSLITERATE` |
 | normalised_form | `JOAO` |
-| confidence | `0.95` |
-| review_required | `False` |
-| latency | `0.01s` |
+| confidence | `0.70` |
+| review_required | `True` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `CHARACTER_MAP` | `CHARACTER_MAP` | ✅ PASS |
+| **method** | `CHARACTER_MAP` | `TRANSLITERATE` | ❌ FAIL |
 | **normalised_form** | `JOAO` | `JOAO` | ✅ PASS |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** Expected CHARACTER_MAP but got TRANSLITERATE. Check that character_map_normaliser.py is wired in _try_strategy_g() and that language 'pt' is in LANGUAGE_CHAR_MAPS.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -2066,7 +2074,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.91s` | — |
+| **latency** | — | `0.96s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2117,7 +2125,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.01s` | — |
+| **latency** | — | `1.70s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2167,7 +2175,7 @@
 | **field_type** | `person_name` | `full_name` | ⚠️ mismatch |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.32s` | — |
+| **latency** | — | `1.12s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** GPT-4o-mini returned `full_name` but expected `person_name`. The router will process the field as `full_name` which may select the wrong strategy.
 
@@ -2218,7 +2226,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.14s` | — |
+| **latency** | — | `0.91s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2267,7 +2275,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `el` | `el` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.88s` | — |
+| **latency** | — | `1.10s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2316,7 +2324,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ko` | `ko` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `2.65s` | — |
+| **latency** | — | `1.24s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2366,7 +2374,7 @@
 | **field_type** | `company_name` | `company_name` | ✅ match |
 | **language** | `ja` | `zh` | ⚠️ mismatch |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.01s` | — |
+| **latency** | — | `1.02s` | — |
 
 > ⚠️ **Classification mismatch on language.** GPT-4o-mini returned `zh` but expected `ja`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
@@ -2419,7 +2427,7 @@
 | **field_type** | `company_name` | `company_name` | ✅ match |
 | **language** | `de` | `de` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.83s` | — |
+| **latency** | — | `0.81s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2438,7 +2446,7 @@
 | confidence | `0.90` |
 | review_required | `False` |
 | allowed_variants | `MULLER & SOHNE GMBH` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2471,7 +2479,7 @@
 | **field_type** | `company_name` | `company_name` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.19s` | — |
+| **latency** | — | `0.91s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2522,7 +2530,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `th` | `th` | ✅ match |
 | **confidence** | — | `0.93` | — |
-| **latency** | — | `1.17s` | — |
+| **latency** | — | `0.91s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2540,7 +2548,7 @@
 | normalised_form | `2025-05-08` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2570,8 +2578,8 @@
 |---|---|---|---|
 | **field_type** | `issue_date` | `date_of_birth` | ⚠️ mismatch |
 | **language** | `th` | `th` | ✅ match |
-| **confidence** | — | `0.95` | — |
-| **latency** | — | `1.17s` | — |
+| **confidence** | — | `0.93` | — |
+| **latency** | — | `0.91s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** GPT-4o-mini returned `date_of_birth` but expected `issue_date`. The router will process the field as `date_of_birth` which may select the wrong strategy.
 
@@ -2591,7 +2599,7 @@
 | normalised_form | `พ.ศ. 2568` |
 | confidence | `0.95` |
 | review_required | `True` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2624,7 +2632,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.63s` | — |
+| **latency** | — | `1.18s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2642,7 +2650,7 @@
 | normalised_form | `14/03/1445` |
 | confidence | `0.95` |
 | review_required | `True` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2675,7 +2683,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `he` | `he` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `1.20s` | — |
+| **latency** | — | `0.99s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2726,7 +2734,7 @@
 | **field_type** | `iban` | `iban` | ✅ match |
 | **language** | `en` | `en` | ✅ match |
 | **confidence** | — | `0.99` | — |
-| **latency** | — | `0.93s` | — |
+| **latency** | — | `0.88s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2793,20 +2801,22 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `PRESERVE` |
+| processing_method | `TRANSLITERATE` |
 | normalised_form | `DE811100090` |
-| confidence | `1.00` |
+| confidence | `0.90` |
 | review_required | `False` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `PRESERVE` | `PRESERVE` | ✅ PASS |
+| **method** | `PRESERVE` | `TRANSLITERATE` | ❌ FAIL |
 | **normalised_form** | `DE811100090` | `DE811100090` | ✅ PASS |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** Got 'TRANSLITERATE', expected one of ['PRESERVE']. Check router.py strategy wiring.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -2828,7 +2838,7 @@
 | **field_type** | `lei_code` | `passport_no` | ⚠️ mismatch |
 | **language** | `en` | `en` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `1.00s` | — |
+| **latency** | — | `0.91s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** GPT-4o-mini returned `passport_no` but expected `lei_code`. The router will process the field as `passport_no` which may select the wrong strategy.
 
@@ -2844,20 +2854,22 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `PRESERVE` |
+| processing_method | `TRANSLITERATE` |
 | normalised_form | `529900T8BM49AURSDO55` |
-| confidence | `1.00` |
+| confidence | `0.90` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `PRESERVE` | `PRESERVE` | ✅ PASS |
+| **method** | `PRESERVE` | `TRANSLITERATE` | ❌ FAIL |
 | **normalised_form** | `529900T8BM49AURSDO55` | `529900T8BM49AURSDO55` | ✅ PASS |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** Got 'TRANSLITERATE', expected one of ['PRESERVE']. Check router.py strategy wiring.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -2879,7 +2891,7 @@
 | **field_type** | `share_capital` | `share_capital` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.94` | — |
-| **latency** | — | `1.18s` | — |
+| **latency** | — | `1.21s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2893,22 +2905,20 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `PRESERVE` |
-| normalised_form | `¥1,234,567` |
-| confidence | `1.00` |
+| processing_method | `NUMERIC` |
+| normalised_form | `1234567` |
+| confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NUMERIC` | `PRESERVE` | ❌ FAIL |
-| **normalised_form** | `1234567` | `¥1,234,567` | ❌ FAIL |
+| **method** | `NUMERIC` | `NUMERIC` | ✅ PASS |
+| **normalised_form** | `1234567` | `1234567` | ✅ PASS |
 
-> ❌ **Method failure diagnosis:** Field type 'share_capital' is in the PRESERVE_FIELDS list but should not be. Check PRESERVE_FIELDS in router.py or preserve.py.
-
-### Overall: ❌ FAIL
+### Overall: ✅ PASS
 
 ---
 
@@ -2930,7 +2940,7 @@
 | **field_type** | `share_capital` | `share_capital` | ✅ match |
 | **language** | `de` | `de` | ✅ match |
 | **confidence** | — | `0.91` | — |
-| **latency** | — | `6.17s` | — |
+| **latency** | — | `1.04s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2944,9 +2954,9 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `PRESERVE` |
-| normalised_form | `€2.500.000,00` |
-| confidence | `1.00` |
+| processing_method | `NUMERIC` |
+| normalised_form | `2500000.00` |
+| confidence | `0.95` |
 | review_required | `False` |
 | latency | `0.00s` |
 
@@ -2954,12 +2964,10 @@
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NUMERIC` | `PRESERVE` | ❌ FAIL |
-| **normalised_form** | `2500000.00` | `€2.500.000,00` | ❌ FAIL |
+| **method** | `NUMERIC` | `NUMERIC` | ✅ PASS |
+| **normalised_form** | `2500000.00` | `2500000.00` | ✅ PASS |
 
-> ❌ **Method failure diagnosis:** Field type 'share_capital' is in the PRESERVE_FIELDS list but should not be. Check PRESERVE_FIELDS in router.py or preserve.py.
-
-### Overall: ❌ FAIL
+### Overall: ✅ PASS
 
 ---
 
@@ -2981,7 +2989,7 @@
 | **field_type** | `share_capital` | `share_capital` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `3.68s` | — |
+| **latency** | — | `0.91s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2995,9 +3003,9 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `PRESERVE` |
-| normalised_form | `﷼500,000` |
-| confidence | `1.00` |
+| processing_method | `NUMERIC` |
+| normalised_form | `500000` |
+| confidence | `0.95` |
 | review_required | `False` |
 | latency | `0.00s` |
 
@@ -3005,12 +3013,10 @@
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NUMERIC` | `PRESERVE` | ❌ FAIL |
-| **normalised_form** | `500000` | `﷼500,000` | ❌ FAIL |
+| **method** | `NUMERIC` | `NUMERIC` | ✅ PASS |
+| **normalised_form** | `500000` | `500000` | ✅ PASS |
 
-> ❌ **Method failure diagnosis:** Field type 'share_capital' is in the PRESERVE_FIELDS list but should not be. Check PRESERVE_FIELDS in router.py or preserve.py.
-
-### Overall: ❌ FAIL
+### Overall: ✅ PASS
 
 ---
 
@@ -3032,7 +3038,7 @@
 | **field_type** | `nationality` | `nationality` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.93` | — |
-| **latency** | — | `1.12s` | — |
+| **latency** | — | `0.81s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3050,7 +3056,7 @@
 | normalised_form | `CHINA` |
 | confidence | `0.88` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -3081,7 +3087,7 @@
 | **field_type** | `nationality` | `nationality` | ✅ match |
 | **language** | `ko` | `ko` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `1.53s` | — |
+| **latency** | — | `0.82s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3130,7 +3136,7 @@
 | **field_type** | `nationality` | `nationality` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.91` | — |
-| **latency** | — | `1.01s` | — |
+| **latency** | — | `0.88s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3178,8 +3184,8 @@
 |---|---|---|---|
 | **field_type** | `status` | `status` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
-| **confidence** | — | `0.91` | — |
-| **latency** | — | `0.91s` | — |
+| **confidence** | — | `0.92` | — |
+| **latency** | — | `0.95s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3228,7 +3234,7 @@
 | **field_type** | `status` | `status` | ✅ match |
 | **language** | `fr` | `fr` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `1.42s` | — |
+| **latency** | — | `0.92s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3246,7 +3252,7 @@
 | normalised_form | `DISSOLVED` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -3277,7 +3283,7 @@
 | **field_type** | `status` | `status` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.91` | — |
-| **latency** | — | `1.94s` | — |
+| **latency** | — | `0.92s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3344,7 +3350,7 @@
 | normalised_form | `STRUCK_OFF` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -3375,7 +3381,7 @@
 | **field_type** | `role` | `role` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `3.73s` | — |
+| **latency** | — | `0.92s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3393,7 +3399,7 @@
 | normalised_form | `GENERAL MANAGER` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -3424,7 +3430,7 @@
 | **field_type** | `role` | `role` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `0.95s` | — |
+| **latency** | — | `0.91s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3442,7 +3448,7 @@
 | normalised_form | `GENERAL DIRECTOR` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -3473,7 +3479,7 @@
 | **field_type** | `role` | `role` | ✅ match |
 | **language** | `fr` | `fr` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `3.17s` | — |
+| **latency** | — | `1.33s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3491,7 +3497,7 @@
 | normalised_form | `MANAGER` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -3522,7 +3528,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `fr` | `fr` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.03s` | — |
+| **latency** | — | `0.92s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3573,7 +3579,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `nl` | `nl` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `1.61s` | — |
+| **latency** | — | `1.12s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3587,21 +3593,22 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `CHARACTER_MAP` |
+| processing_method | `TRANSLITERATE` |
 | normalised_form | `VAN DEN BERG` |
-| confidence | `0.95` |
-| review_required | `False` |
-| allowed_variants | `Van DEN BERG`, `Van Den BERG` |
-| latency | `0.01s` |
+| confidence | `0.70` |
+| review_required | `True` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `CHARACTER_MAP` | `CHARACTER_MAP` | ✅ PASS |
+| **method** | `CHARACTER_MAP` | `TRANSLITERATE` | ❌ FAIL |
 | **normalised_form** | `VAN DEN BERG` | `VAN DEN BERG` | ✅ PASS |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** Expected CHARACTER_MAP but got TRANSLITERATE. Check that character_map_normaliser.py is wired in _try_strategy_g() and that language 'nl' is in LANGUAGE_CHAR_MAPS.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -3623,7 +3630,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `no` | `no` | ✅ match |
 | **confidence** | — | `0.91` | — |
-| **latency** | — | `1.94s` | — |
+| **latency** | — | `1.02s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3637,20 +3644,22 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `CHARACTER_MAP` |
+| processing_method | `TRANSLITERATE` |
 | normalised_form | `BJORNSTAD` |
-| confidence | `0.95` |
-| review_required | `False` |
+| confidence | `0.70` |
+| review_required | `True` |
 | latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `CHARACTER_MAP` | `CHARACTER_MAP` | ✅ PASS |
+| **method** | `CHARACTER_MAP` | `TRANSLITERATE` | ❌ FAIL |
 | **normalised_form** | `BJORNSTAD` | `BJORNSTAD` | ✅ PASS |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** Expected CHARACTER_MAP but got TRANSLITERATE. Check that character_map_normaliser.py is wired in _try_strategy_g() and that language 'no' is in LANGUAGE_CHAR_MAPS.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -3672,7 +3681,7 @@
 | **field_type** | `legal_form` | `registration_no` | ⚠️ mismatch |
 | **language** | `fr` | `en` | ⚠️ mismatch |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `1.16s` | — |
+| **latency** | — | `0.92s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** GPT-4o-mini returned `registration_no` but expected `legal_form`. The router will process the field as `registration_no` which may select the wrong strategy.
 
@@ -3690,9 +3699,9 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `PRESERVE` |
+| processing_method | `TRANSLITERATE` |
 | normalised_form | `SA` |
-| confidence | `1.00` |
+| confidence | `0.90` |
 | review_required | `False` |
 | latency | `0.00s` |
 
@@ -3700,10 +3709,10 @@
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `VOCABULARY` | `PRESERVE` | ❌ FAIL |
+| **method** | `VOCABULARY` | `TRANSLITERATE` | ❌ FAIL |
 | **normalised_form** | `SA` | `SA` | ✅ PASS |
 
-> ❌ **Method failure diagnosis:** Field type 'registration_no' is in the PRESERVE_FIELDS list but should not be. Check PRESERVE_FIELDS in router.py or preserve.py.
+> ❌ **Method failure diagnosis:** Expected VOCABULARY lookup but got TRANSLITERATE. Check that the lookup table for field_type='registration_no' language='en' exists in data/lookup_tables/ and that VocabularyLookupService is correctly wired in _try_strategy_c().
 
 ### Overall: ❌ FAIL
 
@@ -3727,7 +3736,7 @@
 | **field_type** | `company_name` | `company_name` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.11s` | — |
+| **latency** | — | `0.92s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3778,7 +3787,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `en` | `th` | ⚠️ mismatch |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `1.08s` | — |
+| **latency** | — | `1.01s` | — |
 
 > ⚠️ **Classification mismatch on language.** GPT-4o-mini returned `th` but expected `en`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 

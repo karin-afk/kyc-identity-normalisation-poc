@@ -1,46 +1,49 @@
-# Epic 07 — Strategy G: Character Mapping Tables
+# Epic 07 — Strategy G: Character Map Normaliser
 
-## Save to: `prompts/todo/epic-07-strategy-g-character-maps.md`
+## Implementation Todos
 
----
-
-## Context and current state
-
-Strategy G handles Latin-script languages. It applies fixed character substitution
-tables to convert special characters to ASCII for KYC screening output.
-
-The router calls Strategy G after Strategy F returns `None` for Latin-script languages.
-
-**What already exists — do not recreate:**
-- `src/config/language_normalisation_tables.py` — contains `GERMAN_UMLAUT_EXPANSIONS`,
-  `GERMAN_UMLAUT_DROPS`, `FRENCH_ACCENT_STRIP`, `SPANISH_ACCENT_STRIP`,
-  `SPANISH_N_TILDE_VARIANTS`, `ITALIAN_ACCENT_STRIP`
-- `src/pipeline/transliteration_engine.py` — contains `_normalise_german()`,
-  `_normalise_french()`, `_normalise_spanish()`, `_normalise_italian()`,
-  `_normalise_english()` and the helper `_apply_char_map()`
-- `app/data/normalisation/character_maps.py` — exists but may be incomplete
-- `app/pipeline/normalisation/character_map_normaliser.py` — exists but may be a stub
-
-**What does NOT exist and must be built:**
-- Turkish, Dutch, Scandinavian, Polish, Portuguese character maps
-- Handler functions for those five new language groups
+| # | Task | Status |
+|---|------|--------|
+| 1 | Create git branch `epic-07-strategy-g` | implemented |
+| 2 | Populate `app/data/normalisation/character_maps_new.py` — Turkish, Dutch, Scandinavian, Polish, Portuguese tables | — |
+| 3 | Populate `app/data/normalisation/character_maps.py` — import from `src/` and `character_maps_new.py`, build `LANGUAGE_CHAR_MAPS` routing dict | — |
+| 4 | Implement `app/pipeline/normalisation/character_map_normaliser.py` — entry point `apply_character_map()`, import existing handlers from `src/`, add five new handlers | — |
+| 5 | Wire `_try_strategy_g()` in `app/pipeline/normalisation/router.py` — replace `_try_stub` delegation with real call | — |
+| 6 | Write `tests/test_strategy_g_character_maps.py` — 26 tests, no mocks, covering existing (de/fr/es/en) + new (tr/nl/da/no/sv/pl/pt) + non-Latin None + router | — |
+| 7 | Run `pytest tests/test_strategy_g_character_maps.py` and report outcome | — |
+| 8 | Run `run_integration_diagnostic.py` and report outcome | — |
 
 ---
 
-## What you need to provide before running this epic
+## Copilot instruction — Implement Epic 07 Strategy G
 
-One Python file with five new character mapping dicts.
+### Context
 
-### `app/data/normalisation/character_maps_new.py`
+The following files are relevant. Read them before doing anything:
+
+- `src/config/language_normalisation_tables.py` — contains `GERMAN_UMLAUT_EXPANSIONS`, `GERMAN_UMLAUT_DROPS`, `FRENCH_ACCENT_STRIP`, `SPANISH_ACCENT_STRIP`, `SPANISH_N_TILDE_VARIANTS`, `ITALIAN_ACCENT_STRIP`, `KOREAN_SURNAME_VARIANTS`
+- `src/pipeline/transliteration_engine.py` — contains `_normalise_german()`, `_normalise_french()`, `_normalise_spanish()`, `_normalise_italian()`, `_normalise_english()`, `_apply_char_map()`. These are fully implemented — do not rewrite them.
+- `app/data/normalisation/character_maps.py` — exists but is empty. You will populate it.
+- `app/data/normalisation/character_maps_new.py` — exists but is empty. You will populate it.
+- `app/pipeline/normalisation/character_map_normaliser.py` — exists but is a stub. You will replace it.
+- `app/pipeline/normalisation/router.py` — contains `_try_strategy_g()` stub. You will wire it.
+
+---
+
+### Step 1 — Populate `app/data/normalisation/character_maps_new.py`
+
+Create this file with exactly this content:
 
 ```python
 """
-New character mapping tables for Epic 07.
-Copilot merges these into app/data/normalisation/character_maps.py.
+New character mapping tables — Turkish, Dutch, Scandinavian, Polish, Portuguese.
+These five language groups are not covered by src/config/language_normalisation_tables.py.
+Imported by app/data/normalisation/character_maps.py.
+Do not import this file directly anywhere else.
 """
 
 TURKISH_CHAR_MAP: dict[str, str] = {
-    "İ": "I",   # U+0130 uppercase dotted I
+    "İ": "I",   # U+0130 uppercase dotted I — distinct from standard I in Turkish
     "ı": "i",   # U+0131 lowercase dotless I
     "Ğ": "G", "ğ": "g",
     "Ş": "S", "ş": "s",
@@ -50,16 +53,17 @@ TURKISH_CHAR_MAP: dict[str, str] = {
 }
 
 DUTCH_CHAR_MAP: dict[str, str] = {
-    "Ĳ": "IJ",  # U+0132
-    "ĳ": "ij",  # U+0133
+    "Ĳ": "IJ",  # U+0132 uppercase IJ ligature
+    "ĳ": "ij",  # U+0133 lowercase IJ ligature
+    # Two-character I+J digraph handled in _normalise_dutch() handler
 }
 
 SCANDINAVIAN_CHAR_MAP: dict[str, str] = {
     "Æ": "AE", "æ": "ae",
     "Ø": "O",  "ø": "o",
     "Å": "A",  "å": "a",
-    "Ä": "A",  "ä": "a",
-    "Ö": "O",  "ö": "o",
+    "Ä": "A",  "ä": "a",   # Swedish
+    "Ö": "O",  "ö": "o",   # Swedish
 }
 
 POLISH_CHAR_MAP: dict[str, str] = {
@@ -89,27 +93,34 @@ PORTUGUESE_CHAR_MAP: dict[str, str] = {
 }
 ```
 
-Save to: `app/data/normalisation/character_maps_new.py`
-
 ---
 
-## Path conventions for this epic
+### Step 2 — Populate `app/data/normalisation/character_maps.py`
 
-- Character map Python files: `app/data/normalisation/`
-- Normaliser module: `app/pipeline/normalisation/character_map_normaliser.py`
-- JSON data files load from `data/lookup_tables/` (project root) — not `app/data/`
-- Test file: `tests/test_strategy_g_character_maps.py`
-- No imports from `src/` at runtime in any `app/` module
-
----
-
-## Step 1 — Complete `app/data/normalisation/character_maps.py`
-
-Check the existing file. It must contain all of the following. Add anything missing.
-Do not import from `src/` — copy the dict literals directly.
+Import the existing maps from `src/` rather than redefining them. Import the new maps from `character_maps_new.py`. Build the `LANGUAGE_CHAR_MAPS` routing dict.
 
 ```python
-"""All character mapping tables for Strategy G."""
+"""
+All character mapping tables for Strategy G.
+Existing maps imported from src/config/language_normalisation_tables.py.
+New maps imported from app/data/normalisation/character_maps_new.py.
+"""
+
+import sys
+from pathlib import Path
+
+_SRC = Path(__file__).resolve().parents[4] / "src"
+if str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
+
+from config.language_normalisation_tables import (
+    GERMAN_UMLAUT_EXPANSIONS,
+    GERMAN_UMLAUT_DROPS,
+    FRENCH_ACCENT_STRIP,
+    SPANISH_ACCENT_STRIP,
+    SPANISH_N_TILDE_VARIANTS,
+    ITALIAN_ACCENT_STRIP,
+)
 
 from app.data.normalisation.character_maps_new import (
     TURKISH_CHAR_MAP,
@@ -119,50 +130,7 @@ from app.data.normalisation.character_maps_new import (
     PORTUGUESE_CHAR_MAP,
 )
 
-# Carried forward from src/config/language_normalisation_tables.py
-GERMAN_UMLAUT_EXPANSIONS: dict[str, str] = {
-    "Ä": "AE", "ä": "ae",
-    "Ö": "OE", "ö": "oe",
-    "Ü": "UE", "ü": "ue",
-    "ß": "SS",
-}
-GERMAN_UMLAUT_DROPS: dict[str, str] = {
-    "Ä": "A", "ä": "a",
-    "Ö": "O", "ö": "o",
-    "Ü": "U", "ü": "u",
-    "ß": "S",
-}
-FRENCH_ACCENT_STRIP: dict[str, str] = {
-    "À": "A", "Â": "A", "à": "a", "â": "a",
-    "É": "E", "È": "E", "Ê": "E", "Ë": "E",
-    "é": "e", "è": "e", "ê": "e", "ë": "e",
-    "Î": "I", "Ï": "I", "î": "i", "ï": "i",
-    "Ô": "O", "ô": "o",
-    "Ù": "U", "Û": "U", "Ü": "U",
-    "ù": "u", "û": "u", "ü": "u",
-    "Ç": "C", "ç": "c",
-    "Œ": "OE", "œ": "oe",
-    "Æ": "AE", "æ": "ae",
-    "\u2019": "",
-}
-SPANISH_ACCENT_STRIP: dict[str, str] = {
-    "Á": "A", "á": "a",
-    "É": "E", "é": "e",
-    "Í": "I", "í": "i",
-    "Ó": "O", "ó": "o",
-    "Ú": "U", "ú": "u",
-    "Ü": "U", "ü": "u",
-    "Ñ": "N", "ñ": "n",
-}
-ITALIAN_ACCENT_STRIP: dict[str, str] = {
-    "À": "A", "à": "a",
-    "È": "E", "è": "e",
-    "É": "E", "é": "e",
-    "Ì": "I", "ì": "i",
-    "Ò": "O", "ò": "o",
-    "Ù": "U", "ù": "u",
-}
-
+# Primary map per language code
 LANGUAGE_CHAR_MAPS: dict[str, dict[str, str]] = {
     "de": GERMAN_UMLAUT_EXPANSIONS,
     "fr": FRENCH_ACCENT_STRIP,
@@ -177,6 +145,7 @@ LANGUAGE_CHAR_MAPS: dict[str, dict[str, str]] = {
     "pt": PORTUGUESE_CHAR_MAP,
 }
 
+# Variant maps — secondary forms for watchlist matching
 LANGUAGE_VARIANT_MAPS: dict[str, dict[str, str]] = {
     "de": GERMAN_UMLAUT_DROPS,
 }
@@ -184,9 +153,9 @@ LANGUAGE_VARIANT_MAPS: dict[str, dict[str, str]] = {
 
 ---
 
-## Step 2 — Implement `app/pipeline/normalisation/character_map_normaliser.py`
+### Step 3 — Implement `app/pipeline/normalisation/character_map_normaliser.py`
 
-Replace the existing file content entirely.
+Replace the stub entirely. Import the existing handlers from `src/` — do not copy or rewrite them. Only implement the five new handlers.
 
 ```python
 """
@@ -194,28 +163,49 @@ Strategy G — Character Map Normaliser.
 
 Entry point: apply_character_map(text, language, field_type) -> dict | None
 
-Returns None if language has no character map, allowing the router to fall
-through to Strategy H. No imports from src/ at runtime.
+Existing handlers (de, fr, es, it, en) are imported from
+src/pipeline/transliteration_engine.py — do not duplicate them here.
+
+New handlers (tr, nl, no, sv, da, pl, pt) are implemented in this file.
 """
 
-import unicodedata
+import sys
+from pathlib import Path
+
+_SRC = Path(__file__).resolve().parents[4] / "src"
+if str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
+
 import re
+import unicodedata
+
+from pipeline.transliteration_engine import (
+    _normalise_german,
+    _normalise_french,
+    _normalise_spanish,
+    _normalise_italian,
+    _normalise_english,
+    _apply_char_map,
+)
 
 from app.data.normalisation.character_maps import (
-    LANGUAGE_CHAR_MAPS, LANGUAGE_VARIANT_MAPS,
-    GERMAN_UMLAUT_EXPANSIONS, GERMAN_UMLAUT_DROPS,
-    FRENCH_ACCENT_STRIP, SPANISH_ACCENT_STRIP, ITALIAN_ACCENT_STRIP,
-    DUTCH_CHAR_MAP, SCANDINAVIAN_CHAR_MAP, POLISH_CHAR_MAP,
-    PORTUGUESE_CHAR_MAP, TURKISH_CHAR_MAP,
+    LANGUAGE_CHAR_MAPS,
+    TURKISH_CHAR_MAP,
+    DUTCH_CHAR_MAP,
+    SCANDINAVIAN_CHAR_MAP,
+    POLISH_CHAR_MAP,
+    PORTUGUESE_CHAR_MAP,
 )
-from app.pipeline.normalisation.field_types import ProcessingMethod, STRATEGY_CONFIDENCE
 
 
 def apply_character_map(text: str, language: str, field_type: str) -> dict | None:
-    """Strategy G entry point. Returns None if language has no map."""
-    if language not in LANGUAGE_CHAR_MAPS and language != "en":
-        return None
+    """
+    Strategy G entry point called by the normalisation router.
 
+    Returns None if the language has no character map — signals the router
+    to continue to Strategy H. Returns None for non-Latin scripts.
+    Never raises.
+    """
     handlers = {
         "de": _normalise_german,
         "fr": _normalise_french,
@@ -231,15 +221,12 @@ def apply_character_map(text: str, language: str, field_type: str) -> dict | Non
         "pt": _normalise_portuguese,
     }
     handler = handlers.get(language)
-    if handler:
+    if not handler:
+        return None
+    try:
         return handler(text, field_type)
-
-    char_map = LANGUAGE_CHAR_MAPS.get(language, {})
-    return _build_result(text, _apply_char_map(text, char_map).upper())
-
-
-def _apply_char_map(text: str, char_map: dict[str, str]) -> str:
-    return "".join(char_map.get(c, c) for c in text)
+    except Exception:
+        return None
 
 
 def _build_result(original: str, normalised: str,
@@ -248,109 +235,15 @@ def _build_result(original: str, normalised: str,
         "original_text":           original,
         "normalised_form":         normalised,
         "allowed_variants":        variants or [],
-        "processing_method":       ProcessingMethod.CHARACTER_MAP,
-        "confidence":              STRATEGY_CONFIDENCE[ProcessingMethod.CHARACTER_MAP],
+        "processing_method":       "CHARACTER_MAP",
+        "confidence":              0.95,
         "review_required":         False,
         "review_reason":           None,
         "should_use_in_screening": True,
     }
 
 
-# ── Existing handlers — ported from src/pipeline/transliteration_engine.py ────
-# Logic is identical. Only imports are updated. Do not import from src/.
-
-def _normalise_german(text: str, field_type: str) -> dict:
-    expanded = _apply_char_map(text, GERMAN_UMLAUT_EXPANSIONS).upper()
-    dropped  = _apply_char_map(text, GERMAN_UMLAUT_DROPS).upper()
-    variants: set[str] = set()
-    if dropped != expanded:
-        variants.add(dropped)
-    if "-" in expanded:
-        variants.add(expanded.replace("-", " "))
-    if "-" in dropped:
-        variants.add(dropped.replace("-", " "))
-    for particle in ("VON ", "VAN ", "ZU "):
-        if particle in expanded:
-            variants.add(expanded.replace(particle, particle.capitalize()))
-    result = _build_result(text, expanded)
-    result["allowed_variants"] = sorted(v for v in variants if v != expanded)
-    return result
-
-
-def _normalise_french(text: str, field_type: str) -> dict:
-    stripped = _apply_char_map(text, FRENCH_ACCENT_STRIP).upper()
-    variants: set[str] = set()
-    if "'" in stripped or "\u2019" in stripped:
-        variants.add(stripped.replace("'", "").replace("\u2019", ""))
-        variants.add(stripped.replace("'", " ").replace("\u2019", " ").strip())
-    if "-" in stripped:
-        variants.add(stripped.replace("-", " "))
-    for particle in ("DE LA ", "DU ", "DES ", "DE "):
-        if f" {particle}" in stripped or stripped.startswith(particle):
-            variants.add(stripped.replace(particle, "").strip())
-    result = _build_result(text, stripped)
-    result["allowed_variants"] = sorted(v for v in variants if v != stripped)
-    return result
-
-
-def _normalise_spanish(text: str, field_type: str) -> dict:
-    stripped = _apply_char_map(text, SPANISH_ACCENT_STRIP).upper()
-    variants: set[str] = set()
-    if "Ñ" in text.upper():
-        ny_variant = "".join(
-            "NY" if orig in "ñÑ" else ch
-            for orig, ch in zip(text.upper(), stripped)
-        )
-        if ny_variant != stripped:
-            variants.add(ny_variant)
-    if "-" in stripped:
-        variants.add(stripped.replace("-", " "))
-    for particle in ("DEL ", "DE LA ", "DE LOS ", "DE LAS ", "DE "):
-        if f" {particle}" in stripped or stripped.startswith(particle):
-            variants.add(stripped.replace(particle, "").strip())
-    result = _build_result(text, stripped)
-    result["allowed_variants"] = sorted(v for v in variants if v != stripped)
-    return result
-
-
-def _normalise_italian(text: str, field_type: str) -> dict:
-    stripped = _apply_char_map(text, ITALIAN_ACCENT_STRIP).upper()
-    variants: set[str] = set()
-    apos_re = re.compile(r"\b([A-Z]+)'([A-Z])")
-    if apos_re.search(stripped):
-        variants.add(apos_re.sub(r"\1 \2", stripped))
-        variants.add(apos_re.sub(r"\1\2", stripped))
-    if "-" in stripped:
-        variants.add(stripped.replace("-", " "))
-    result = _build_result(text, stripped)
-    result["allowed_variants"] = sorted(v for v in variants if v != stripped)
-    return result
-
-
-def _normalise_english(text: str, field_type: str) -> dict:
-    normalised = unicodedata.normalize("NFKC", text).upper()
-    variants: set[str] = set()
-    if "'" in normalised:
-        variants.add(normalised.replace("'", ""))
-        variants.add(normalised.replace("'", " ").strip())
-    if "-" in normalised:
-        variants.add(normalised.replace("-", " "))
-        variants.add(normalised.replace("-", ""))
-    for mac_re, alt in [(re.compile(r"\bMAC([A-Z])"), "MC"),
-                        (re.compile(r"\bMC([A-Z])"),  "MAC")]:
-        swapped = mac_re.sub(lambda m: alt + m.group(1), normalised)
-        if swapped != normalised:
-            variants.add(swapped)
-    if " ST " in normalised or normalised.startswith("ST "):
-        variants.add(normalised.replace("ST ", "SAINT ", 1))
-    if "SAINT " in normalised:
-        variants.add(normalised.replace("SAINT ", "ST ", 1))
-    result = _build_result(text, normalised)
-    result["allowed_variants"] = sorted(v for v in variants if v != normalised)
-    return result
-
-
-# ── New handlers ───────────────────────────────────────────────────────────────
+# ── Five new handlers ──────────────────────────────────────────────────────────
 
 def _normalise_turkish(text: str, field_type: str) -> dict:
     normalised = _apply_char_map(text, TURKISH_CHAR_MAP).upper()
@@ -411,9 +304,9 @@ def _normalise_portuguese(text: str, field_type: str) -> dict:
 
 ---
 
-## Step 3 — Wire into the router
+### Step 4 — Wire into `app/pipeline/normalisation/router.py`
 
-In `app/pipeline/normalisation/router.py`, replace the `_try_strategy_g()` stub:
+Replace `_try_strategy_g()` stub with:
 
 ```python
 def _try_strategy_g(text: str, field_type: str, language: str) -> dict | None:
@@ -426,15 +319,15 @@ def _try_strategy_g(text: str, field_type: str, language: str) -> dict | None:
 
 ---
 
-## Tests — `tests/test_strategy_g_character_maps.py`
+### Step 5 — Tests `tests/test_strategy_g_character_maps.py`
 
-No mocks. Call `apply_character_map()` or `route_field()` with real inputs.
+No mocks. All tests call `apply_character_map()` directly or `route_field()`.
 
 ```python
 from app.pipeline.normalisation.character_map_normaliser import apply_character_map
 from app.pipeline.normalisation.router import route_field
 
-# Existing
+# Existing — must still pass
 def test_german_umlaut_expansion():
     assert apply_character_map("Müller", "de", "person_name")["normalised_form"] == "MUELLER"
 
@@ -445,7 +338,7 @@ def test_german_sz():
     assert apply_character_map("Straße", "de", "person_name")["normalised_form"] == "STRASSE"
 
 def test_french_accent():
-    assert apply_character_map("Léa", "fr", "person_name")["normalised_form"] == "LEA"
+    assert apply_character_map("Élodie", "fr", "person_name")["normalised_form"] == "ELODIE"
 
 def test_spanish_n_tilde_primary():
     assert apply_character_map("Muñoz", "es", "person_name")["normalised_form"] == "MUNOZ"
@@ -468,8 +361,7 @@ def test_turkish_soft_g():
     assert apply_character_map("Ağaoğlu", "tr", "person_name")["normalised_form"] == "AGAOGLU"
 
 def test_dutch_ij_ligature():
-    r = apply_character_map("Ĳsselmeer", "nl", "person_name")
-    assert r["normalised_form"] == "IJSSELMEER"
+    assert apply_character_map("Ĳsselmeer", "nl", "person_name")["normalised_form"] == "IJSSELMEER"
 
 def test_scandinavian_ae():
     assert apply_character_map("Ærø", "da", "person_name")["normalised_form"] == "AERO"
@@ -492,22 +384,23 @@ def test_portuguese_tilde():
 def test_portuguese_cedilla():
     assert apply_character_map("Gonçalves", "pt", "person_name")["normalised_form"] == "GONCALVES"
 
-# Routing
+# Non-Latin returns None
+def test_arabic_returns_none():
+    assert apply_character_map("محمد", "ar", "person_name") is None
+
+def test_japanese_returns_none():
+    assert apply_character_map("田中", "ja", "person_name") is None
+
+# Router
 def test_german_routes_to_character_map():
     r = route_field({"original_text": "Müller", "field_type": "person_name", "language": "de"})
     assert r["processing_method"] == "CHARACTER_MAP"
     assert r["normalised_form"] == "MUELLER"
-
-def test_arabic_returns_none_from_strategy_g():
-    assert apply_character_map("محمد", "ar", "person_name") is None
-
-def test_japanese_returns_none_from_strategy_g():
-    assert apply_character_map("田中", "ja", "person_name") is None
 ```
 
 ---
 
-## Acceptance criteria
+### Acceptance criteria
 
 - `apply_character_map("Müller", "de", "person_name")` → `MUELLER` with `MULLER` in variants
 - `apply_character_map("İstanbul", "tr", "person_name")` → `ISTANBUL`
@@ -515,6 +408,6 @@ def test_japanese_returns_none_from_strategy_g():
 - `apply_character_map("Ærø", "da", "person_name")` → `AERO`
 - `apply_character_map("محمد", "ar", "person_name")` → `None`
 - `route_field({"original_text": "Müller", "field_type": "person_name", "language": "de"})` → `processing_method == "CHARACTER_MAP"`
-- All existing golden dataset regression tests pass unchanged
-- All tests in `tests/test_strategy_g_character_maps.py` pass
-- No imports from `src/` at runtime in any `app/` module
+- All tests pass
+- `src/pipeline/transliteration_engine.py` is not modified
+- `src/config/language_normalisation_tables.py` is not modified
