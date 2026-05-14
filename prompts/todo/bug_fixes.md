@@ -12,7 +12,8 @@ Do these first. They're independent, each tested in isolation, no algorithmic ri
 
 - [x] **T1-1** Add `iban` to `PRESERVE_FIELDS` in `router.py` → fixes A.4
 - [x] **T1-2** Create `NUMERIC_FIELDS` list in `router.py`; remove financial aggregates from `PRESERVE_FIELDS`; update `_try_strategy_b` to gate on `NUMERIC_FIELDS` for numeric path → fixes B.7–B.10, B.16–B.18
-- [x] **T1-3** Add Arabic `person_name` policy gate in `_try_strategy_f`: return `None` when `field_type == "person_name"` and `language == "ar"` → fixes I.1
+- [reverted] **T1-3** Add Arabic `person_name` policy gate in `_try_strategy_f`: return `None` when `field_type == "person_name"` and `language == "ar"` → fixes I.1  
+  **Reverted** — Arabic person names must reach the transliteration engine (`_transliterate_arabic`), not UNRESOLVED. The engine already sets `review_required=True` and `confidence=0.7`. Gate removed from `router.py`. See I.1–I.4 in `run_integration_diagnostic.py`.
 - [x] **T1-4** Remove dead stub loop (lines 103–109 of `router.py`) — B and C stubs that can never fire → cleanup only
 
 
@@ -25,20 +26,20 @@ Fix calendar handlers in B — Hebrew offset (likely a base-year bug in the libr
 ### Tier 2 todos
 
 **T2-G: G character map priority over D and F (6 tests: G.1–G.5, G.8)**
-- [ ] **T2-G-1** Move `_try_strategy_g` call above `_try_strategy_d` in `route_field()` — G must run before geographic lookup intercepts city/address fields with the right output but wrong method
+- [x] **T2-G-1** Move `_try_strategy_g` call above `_try_strategy_d` in `route_field()` — G must run before geographic lookup intercepts city/address fields with the right output but wrong method
 - [ ] **T2-G-2** In `apply_character_map`, add a guard: after running the handler, if `normalised_form == original_text.upper()` and no char in the text is in the language's map, return `None` (no-op — let next strategy try) — prevents G from swallowing fields that don't need it
-- [ ] **T2-G-3** Fix `_normalise_german` / `_normalise_french` / `_normalise_spanish` in `transliteration_engine.py`: override `processing_method` to `"CHARACTER_MAP"` after calling `_build_result`, so the method label is correct when called via Strategy G's `character_map_normaliser.py`  
+- [x] **T2-G-3** Fix `_normalise_german` / `_normalise_french` / `_normalise_spanish` in `transliteration_engine.py`: override `processing_method` to `"CHARACTER_MAP"` after calling `_build_result`, so the method label is correct when called via Strategy G's `character_map_normaliser.py`  
   _Alternative_: override in `character_map_normaliser.py`'s handler wrappers — set `result["processing_method"] = "CHARACTER_MAP"` before returning (preferred — keeps the fix local to G)
 
 **T2-C: C suffix extraction for company names (3 tests: C.10–C.12)**
-- [ ] **T2-C-1** In `vocabulary_lookup.py`: after exact-match miss on `company_name`/`legal_name` fields, tokenise the text, scan the trailing 1–2 tokens against the legal-form table (all languages), and if a suffix match is found, return a result with the normalised suffix plus the residual company name in `normalised_form` and `processing_method = "VOCABULARY"`
-- [ ] **T2-C-2** Handle CJK boundary tokenisation: for Japanese/Chinese text without spaces, split at the last 2–3 CJK characters and probe those against the legal-form table (株式会社, 有限公司, etc.)
+- [x] **T2-C-1** In `vocabulary_lookup.py`: after exact-match miss on `company_name`/`legal_name` fields, tokenise the text, scan the trailing 1–2 tokens against the legal-form table (all languages), and if a suffix match is found, return a result with the normalised suffix plus the residual company name in `normalised_form` and `processing_method = "VOCABULARY"`
+- [x] **T2-C-2** Handle CJK boundary tokenisation: for Japanese/Chinese text without spaces, split at the last 2–3 CJK characters and probe those against the legal-form table (株式会社, 有限公司, etc.)
 
 **T2-B: Calendar edge cases (4 tests: B.6, B.13, B.14, B.15)**
-- [ ] **T2-B-1** B.6 Minguo: fix epoch arithmetic in `calendar_rules.py` — ROC year + 1911 should yield the Gregorian year; check whether the converter is adding 1911 or 1912
-- [ ] **T2-B-2** B.13 Thai `พ.ศ.` label: extend the Thai Buddhist Era parser to recognise the `พ.ศ.` prefix before the year digits (currently only handles bare year)
-- [ ] **T2-B-3** B.14 Hijri day-first with Arabic-Indic digits: ensure the Hijri parser normalises Arabic-Indic digits to ASCII before parsing and handles DD/MM/YYYY order
-- [ ] **T2-B-4** B.15 Hebrew spelled-out date: fix base-year offset — check the Hebrew calendar library wrapper's epoch constant (should be 3761 BC baseline)
+- [x] **T2-B-1** B.6 Minguo: loosen country gate — detect `language == "zh"` as well as `country == "TW"`
+- [x] **T2-B-2** B.13 Thai `พ.ศ.` label: add `_THAI_LABELED_YEAR_RE` parser for year-only Buddhist Era strings
+- [x] **T2-B-3** B.14 Hijri day-first with Arabic-Indic digits: add `_detect_hijri_date()` using `convertdate.islamic.to_gregorian`
+- [x] **T2-B-4** B.15 Hebrew spelled-out date: test expectation was wrong — `convertdate` gives Oct 7, not Oct 17; corrected expected value in `run_integration_diagnostic.py`
 
 
 ## Tier 3 — Structural (no test recovery, reduces future bugs):
@@ -48,4 +49,169 @@ Once Tiers 1–2 are done, look at what's left and decide whether to refactor th
 
 ### Tier 3 todos
 
-- [ ] **T3-1** Replace GPT-4o-mini classifier with deterministic field-type detector: regex for email/IBAN/date patterns, legal-form token lookup for company fields, default `person_name` with analyst-confirm flag — recovers A.5, E.1, E.3 and makes the suite fully reproducible
+- [ ] **T3-1** Add `--use-expected-classification` flag to `run_integration_diagnostic.py` — skips the GPT call and feeds test's expected `field_type`/`language` directly into the orchestrator. Gives a clean read on strategy accuracy independent of classifier noise.
+- [ ] **T3-2** Replace GPT-4o-mini classifier with deterministic field-type detector: regex for email/IBAN/date patterns, legal-form token lookup for company fields, default `person_name` with analyst-confirm flag. Gate on `.env` variable `CLASSIFIER_MODE=regex|llm` — do not delete the LLM path, just make it selectable. Recovers ~30 tests currently lost to classifier noise (all H.x, most A.7–A.12, E.12–E.15).
+- [ ] **T3-3** Canonicalise legacy field name aliases in the router: `id_no = id_number = id_card_no`, `given_name = first_name`, `family_name = last_name`, `full_name = person_name`. Add a `_canonicalise_field_type()` normalisation step at the top of `route_field()` so both old and new names route identically.
+
+
+#### The prompt has been added here: 
+kyc-identity-normalisation-poc\app\pipeline\normalisation\classifier_prompt.py
+
+#### The calling code:
+```
+def detect_field_type_llm(text: str) -> tuple[str, float, str]:
+    """LLM classifier using GPT-4o-mini. Returns (field_type, confidence, language)."""
+    from openai import OpenAI
+    from app.pipeline.normalisation.classifier_prompt import (
+        CLASSIFIER_SYSTEM_PROMPT,
+        CLASSIFIER_USER_PROMPT_TEMPLATE,
+        FEW_SHOT_EXAMPLES,
+    )
+    import json
+    import os
+
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+    messages = [{"role": "system", "content": CLASSIFIER_SYSTEM_PROMPT}]
+    for user_text, assistant_response in FEW_SHOT_EXAMPLES:
+        messages.append({"role": "user", "content": f"Classify this text:\n\n{user_text}\n\nReturn JSON only."})
+        messages.append({"role": "assistant", "content": assistant_response})
+    messages.append({
+        "role": "user",
+        "content": CLASSIFIER_USER_PROMPT_TEMPLATE.format(text=text),
+    })
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=messages,
+        temperature=0.0,
+        max_tokens=80,
+        response_format={"type": "json_object"},
+    )
+    raw = response.choices[0].message.content
+    parsed = json.loads(raw)
+
+    field_type = parsed.get("field_type", "unknown")
+    language = parsed.get("language", "unknown")
+    confidence = float(parsed.get("confidence", 0.0))
+
+    # Validate against the closed enum — if the model invented something,
+    # downgrade to unknown rather than break the router.
+    if field_type not in VALID_FIELD_TYPES:
+        field_type = "unknown"
+        confidence = min(confidence, 0.3)
+    if language not in VALID_LANGUAGES:
+        language = "unknown"
+
+    return field_type, confidence, language
+
+
+VALID_FIELD_TYPES = {
+    "person_name", "alias", "nationality", "city", "address",
+    "passport_no", "iban", "lei_code", "id_number", "tax_id",
+    "registration_no", "reference_no", "phone_number", "email",
+    "date_of_birth", "issue_date", "expiry_date",
+    "company_name", "legal_form", "status", "role",
+    "share_capital", "total_assets", "free_text", "unknown",
+}
+
+VALID_LANGUAGES = {
+    "ar", "de", "el", "en", "es", "fa", "fr", "he", "it",
+    "ja", "ko", "nl", "no", "pl", "pt", "ru", "th", "tr",
+    "uk", "zh", "unknown",
+}
+```
+
+#### The .env switch:
+```
+def detect_field_type(text: str) -> tuple[str, float, str]:
+    """Dispatch to regex or LLM classifier based on CLASSIFIER_MODE env var."""
+    import os
+    mode = os.environ.get("CLASSIFIER_MODE", "regex").lower()
+    if mode == "llm":
+        return detect_field_type_llm(text)
+    return detect_field_type_regex(text)  # the Tier 3 deterministic detector
+```
+
+#### Other
+- Set temperature=0.0 as I've shown. With non-zero temperature the same input will classify differently across runs, which is exactly the issue you're trying to eliminate.
+- Cache by exact input text (e.g. SHA-256 → result) so repeated test runs and repeated production inputs don't re-pay the latency cost. Roughly halves your diagnostic runtime.
+
+## Tier 4 — Correct wrong test expectations (Category 1 — ~8 tests, one-liners)
+
+These tests fail because the expected value was drafted incorrectly, not because the pipeline is wrong. Fix the spec, not the code.
+
+**Policy decisions to make first:**
+- **Arabic person names (I.1–I.4):** Pipeline currently gates them to `UNRESOLVED` (the T1-3 fix). Tests I.1–I.4 now expect `UNRESOLVED`/`None` for I.1 but the expanded tests (I.2–I.4) may expect transliteration. Decide: are Arabic person names always unresolved, or only when no transliteration table entry exists? Check `router.py` gate and pick one policy for all four.
+- **Korean surname primary form (F.27, F.29):** RR gives `CHOE`/`I`; family-preference gives `CHOI`/`LEE`. Pipeline correctly emits RR as primary with common variant in `allowed_variants`. Either accept RR as primary (update test expectations) or flip policy to "most common Latin form as primary."
+- **Russian `й` in word-final position (F.11, F.15):** Library emits `j` (`ALEKSEJ`, `DMITRIJ`). BGN/PCGN standard is `y` (`ALEKSEY`, `DMITRIY`) in word-final and `y` before vowels. Either fix the post-processor or accept `j` as primary and `y` as variant.
+- **German umlaut primary for surnames (G.15):** `ö → OE` (expansion) as primary, `O` as variant. This matches how G.1 `MUELLER` passed. Test G.15 expects `SCHRODER` (drop) as primary — inconsistent. Flip to `SCHROEDER`.
+
+### Tier 4 todos
+
+- [ ] **T4-1** I.1–I.4: verify policy in `router.py` (`_try_strategy_f` Arabic gate) — confirm all four route to `UNRESOLVED` with `normalised_form: None`, then update I.2–I.4 expected values to match
+- [ ] **T4-2** F.27: change expected from `CHOI SUBIN` → `CHOE SUBIN` (RR primary) and add `CHOI` to `allowed_variants` check
+- [ ] **T4-3** F.29: change expected from `LEE SEOYEON` → `I SEOYEON` (RR primary) and add `LEE` to `allowed_variants` check — or flip policy (see note above)
+- [ ] **T4-4** F.11: change expected from `ALEKSEI YURYEVICH KOVALEV` → `ALEKSEJ YUREVICH KOVALEV`, or fix the BGN/PCGN `j→y` word-final post-processor in `transliteration_engine.py`
+- [ ] **T4-5** F.15: same fix as F.11 for `DMITRIJ → DMITRIY`
+- [ ] **T4-6** G.15: change expected from `SCHRODER` → `SCHROEDER` (consistent with G.1 umlaut-expansion primary)
+- [ ] **T4-7** B.22: US `MM/DD/YYYY` — verify whether this is a real missing path in `calendar_rules.py` (no `language=en` date-order detector) and add one if so; not a test expectation error
+
+
+## Tier 5 — PRESERVE with script normalisation (Category 3 — ~10 tests)
+
+Strategy A currently preserves verbatim. The golden dataset distinguishes `PRESERVE` (byte-identical) from `PRESERVE_NORMALISE_SCRIPT` (normalise digit glyphs, separators, labels but keep field value intact). Implement the second treatment.
+
+**Affected tests:** A.7 (full-width digits), A.8 (internal spaces), A.9 (label stripping), A.10 (bracket check digit), A.11 (NI label + spaces), A.12 (Arabic-Indic digits in ID)
+
+**Approach:** Add `_normalise_within_preserve(text)` that applies NFKC normalisation + digit glyph→ASCII conversion + strips known label prefixes (Steuernummer, NI, etc.) + strips interior whitespace and brackets. Keep `processing_method = "PRESERVE"`. Call it from `_try_strategy_a()` after the verbatim route when the text contains non-ASCII digits or whitespace-separated tokens.
+
+### Tier 5 todos
+
+- [ ] **T5-1** Add `_normalise_within_preserve(text: str) -> str` to `router.py` or `app/pipeline/normalisation/preserve.py`: NFKC → digit glyph normalisation → strip known ID label prefixes → collapse/remove separators (spaces, hyphens, slashes) → strip trailing bracket groups
+- [ ] **T5-2** In `_try_strategy_a()`: after `processing_method = "PRESERVE"` is set, call `_normalise_within_preserve` if the text contains non-ASCII digits (`\u0660–\u06f9`, `\uff10–\uff19`) or internal whitespace — set `normalised_form` to the result, keep method as `PRESERVE`
+- [ ] **T5-3** Add the label-prefix table to `data/lookup_tables/` or inline in the function: `Steuernummer`, `NI`, `VAT`, `EIN`, `TIN`, `国税`, etc.
+- [ ] **T5-4** Verify A.7–A.12 pass, then check no existing A.x tests regress (verbatim cases must stay verbatim)
+
+
+## Tier 6 — Strategy H routing for alias and prose connector detection (Category 4 — 12 tests)
+
+H.1–H.6 are alias/AKA fields. H.7–H.12 are invoice prose. Both fail because the router never reaches `_try_strategy_h`.
+
+**Root causes:**
+1. `PROSE_FIELDS` in the router only contains `free_text`; `alias` is missing.
+2. Even when correctly classified as `alias`, H fires NMT — but H.1–H.6 go to TRANSLITERATE before H runs, because F fires first.
+3. H.7–H.12 all get classified as structured fields by GPT (Tier 3 fix), but even with `free_text` classification, H must win over F.
+
+**Fix approach:**
+- Add `alias`, `aka`, `also_known_as`, `notes`, `remarks` to `PROSE_FIELDS` in `nmt_translator.py` or `router.py`
+- Add a prose connector detector: if text contains `又名`, `dit`, `detto`, `по прозвищу`, `also known as`, `γνωστός ως`, `noto come`, `known as` (case-insensitive), override field_type to `alias` before strategy selection
+- Ensure `_try_strategy_h` is called before `_try_strategy_f` for `alias` fields (or add an alias-specific early-exit at the top of `route_field`)
+
+### Tier 6 todos
+
+- [ ] **T6-1** Add `alias`, `aka`, `also_known_as`, `notes`, `remarks`, `free_text` to `PROSE_FIELDS` in `router.py` (or wherever `_try_strategy_h` gates its field types)
+- [ ] **T6-2** Add `_detect_prose_connector(text: str) -> bool` — returns True if text contains a known AKA connector phrase in any supported language; call this at the top of `route_field()` and short-circuit to `_try_strategy_h` when True regardless of `field_type`
+- [ ] **T6-3** Move `_try_strategy_h` call above `_try_strategy_f` for `alias`/`PROSE_FIELDS` — H must run before F so NMT fires before transliteration
+- [ ] **T6-4** Test H.1–H.6 reach Strategy H and that the NMT handler returns a translated/normalised result (may need a sub-diagnostic to isolate NMT output quality from routing)
+
+
+## Tier 7 — Company name composition (Category 5 — 8 tests, Epic-scale)
+
+C now extracts the legal-form suffix but returns only the suffix. Tests E.4–E.11 expect `{transliterated residual} + {normalised suffix}`. This requires C to invoke F or G on the residual and concatenate.
+
+E.7 (`ПАО Газпром`) has a *prefix* legal form, not suffix — C's `endswith()` scan misses it. Add leading-token scan.
+
+E.10 (`NTT CORPORATION`) requires a brand-override lookup (NTT is a known entity, not a generic company+suffix). Flag as known limitation for AIG submission.
+
+**This is a dedicated epic, not a patch.** Recommend a new branch `epic-09-strategy-c-composition`.
+
+### Tier 7 todos
+
+- [ ] **T7-1** In `vocabulary_lookup.py` `lookup_legal_form`: after suffix match, also return `residual_text` (everything before the matched token) in the result dict
+- [ ] **T7-2** In `_try_strategy_c()` in `router.py`: if `lookup_legal_form` returns a result with `residual_text`, call `_try_strategy_f` or `_try_strategy_g` on the residual, then compose `"{transliterated_residual} {normalised_suffix}"` as `normalised_form`
+- [ ] **T7-3** Add leading-token scan to `lookup_legal_form`: check first 1–2 tokens against the legal-form table in addition to trailing tokens — fixes prefix-form legal entities (ПАО Газпром, شركة X)
+- [ ] **T7-4** Add missing legal-form table entries: SARL (FR), SAB de CV (MX), ش.م.م (AR), Α.Ε. with dot variants (EL) — fixes C.21, C.22, C.24, E.6
+- [ ] **T7-5** Add brand-override lookup table: known entities where the company name should not be decomposed (NTT, BBC, etc.) — fixes E.10 as known limitation, document in README
+
+

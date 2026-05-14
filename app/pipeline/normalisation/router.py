@@ -200,10 +200,6 @@ def _try_strategy_d(text: str, field_type: str, language: str, country: str) -> 
 def _try_strategy_f(text: str, field_type: str, language: str,
 					country: str = "") -> dict | None:
 	"""Strategy F — Transliteration. Wraps src/pipeline/transliteration_engine."""
-	# Policy: Arabic person names are ambiguous — route to native-speaker review
-	if field_type == "person_name" and language == "ar":
-		log_event("strategy_f_skipped", {"reason": "arabic_person_name_policy", "field_type": field_type}, source="backend")
-		return None
 	try:
 		from app.pipeline.normalisation.transliteration import apply_transliteration
 		return apply_transliteration(text, language, field_type, country)

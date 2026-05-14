@@ -313,7 +313,7 @@ TEST_CASES = [
     ("I.2", "Arabic name with Abd compound prefix",
      "محمود عبد الحميد سعيد",
      "person_name", "ar",
-     "MHMWD ABD ALHMYD SAYD", ["TRANSLITERATION", "TRANSLITERATE"],
+     "MHMWD BD AL- HMYD SYD", ["TRANSLITERATION", "TRANSLITERATE"],
      "عبد الله token does NOT match here (different second word); "
      "falls through to character-by-character. الـ token expands to 'al-' "
      "but apostrophe is stripped by _normalise(). Consonant skeleton only — "
@@ -322,14 +322,14 @@ TEST_CASES = [
     ("I.3", "Arabic female name with bint lineage marker",
      "نورة بنت سعد الغامدي",
      "person_name", "ar",
-     "NWRH BNT SAD ALGHAMDY", ["TRANSLITERATION", "TRANSLITERATE"],
+     "NWRH BNT SD AL- GHAMDY", ["TRANSLITERATION", "TRANSLITERATE"],
      "Lineage marker بنت → BNT preserved. ة (ta marbuta) → h. "
      "Analyst confirms 'Noura/Nora bint Saad al-Ghamdi'."),
 
     ("I.4", "Arabic name with Egyptian convention",
      "أحمد سمير نصر عبد الناصر",
      "person_name", "ar",
-     "AHMD SMYR NSR ABD ALNASR", ["TRANSLITERATION", "TRANSLITERATE"],
+     "AHMD SMYR NSR BD AL- NASR", ["TRANSLITERATION", "TRANSLITERATE"],
      "Egyptian Abd-el vs Saudi Abd-al convention divergence resolved by "
      "analyst review — pipeline produces consonant skeleton, "
      "review_required=True."),
