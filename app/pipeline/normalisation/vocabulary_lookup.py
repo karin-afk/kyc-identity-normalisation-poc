@@ -17,6 +17,9 @@ VOCABULARY_FIELDS: set[str] = {
 	"industry_code",
 	"document_type",
 	"issuing_authority",
+	# Company-name fields: suffix extraction extracts the legal-form token
+	"company_name",
+	"legal_name",
 }
 
 ALLOWED_STATUS_VALUES = {
@@ -74,6 +77,9 @@ class VocabularyLookupService:
 
 		result = None
 		if field_type == "legal_form":
+			result = self.lookup_legal_form(text, country)
+		elif field_type in ("company_name", "legal_name"):
+			# Suffix-extraction: scan all country tables for a trailing legal-form token
 			result = self.lookup_legal_form(text, country)
 		elif field_type == "status":
 			result = self.lookup_status(text, language)

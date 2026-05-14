@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from convertdate import hebrew, persian
+from convertdate import hebrew, islamic, persian
 
 from .numeric_rules import (
 	normalise_all_digits,
@@ -48,6 +48,7 @@ _ALL_DIGIT_CONTENT_RE = re.compile(
 	r"^[\u0660-\u0669\u06f0-\u06f9\uff10-\uff19\u0e50-\u0e59\u0966-\u096f\d\s,.\/\-]+$"
 )
 _THAI_DATE_RE = re.compile(r"^(\d{1,4})[\/\-.](\d{1,2})[\/\-.](\d{1,4})$")
+_THAI_LABELED_YEAR_RE = re.compile(r"^พ\.ศ\.\s*(\d{4})$")
 _MINGUO_DATE_RE = re.compile(r"^(\d{2,3})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$")
 _SOLAR_HIJRI_RE = re.compile(r"^(1[34]\d{2})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$")
 _HEBREW_TISHREI_RE = re.compile(r"^(\d{1,2})\s+ב?תשרי\s+(\d{4})$")
@@ -190,7 +191,12 @@ def _detect_calendar_and_convert(text: str, language: str, country: str) -> dict
 		if result:
 			return result
 
-	if (language == "zh" and country == "TW") or country == "TW":
+	if language == "ar":
+		result = _detect_hijri_date(text)
+		if result:
+			return result
+
+	if language == "zh" or country == "TW":
 		result = _detect_minguo_date(text)
 		if result:
 			return result
@@ -205,6 +211,18 @@ def _detect_calendar_and_convert(text: str, language: str, country: str) -> dict
 
 def _detect_thai_date(text: str) -> dict | None:
 	"""Detect Thai Buddhist dates in numeric forms and convert to Gregorian."""
+	# Year-only with พ.ศ. label: e.g. "พ.ศ. 2568" → "2025"
+	labeled = _THAI_LABELED_YEAR_RE.match(text)
+	if labeled:
+		be_year = int(labeled.group(1))
+		if 2400 <= be_year <= 2700:
+			return {
+				"normalised_form": str(be_year - 543),
+				"original_calendar": "thai_buddhist",
+				"review_required": False,
+				"review_reason": None,
+			}
+
 	match = _THAI_DATE_RE.match(text)
 	if not match:
 		return None
@@ -245,6 +263,42 @@ def _detect_minguo_date(text: str) -> dict | None:
 		"review_required": False,
 		"review_reason": None,
 	}
+
+
+def _detect_hijri_date(text: str) -> dict | None:
+	"""Detect Hijri (Islamic) dates in DD/MM/YYYY or YYYY/MM/DD form and convert."""
+	# Hijri years are currently ~1400-1450; distinguish from Gregorian 4-digit years.
+	# Day-first: DD/MM/1300-1499
+	day_first = re.match(r"^(\d{1,2})[\/\-.](\d{1,2})[\/\.\-](1[34]\d{2})$", text)
+	if day_first:
+		day, month, year = int(day_first.group(1)), int(day_first.group(2)), int(day_first.group(3))
+		if 1 <= month <= 12 and 1 <= day <= 30:
+			try:
+				g_year, g_month, g_day = islamic.to_gregorian(year, month, day)
+				return {
+					"normalised_form": f"{g_year:04d}-{g_month:02d}-{g_day:02d}",
+					"original_calendar": "hijri",
+					"review_required": False,
+					"review_reason": None,
+				}
+			except Exception:
+				pass
+	# Year-first: 1300-1499/MM/DD
+	year_first = re.match(r"^(1[34]\d{2})[\/\-.](\d{1,2})[\/\.\-](\d{1,2})$", text)
+	if year_first:
+		year, month, day = int(year_first.group(1)), int(year_first.group(2)), int(year_first.group(3))
+		if 1 <= month <= 12 and 1 <= day <= 30:
+			try:
+				g_year, g_month, g_day = islamic.to_gregorian(year, month, day)
+				return {
+					"normalised_form": f"{g_year:04d}-{g_month:02d}-{g_day:02d}",
+					"original_calendar": "hijri",
+					"review_required": False,
+					"review_reason": None,
+				}
+			except Exception:
+				pass
+	return None
 
 
 def _detect_solar_hijri_date(text: str) -> dict | None:

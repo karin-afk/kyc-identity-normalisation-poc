@@ -71,14 +71,14 @@ def route_field(row: dict) -> dict:
 		log_event("router_selected_strategy", {"strategy": "C", "method": result.get("processing_method")}, source="backend")
 		return result
 
-	result = _try_strategy_d(text, field_type, language, country)
-	if result:
-		log_event("router_selected_strategy", {"strategy": "D", "method": result.get("processing_method")}, source="backend")
-		return result
-
 	result = _try_strategy_g(text, field_type, language)
 	if result:
 		log_event("router_selected_strategy", {"strategy": "G", "method": result.get("processing_method")}, source="backend")
+		return result
+
+	result = _try_strategy_d(text, field_type, language, country)
+	if result:
+		log_event("router_selected_strategy", {"strategy": "D", "method": result.get("processing_method")}, source="backend")
 		return result
 
 	result = _try_strategy_f(text, field_type, language, country)

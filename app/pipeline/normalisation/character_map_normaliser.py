@@ -60,11 +60,19 @@ def apply_character_map(text: str, language: str, field_type: str) -> dict | Non
         "pl": _normalise_polish,
         "pt": _normalise_portuguese,
     }
+    # de/fr/es/it/en handlers are imported from transliteration_engine which
+    # stamps processing_method='TRANSLITERATE'.  Override here so callers
+    # always see CHARACTER_MAP when Strategy G is responsible.
+    _TRANSLITERATE_METHOD_LANGS = {"de", "fr", "es", "it", "en"}
+
     handler = handlers.get(language)
     if not handler:
         return None
     try:
-        return handler(text, field_type)
+        result = handler(text, field_type)
+        if result and language in _TRANSLITERATE_METHOD_LANGS:
+            result["processing_method"] = "CHARACTER_MAP"
+        return result
     except Exception:
         return None
 

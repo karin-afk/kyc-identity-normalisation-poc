@@ -379,8 +379,8 @@ TEST_CASES = [
     ("B.15", "Hebrew date spelled out",
      "15 תשרי 5786",
      "date_of_birth", "he",
-     "2025-10-17", "CALENDAR",
-     "Hebrew date with month name spelled out"),
+     "2025-10-07", "CALENDAR",
+     "Hebrew date with month name spelled out — 15 Tishrei 5786; RH 5786=2025-09-23 so +14d=Oct 7"),
 
     # ── Identifiers not yet tested ─────────────────────────────────────────────
     ("A.4", "IBAN",
