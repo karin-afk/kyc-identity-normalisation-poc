@@ -13,10 +13,12 @@ if str(SRC_DIR) not in sys.path:
 	sys.path.insert(0, str(SRC_DIR))
 
 
+# Identifiers and codes — passed through verbatim (Strategy A)
 PRESERVE_FIELDS = [
 	"passport_no",
 	"id_no",
 	"id_number",
+	"iban",
 	"email",
 	"registration_no",
 	"company_no",
@@ -26,17 +28,11 @@ PRESERVE_FIELDS = [
 	"vat_number",
 	"document_number",
 	"licence_no",
-	"number_of_shares",
-	"voting_rights",
-	"ownership_percentage",
-	"share_capital",
-	"number_of_issued_shares",
-	"total_assets",
-	"total_liabilities",
-	"net_assets",
-	"revenue",
-	"expenses",
 ]
+
+# Financial aggregates — numeric normalisation via Strategy B
+# (share_capital, total_assets, etc. removed from PRESERVE so B can handle them)
+# FINANCIAL_NUMERIC_FIELDS is defined in calendar_rules.py and checked there.
 
 
 def route_field(row: dict) -> dict:
@@ -94,15 +90,6 @@ def route_field(row: dict) -> dict:
 	if result:
 		log_event("router_selected_strategy", {"strategy": "H", "method": result.get("processing_method")}, source="backend")
 		return result
-
-	for strategy_letter, module_name in (
-		("B", "calendar_rules"),
-		("C", "vocabulary_lookup"),
-		("E", "repository_lookup"),
-	):
-		result = _try_stub(strategy_letter, module_name)
-		if result:
-			return result
 
 	if os.environ.get("LLM_ENABLED", "false").lower() == "true":
 		result = _try_stub("I", "llm_normalise")
@@ -213,6 +200,10 @@ def _try_strategy_d(text: str, field_type: str, language: str, country: str) -> 
 def _try_strategy_f(text: str, field_type: str, language: str,
 					country: str = "") -> dict | None:
 	"""Strategy F — Transliteration. Wraps src/pipeline/transliteration_engine."""
+	# Policy: Arabic person names are ambiguous — route to native-speaker review
+	if field_type == "person_name" and language == "ar":
+		log_event("strategy_f_skipped", {"reason": "arabic_person_name_policy", "field_type": field_type}, source="backend")
+		return None
 	try:
 		from app.pipeline.normalisation.transliteration import apply_transliteration
 		return apply_transliteration(text, language, field_type, country)
