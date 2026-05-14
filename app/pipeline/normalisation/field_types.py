@@ -28,7 +28,7 @@ STRATEGY_CONFIDENCE: dict[str, float] = {
     ProcessingMethod.REPOSITORY: 0.97,
     ProcessingMethod.TRANSLITERATION: 0.80,
     ProcessingMethod.CHARACTER_MAP: 0.85,
-    ProcessingMethod.NMT: 0.75,
+    ProcessingMethod.NMT: 0.80,
     ProcessingMethod.LLM: 0.70,
     ProcessingMethod.UNRESOLVED: 0.0,
 }
@@ -40,4 +40,13 @@ GEOGRAPHIC_FIELDS: list[str] = [
     "country_of_residence",
     "place_of_birth",
     "city",
+]
+
+PROSE_FIELDS: list[str] = [
+    "nature_of_business",
+    "business_purpose",
+    "accounting_policies",
+    "locality_information",
+    "capital_changes_narrative",
+    "unstructured_text",
 ]

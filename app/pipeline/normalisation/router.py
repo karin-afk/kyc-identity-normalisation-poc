@@ -90,11 +90,15 @@ def route_field(row: dict) -> dict:
 		log_event("router_selected_strategy", {"strategy": "F", "method": result.get("processing_method")}, source="backend")
 		return result
 
+	result = _try_strategy_h(text, field_type, language)
+	if result:
+		log_event("router_selected_strategy", {"strategy": "H", "method": result.get("processing_method")}, source="backend")
+		return result
+
 	for strategy_letter, module_name in (
 		("B", "calendar_rules"),
 		("C", "vocabulary_lookup"),
 		("E", "repository_lookup"),
-		("H", "nmt_translator"),
 	):
 		result = _try_stub(strategy_letter, module_name)
 		if result:
@@ -220,6 +224,15 @@ def _try_strategy_g(text: str, field_type: str, language: str) -> dict | None:
 	try:
 		from app.pipeline.normalisation.character_map_normaliser import apply_character_map
 		return apply_character_map(text, language, field_type)
+	except Exception:
+		return None
+
+
+def _try_strategy_h(text: str, field_type: str, language: str) -> dict | None:
+	"""Strategy H — Azure NMT for prose fields only."""
+	try:
+		from app.pipeline.normalisation.nmt_translator import apply_nmt
+		return apply_nmt(text, field_type, language)
 	except Exception:
 		return None
 

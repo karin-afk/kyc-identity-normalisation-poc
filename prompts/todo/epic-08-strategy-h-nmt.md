@@ -1,5 +1,20 @@
 # Epic 08 — Strategy H: Azure Translator NMT
 
+## Status: ✅ IMPLEMENTED — 2026-05-11
+
+**Branch:** `epic-08-strategy-h` (commit `2c7226d`) — pushed to remote  
+**Tests:** 13/13 pass (`tests/test_strategy_h_nmt.py`)  
+**Router order:** A → B → C → D → G → F → **H** → I
+
+### What was built
+- `app/pipeline/normalisation/nmt_translator.py` — full `apply_nmt()` + `_call_azure_translator()` replacing the stub
+- `app/pipeline/normalisation/field_types.py` — added `PROSE_FIELDS` list; corrected NMT confidence `0.75 → 0.80`
+- `app/pipeline/normalisation/router.py` — real `_try_strategy_h()` wired after F; removed H from `_try_stub` loop
+- `requirements.txt` — added `azure-ai-translation-text>=1.0.0`
+- `tests/test_strategy_h_nmt.py` — 13 tests (field gating, credential check, already-English, mock translation, Azure failure, router integration)
+
+---
+
 ## Save to: `prompts/todo/epic-08-strategy-h-nmt-translator.md`
 
 ---
