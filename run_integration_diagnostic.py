@@ -1072,6 +1072,12 @@ TEST_CASES = [
      "Cyrillic А vs Latin A and Latin O vs zero — OCR ambiguity"),
     
     
+    ("G.16", "Latin-script input with no special characters",
+    "123 Main Street",
+    "address", "de",
+    None, ["GEOGRAPHIC", "UNRESOLVED"],
+    "G must return None when no character in the input is in the German "
+    "map, so the router can fall through to Strategy D for address handling"),
 ]
 
 

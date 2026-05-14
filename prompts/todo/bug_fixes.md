@@ -42,6 +42,20 @@ Fix calendar handlers in B — Hebrew offset (likely a base-year bug in the libr
 - [x] **T2-B-4** B.15 Hebrew spelled-out date: test expectation was wrong — `convertdate` gives Oct 7, not Oct 17; corrected expected value in `run_integration_diagnostic.py`
 
 
+## Tier 2.5 — Transliteration standard conformance (real code bugs, tests were right)
+
+These were originally filed under Tier 4 as "wrong test expectations" but are actually BGN/PCGN standard violations in the transliteration engine. The tests are correct; the post-processor is wrong.
+
+**BGN/PCGN Table 1 (Russian), Rule 7:** `й` → `y` in word-final position and before a vowel. The library currently emits `j` for `й` in all positions. The existing `Je→Ye` / `Ju→Yu` post-processor in `transliteration_engine.py` does not cover word-final `j`.
+
+### Tier 2.5 todos
+
+- [ ] **T2.5-1** Fix word-final `й → y` in `_transliterate_cyrillic` post-processor in `src/pipeline/transliteration_engine.py`: after character mapping, apply `re.sub(r'J\b', 'Y', result)` (case-insensitive) to convert word-final `J`→`Y` and `EJ`→`EY`. Fixes F.11 (`ALEKSEJ → ALEKSEY`) and F.15 (`DMITRIJ → DMITRIY`).
+- [ ] **T2.5-2** Fix pre-vowel `й → y` in the same post-processor: `Й` before a vowel should also produce `Y` not `J` per BGN/PCGN. Apply `re.sub(r'J([AEIOU])', r'Y\1', result)` after the word-final substitution.
+- [ ] **T2.5-3** Verify F.7 (`IVANOVA NATALYA ALEKSANDROVNA`) still passes — the `lya` ending contains `Л` not `Й`, so it must not be affected by the `j→y` substitution.
+- [ ] **T2.5-4** Update F.11 expected: `ALEKSEJ YUREVICH KOVALEV` → `ALEKSEY YURYEVICH KOVALEV`; update F.15 expected: `DMITRIJ IVANOV` → `DMITRIY IVANOV`.
+
+
 ## Tier 3 — Structural (no test recovery, reduces future bugs):
 
 Replace the GPT-4o-mini classifier with deterministic detection (regex for emails/IBANs/dates, lookup for legal-form tokens, default to person_name with analyst-confirm badge in the UI). This recovers A.5, E.1, E.3 and removes the reproducibility floor for AIG submission. Until this is done, you can't reliably hit 100% even with perfect strategies, and you can't reproduce failures to debug them.
@@ -142,18 +156,24 @@ def detect_field_type(text: str) -> tuple[str, float, str]:
 These tests fail because the expected value was drafted incorrectly, not because the pipeline is wrong. Fix the spec, not the code.
 
 **Policy decisions to make first:**
-- **Arabic person names (I.1–I.4):** Pipeline currently gates them to `UNRESOLVED` (the T1-3 fix). Tests I.1–I.4 now expect `UNRESOLVED`/`None` for I.1 but the expanded tests (I.2–I.4) may expect transliteration. Decide: are Arabic person names always unresolved, or only when no transliteration table entry exists? Check `router.py` gate and pick one policy for all four.
-- **Korean surname primary form (F.27, F.29):** RR gives `CHOE`/`I`; family-preference gives `CHOI`/`LEE`. Pipeline correctly emits RR as primary with common variant in `allowed_variants`. Either accept RR as primary (update test expectations) or flip policy to "most common Latin form as primary."
-- **Russian `й` in word-final position (F.11, F.15):** Library emits `j` (`ALEKSEJ`, `DMITRIJ`). BGN/PCGN standard is `y` (`ALEKSEY`, `DMITRIY`) in word-final and `y` before vowels. Either fix the post-processor or accept `j` as primary and `y` as variant.
+- **Arabic person names (I.1–I.4):** T1-3 gate has been reverted — Arabic person names now reach `_transliterate_arabic` with `review_required=True`. All four tests updated to match actual consonant-skeleton output. ✅ Resolved.
+- **Korean surname primary form (F.27, F.29):** This is a screening-recall policy question. RR (`CHOE`/`I`) is the published official standard. Family-preference forms (`CHOI`/`LEE`) are dominant in passports, bank records, and existing sanctions watchlists — your screener almost certainly has both in its variant table, but the *primary* output determines what gets logged, queried, and surfaced in the UI. Decide: if your downstream screener normalises both forms anyway, RR as primary is fine and the tests were wrong; if your screener is primary-form-sensitive, family-preference as primary is safer. This is not a pipeline bug — it is a product policy decision.
+- **Russian `й` in word-final position (F.11, F.15):** These are **not** test expectation errors. BGN/PCGN Table 1 Rule 7 explicitly mandates `y` for `й` in word-final position. The library emits `j`, the post-processor doesn't catch it, and the tests were correct. Moved to **Tier 2.5** as real code bugs.
 - **German umlaut primary for surnames (G.15):** `ö → OE` (expansion) as primary, `O` as variant. This matches how G.1 `MUELLER` passed. Test G.15 expects `SCHRODER` (drop) as primary — inconsistent. Flip to `SCHROEDER`.
 
 ### Tier 4 todos
 
-- [ ] **T4-1** I.1–I.4: verify policy in `router.py` (`_try_strategy_f` Arabic gate) — confirm all four route to `UNRESOLVED` with `normalised_form: None`, then update I.2–I.4 expected values to match
-- [ ] **T4-2** F.27: change expected from `CHOI SUBIN` → `CHOE SUBIN` (RR primary) and add `CHOI` to `allowed_variants` check
-- [ ] **T4-3** F.29: change expected from `LEE SEOYEON` → `I SEOYEON` (RR primary) and add `LEE` to `allowed_variants` check — or flip policy (see note above)
-- [ ] **T4-4** F.11: change expected from `ALEKSEI YURYEVICH KOVALEV` → `ALEKSEJ YUREVICH KOVALEV`, or fix the BGN/PCGN `j→y` word-final post-processor in `transliteration_engine.py`
-- [ ] **T4-5** F.15: same fix as F.11 for `DMITRIJ → DMITRIY`
+- [x] **T4-1** I.1–I.4: T1-3 gate reverted — all four now reach `_transliterate_arabic`, expected values updated to actual consonant-skeleton output. ✅ Done.
+- [ ] **T4-2** F.27: **Policy decision required** — choose one of:
+  - (a) Accept RR as primary: change expected from `CHOI SUBIN` → `CHOE SUBIN`, confirm `CHOI` is in `allowed_variants`
+  - (b) Keep family-preference as primary: tests stay as-is, add note that this deviates from RR standard
+  - _Recommendation_: if downstream screener is variant-aware, go (a) — RR is consistent and principled.
+- [ ] **T4-3** F.29: **Same policy decision as T4-2** —
+  - (a) Accept RR: change expected from `LEE SEOYEON` → `I SEOYEON`, confirm `LEE`/`YI`/`RHEE` in `allowed_variants`
+  - (b) Keep family-preference: `LEE` stays primary
+  - _Note_: `I` as primary will look wrong to every Korean reviewer. `LEE` is overwhelmingly dominant in Korean passports. Consider (b) with `I` as variant.
+- [moved to T2.5] **T4-4** F.11: BGN/PCGN code bug — see **T2.5-1** and **T2.5-4**.
+- [moved to T2.5] **T4-5** F.15: BGN/PCGN code bug — see **T2.5-1** and **T2.5-4**.
 - [ ] **T4-6** G.15: change expected from `SCHRODER` → `SCHROEDER` (consistent with G.1 umlaut-expansion primary)
 - [ ] **T4-7** B.22: US `MM/DD/YYYY` — verify whether this is a real missing path in `calendar_rules.py` (no `language=en` date-order detector) and add one if so; not a test expectation error
 
@@ -191,7 +211,11 @@ H.1–H.6 are alias/AKA fields. H.7–H.12 are invoice prose. Both fail because 
 ### Tier 6 todos
 
 - [ ] **T6-1** Add `alias`, `aka`, `also_known_as`, `notes`, `remarks`, `free_text` to `PROSE_FIELDS` in `router.py` (or wherever `_try_strategy_h` gates its field types)
-- [ ] **T6-2** Add `_detect_prose_connector(text: str) -> bool` — returns True if text contains a known AKA connector phrase in any supported language; call this at the top of `route_field()` and short-circuit to `_try_strategy_h` when True regardless of `field_type`
+- [ ] **T6-2** Add `_detect_prose_connector(text: str, field_type: str) -> bool` — returns True if text contains a known AKA connector phrase AND both safeguards pass:
+  1. **Field-type gate:** only fire when `field_type ∈ {alias, person_name, free_text, unknown}` — do not override a confident structured-field classification (address, date, IBAN, etc.)
+  2. **Capitalised-neighbour heuristic:** the connector phrase must be immediately preceded or followed by a token starting with a capital letter (e.g. `IVAN also known as VANYA` passes; `the area known as Soho` fails the left-neighbour check because `the` is lowercase)
+  - **False-positive risks to avoid:** `"known as"` in geographic prose ("the area known as Soho"), `dit` as a regular French verb — both are suppressed by the capitalised-neighbour check
+  - Call at the top of `route_field()` and short-circuit to `_try_strategy_h` when True
 - [ ] **T6-3** Move `_try_strategy_h` call above `_try_strategy_f` for `alias`/`PROSE_FIELDS` — H must run before F so NMT fires before transliteration
 - [ ] **T6-4** Test H.1–H.6 reach Strategy H and that the NMT handler returns a translated/normalised result (may need a sub-diagnostic to isolate NMT output quality from routing)
 
@@ -212,6 +236,9 @@ E.10 (`NTT CORPORATION`) requires a brand-override lookup (NTT is a known entity
 - [ ] **T7-2** In `_try_strategy_c()` in `router.py`: if `lookup_legal_form` returns a result with `residual_text`, call `_try_strategy_f` or `_try_strategy_g` on the residual, then compose `"{transliterated_residual} {normalised_suffix}"` as `normalised_form`
 - [ ] **T7-3** Add leading-token scan to `lookup_legal_form`: check first 1–2 tokens against the legal-form table in addition to trailing tokens — fixes prefix-form legal entities (ПАО Газпром, شركة X)
 - [ ] **T7-4** Add missing legal-form table entries: SARL (FR), SAB de CV (MX), ش.م.م (AR), Α.Ε. with dot variants (EL) — fixes C.21, C.22, C.24, E.6
-- [ ] **T7-5** Add brand-override lookup table: known entities where the company name should not be decomposed (NTT, BBC, etc.) — fixes E.10 as known limitation, document in README
+
+
+Tier 8
+T-8-2: Add a test for the closed-enum validator. Confirm that if GPT-4o-mini returns id_no despite the prompt, it gets downgraded to unknown and the router handles unknown gracefully. Right now the router probably routes unknown to UNRESOLVED, which is correct behaviour but worth verifying with a test.
 
 

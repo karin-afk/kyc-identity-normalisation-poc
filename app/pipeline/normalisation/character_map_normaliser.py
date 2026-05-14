@@ -68,6 +68,12 @@ def apply_character_map(text: str, language: str, field_type: str) -> dict | Non
     handler = handlers.get(language)
     if not handler:
         return None
+    # T2-G-2: if none of the input characters is a key in the language's map,
+    # G has nothing to do — return None so the router tries D or F instead.
+    # Check against map membership, not output equality, to avoid false negatives
+    # on already-uppercased inputs like "MUELLER".
+    if language in LANGUAGE_CHAR_MAPS and not any(c in LANGUAGE_CHAR_MAPS[language] for c in text):
+        return None
     try:
         result = handler(text, field_type)
         if result and language in _TRANSLITERATE_METHOD_LANGS:
