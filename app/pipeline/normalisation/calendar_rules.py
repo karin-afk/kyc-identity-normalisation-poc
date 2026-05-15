@@ -51,6 +51,7 @@ _THAI_DATE_RE = re.compile(r"^(\d{1,4})[\/\-.](\d{1,2})[\/\-.](\d{1,4})$")
 _THAI_LABELED_YEAR_RE = re.compile(r"^พ\.ศ\.\s*(\d{4})$")
 _MINGUO_DATE_RE = re.compile(r"^(\d{2,3})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$")
 _SOLAR_HIJRI_RE = re.compile(r"^(1[34]\d{2})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$")
+_EN_SLASH_DATE_RE = re.compile(r"^(\d{1,2})/(\d{1,2})/(\d{4})$")
 _HEBREW_TISHREI_RE = re.compile(r"^(\d{1,2})\s+ב?תשרי\s+(\d{4})$")
 _HEBREW_NUMERIC_RE = re.compile(r"^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$")
 
@@ -206,7 +207,63 @@ def _detect_calendar_and_convert(text: str, language: str, country: str) -> dict
 		if result:
 			return result
 
+	if language == "en":
+		result = _detect_en_slash_date(text, country)
+		if result:
+			return result
+
 	return None
+
+
+def _detect_en_slash_date(text: str, country: str) -> dict | None:
+	"""Detect English-language slash-separated dates (MM/DD/YYYY or DD/MM/YYYY).
+
+	Date-order resolution:
+	- If first part > 12 → unambiguous DD/MM/YYYY.
+	- If second part > 12 → unambiguous MM/DD/YYYY (e.g. 03/14/1990).
+	- If country in US-convention group → MM/DD/YYYY, no review flag.
+	- If country in UK-convention group → DD/MM/YYYY, no review flag.
+	- Otherwise → MM/DD/YYYY with review_required=True.
+	"""
+	match = _EN_SLASH_DATE_RE.match(text)
+	if not match:
+		return None
+
+	a, b, year = int(match.group(1)), int(match.group(2)), int(match.group(3))
+	if not (1 <= a <= 31 and 1 <= b <= 31 and 1900 <= year <= 2100):
+		return None
+
+	_UK_COUNTRIES = {"GB", "UK", "AU", "NZ", "IE"}
+	review = False
+	review_reason = None
+
+	if a > 12:
+		# Unambiguous: first part can only be day
+		day, month = a, b
+	elif b > 12:
+		# Unambiguous: second part can only be day
+		month, day = a, b
+	elif country in _UK_COUNTRIES:
+		day, month = a, b
+	else:
+		# US convention (including unknown country)
+		month, day = a, b
+		if country not in ("US", "CA"):
+			review = True
+			review_reason = (
+				"Ambiguous English date order: assumed MM/DD/YYYY (US convention); "
+				"confirm with country context"
+			)
+
+	if not (1 <= month <= 12 and 1 <= day <= 31):
+		return None
+
+	return {
+		"normalised_form": f"{year:04d}-{month:02d}-{day:02d}",
+		"original_calendar": "gregorian",
+		"review_required": review,
+		"review_reason": review_reason,
+	}
 
 
 def _detect_thai_date(text: str) -> dict | None:

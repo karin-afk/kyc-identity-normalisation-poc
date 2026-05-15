@@ -169,7 +169,7 @@ These tests fail because the expected value was drafted incorrectly, not because
 - [moved to T2.5] **T4-4** ✅ F.11: BGN/PCGN code bug — see **T2.5-1** and **T2.5-4**.
 - [moved to T2.5] **T4-5** ✅ F.15: BGN/PCGN code bug — see **T2.5-1** and **T2.5-4**.
 - [x] **T4-6** G.15: change expected from `SCHRODER` → `SCHROEDER` (consistent with G.1 umlaut-expansion primary); `SCHRODER` confirmed in `allowed_variants`
-- [ ] **T4-7** B.22: US `MM/DD/YYYY` — verify whether this is a real missing path in `calendar_rules.py` (no `language=en` date-order detector) and add one if so; not a test expectation error
+- [x] **T4-7** B.22: Added `_detect_en_slash_date(text, country)` to `calendar_rules.py`. Date-order logic: `a > 12` → DD/MM unambiguous; `b > 12` → MM/DD unambiguous; UK country set → DD/MM; else MM/DD (US default). Ambiguous cases (both parts ≤ 12, no country hint) set `review_required=True`. B.22 (`03/14/1990`, `en`) unambiguous MM/DD → `1990-03-14`, no review flag. B.20/B.21 (dot-separator paths) confirmed no regression.
 
 
 ## Tier 5 — PRESERVE with script normalisation (Category 3 — ~10 tests)
