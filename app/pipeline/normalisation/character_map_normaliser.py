@@ -24,7 +24,6 @@ from pipeline.transliteration_engine import (
     _normalise_french,
     _normalise_spanish,
     _normalise_italian,
-    _normalise_english,
     _apply_char_map,
 )
 
@@ -51,7 +50,6 @@ def apply_character_map(text: str, language: str, field_type: str) -> dict | Non
         "fr": _normalise_french,
         "es": _normalise_spanish,
         "it": _normalise_italian,
-        "en": _normalise_english,
         "tr": _normalise_turkish,
         "nl": _normalise_dutch,
         "no": _normalise_scandinavian,
@@ -63,7 +61,7 @@ def apply_character_map(text: str, language: str, field_type: str) -> dict | Non
     # de/fr/es/it/en handlers are imported from transliteration_engine which
     # stamps processing_method='TRANSLITERATE'.  Override here so callers
     # always see CHARACTER_MAP when Strategy G is responsible.
-    _TRANSLITERATE_METHOD_LANGS = {"de", "fr", "es", "it", "en"}
+    _TRANSLITERATE_METHOD_LANGS = {"de", "fr", "es", "it"}
 
     handler = handlers.get(language)
     if not handler:

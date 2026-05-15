@@ -27,7 +27,7 @@ Fix calendar handlers in B — Hebrew offset (likely a base-year bug in the libr
 
 **T2-G: G character map priority over D and F (6 tests: G.1–G.5, G.8)**
 - [x] **T2-G-1** Move `_try_strategy_g` call above `_try_strategy_d` in `route_field()` — G must run before geographic lookup intercepts city/address fields with the right output but wrong method
-- [ ] **T2-G-2** In `apply_character_map`, add a guard: after running the handler, if `normalised_form == original_text.upper()` and no char in the text is in the language's map, return `None` (no-op — let next strategy try) — prevents G from swallowing fields that don't need it
+- [x] **T2-G-2** In `apply_character_map`, add a guard: if no char in the text is a key in the language's map, return `None` (no-op — let next strategy try) — prevents G from swallowing fields that don't need it. Also removed `en` from the handler registry (English has no character map; `_normalise_english` was producing false CHARACTER_MAP successes blocking D/F). G.9 (Dutch van particle, `language=en`) was a false pass under the old code — now correctly unresolved; logged as known issue pending English-specific strategy.
 - [x] **T2-G-3** Fix `_normalise_german` / `_normalise_french` / `_normalise_spanish` in `transliteration_engine.py`: override `processing_method` to `"CHARACTER_MAP"` after calling `_build_result`, so the method label is correct when called via Strategy G's `character_map_normaliser.py`  
   _Alternative_: override in `character_map_normaliser.py`'s handler wrappers — set `result["processing_method"] = "CHARACTER_MAP"` before returning (preferred — keeps the fix local to G)
 
@@ -240,6 +240,15 @@ E.10 (`NTT CORPORATION`) requires a brand-override lookup (NTT is a known entity
 
 Tier 8
 T-8-2: Add a test for the closed-enum validator. Confirm that if GPT-4o-mini returns id_no despite the prompt, it gets downgraded to unknown and the router handles unknown gracefully. Right now the router probably routes unknown to UNRESOLVED, which is correct behaviour but worth verifying with a test.
+
 T-8-4 (in Tier 6): Confirm NMT (Strategy H) actually produces translated output, not just routes correctly. Tier 6 fixes the routing problem. It doesn't tell you whether apply_nmt() actually works. Worth a 5-test isolated H sub-diagnostic that bypasses the router and calls the NMT handler directly with prose inputs.
+T-8-3. Add lei_code to PRESERVE_FIELDS ✅
+
+Test A.6 (LEI code 529900T8BM49AURSDO55) currently fails. The classifier correctly returns lei_code. The router then routes it to CHARACTER_MAP instead of PRESERVE, which produces the right output by accident (uppercase of an already-uppercase input) but with the wrong processing_method label. The test checks the method, so it fails.
+Fix: in app/pipeline/normalisation/router.py, find the PRESERVE_FIELDS list and add "lei_code". Same pattern as iban/passport_no. Should have been in Tier 1 alongside T1-1; missed at the time.
+
+5-second fix. Recovers A.6.
+T-8-4. Drop G.6 from the diagnostic. ✅
+The Scandinavian languages were never explicitly in scope and Norwegian (no) is already there and passing (G.10).
 
 
