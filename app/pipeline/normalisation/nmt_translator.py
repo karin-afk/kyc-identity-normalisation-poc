@@ -82,7 +82,7 @@ def apply_nmt(text: str, field_type: str, language: str = "") -> dict | None:
 
         return {
             "original_text":           text,
-            "normalised_form":         translated,
+            "normalised_form":         translated.upper(),
             "allowed_variants":        [],
             "processing_method":       ProcessingMethod.NMT,
             "confidence":              STRATEGY_CONFIDENCE[ProcessingMethod.NMT],

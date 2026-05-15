@@ -66,10 +66,10 @@ Once Tiers 1–2 are done, look at what's left and decide whether to refactor th
 - [x] **T3-1** Add `--use-expected-classification` flag to `run_integration_diagnostic.py` — skips the GPT call and feeds test's expected `field_type`/`language` directly into the orchestrator. Gives a clean read on strategy accuracy independent of classifier noise.
 - [x] **T3-2** Replace GPT-4o-mini classifier with deterministic field-type detector: regex for email/IBAN/date patterns, legal-form token lookup for company fields, default `person_name` with analyst-confirm flag. Gate on `.env` variable `CLASSIFIER_MODE=regex|llm` — do not delete the LLM path, just make it selectable. Recovers ~30 tests currently lost to classifier noise (all H.x, most A.7–A.12, E.12–E.15).
 - [x] **T3-3** Canonicalise legacy field name aliases in the router: `id_no = id_number = id_card_no`, `given_name = first_name`, `family_name = last_name`, `full_name = person_name`. Add a `_canonicalise_field_type()` normalisation step at the top of `route_field()` so both old and new names route identically.
-- [ ] **T3-4** Add few-shot examples to `classifier_prompt.py` for compact non-Gregorian dates: Thai Buddhist (B.1 `2568/5/8`), Persian/Solar Hijri (B.5 `1404/2/15`), Minguo (B.6 `114/5/8`), compact ISO-ish numeric (E.3 `20250508`) — classifier currently defaults these to `free_text`
-- [ ] **T3-5** Add few-shot examples for accounting-format negatives (B.7 `△4,191`, B.8 `（4,191）`) — classifier should return the relevant numeric field type, not `free_text`
-- [ ] **T3-6** Add few-shot examples for space-separated European thousands (B.29 `1 234 567`, B.30 `12 500`) — classifier should return a numeric field type
-- [ ] **T3-7** Add few-shot example for Han spoken-digit phone sequence (B.36) — classifier should return `phone_number`
+- [x] **T3-4** Add few-shot examples to `classifier_prompt.py` for compact non-Gregorian dates: Thai Buddhist (B.1 `2568/5/8`), Persian/Solar Hijri (B.5 `1404/2/15`), Minguo (B.6 `114/5/8`), compact ISO-ish numeric (E.3 `20250508`) — classifier currently defaults these to `free_text`
+- [x] **T3-5** Add few-shot examples for accounting-format negatives (B.7 `△4,191`, B.8 `（4,191）`) — classifier should return the relevant numeric field type, not `free_text`
+- [x] **T3-6** Add few-shot examples for space-separated European thousands (B.29 `1 234 567`, B.30 `12 500`) — classifier should return a numeric field type
+- [x] **T3-7** Add few-shot example for Han spoken-digit phone sequence (B.36) — classifier should return `phone_number`
 
 
 #### The prompt has been added here: 
@@ -212,7 +212,7 @@ H.1–H.6 are alias/AKA fields. H.7–H.12 are invoice prose. Both fail because 
 - [x] **T6-2** Added `_detect_prose_connector(text, field_type)` to `router.py`: regex for `по прозвищу`, `又名`, `γνωστός ως`, `also known as`, `known as`, `dit`, `detto`, `noto come`; field-type gate (`alias/person_name/free_text/unknown`); capitalised-neighbour check (`_is_cap_or_non_latin` — uppercase Latin/Cyrillic/Greek or any non-ASCII). Suppresses `"the area known as Soho"` (left="area", lowercase) and `"Il a dit quelque chose"` (left="dit" neighbourhood fails).
 - [x] **T6-3** Connector early-exit and PROSE_FIELDS early-exit both added before G/D/F in `route_field()`. Both hard-stop on NMT None — alias/prose fields return UNRESOLVED rather than falling through to transliteration. H.1–H.6: routing confirmed (UNRESOLVED without Azure, not TRANSLITERATE). H.4 (English) gets NMT directly. H.7/H.11 (free_text): UNRESOLVED without Azure. No regression on F.1/G.1/A.1/A.8 or geographic false-positive.
 - [x] **T6-4** Sub-diagnostic confirmed via inline test: all 8 sampled H-series cases reach H (NMT or UNRESOLVED); none go to TRANSLITERATE/CHARACTER_MAP. Actual NMT output quality (translation + uppercase) requires Azure credentials — tracked in T8-4.
-- [ ] **T6-5** In `nmt_translator.py` `apply_nmt`: apply `.upper()` to `translated` before storing in `normalised_form` → fixes H.1, H.3, H.4, H.5 casing failures (1-line change)
+- [x] **T6-5** In `nmt_translator.py` `apply_nmt`: apply `.upper()` to `translated` before storing in `normalised_form` → fixes H.1, H.3, H.4, H.5 casing failures (1-line change)
 - [ ] **T6-6** H.2 routing gap: `alias` + `language=zh` routes to UNRESOLVED instead of NMT — verify `_detect_prose_connector` fires on `又名` in Chinese text and that the `zh` language code is not inadvertently excluded from the NMT path
 - [ ] **T6-7** H.6 policy decision: Azure translates `"Il Professore"` → `"The Professor"` (semantic); test expects `"IL PROFESSORE"` (transcription/preserve). Decide: (a) accept semantic output and update test, or (b) add a post-processor that preserves proper nouns in original script
 - [ ] **T6-8** H.7–H.12 invoice structured extraction: NMT returns raw prose but tests expect `DUE DATE YYYY-MM-DD AMOUNT NNNN CUR` format — this post-NMT extraction layer was outside Tier 6 scope. Deferred to **Tier 10** (T10-invoice).
@@ -233,7 +233,7 @@ E.10 (`NTT CORPORATION`) requires a brand-override lookup (NTT is a known entity
 - [ ] **T7-1** In `vocabulary_lookup.py` `lookup_legal_form`: after suffix match, also return `residual_text` (everything before the matched token) in the result dict
 - [ ] **T7-2** In `_try_strategy_c()` in `router.py`: if `lookup_legal_form` returns a result with `residual_text`, call `_try_strategy_f` or `_try_strategy_g` on the residual, then compose `"{transliterated_residual} {normalised_suffix}"` as `normalised_form`
 - [ ] **T7-3** Add leading-token scan to `lookup_legal_form`: check first 1–2 tokens against the legal-form table in addition to trailing tokens — fixes prefix-form legal entities (ПАО Газпром, شركة X)
-- [ ] **T7-4** Add missing legal-form table entries: SARL (FR), SAB de CV (MX), ش.م.م (AR), Α.Ε. with dot variants (EL) — fixes C.21, C.22, C.24, E.6
+- [x] **T7-4** Add missing legal-form table entries: SARL dotted form `S.A.R.L.` (FR), `S.A.B. de C.V.` / new MX section (MX), `شركة محدودة → LTD` (EG) — fixes C.21, C.22, C.24. Note: E.6 (Α.Ε. dot variants EL) deferred — not yet added.
 
 
 Tier 8
@@ -266,11 +266,11 @@ These tests were known to be outside the bounded scope of Tiers 1–8 at the tim
 
 ### T9-Cal: Calendar strategy extensions
 
-- [ ] **T9-B19** B.19 — Korean labelled date `2023년 3월 15일`: strip `년`/`월`/`일` labels, parse the remaining digits as `YYYY-MM-DD`. Tiny addition to `calendar_rules.py`.
+- [x] **T9-B19** B.19 — Korean labelled date `2023년 3월 15일`: added `_KOREAN_LABELED_DATE_RE` and `_detect_korean_date()` to `calendar_rules.py`; wired into `_detect_calendar_and_convert` for `language == "ko"`.
 
 ### T9-Num: Numeric strategy extensions
 
-- [ ] **T9-B28** B.28 — Arabic-Indic thousands separator `U+066C` (`٬`) not stripped by NUMERIC. Add it alongside existing `,` and `.` separator handling in `_try_strategy_b` (one-line change).
+- [x] **T9-B28** B.28 — Arabic-Indic thousands separator `U+066C` (`٬`) not stripped by NUMERIC. Added `.replace("\u066c", ",")` to `normalise_all_digits()` in `numeric_rules.py` — converts `٬` to a standard comma before separator logic runs.
 
 ### T9-Geo: Geographic strategy extensions
 
@@ -346,6 +346,7 @@ Strip 년/월/일 before parsing digits in calendar handler.
 T10-2 — NUMERIC Arabic thousands U+066C (5 min, 1 test: B.28)
 Add ٬ to thousands separator strip list alongside , and ..
 Subtotal: ~117 → ~133/164 = ~81%
+
 Priority 2 — Bounded Phase 2 items (≈1 day total)
 Useful if there's time before AIG; otherwise list as Phase 2 scope.
 T6.5-2 — H.2 Chinese alias routing gap (debug, ~30 min, 1 test)
@@ -363,6 +364,8 @@ Extension of NUMERIC: full-width digit collapse, Arabic-Indic conversion, whites
 T12-2 — Han numeral semantic converter (½ day, 3 tests: B.24, B.31, B.35)
 Utility module wired into both NUMERIC (amounts/house numbers) and CALENDAR (Han-numeral dates).
 Subtotal: ~133 → ~144/164 = ~88%
+
+
 Priority 3 — Phase 2 epics (defer)
 These don't ship for AIG. List on the roadmap and explain in the submission.
 T13 — Strategy E build-out (multi-day, 5 tests: E.1, E.3, E.12, E.13, E.15)

@@ -231,4 +231,31 @@ FEW_SHOT_EXAMPLES = [
     # Short ambiguous string
     ("SA",
      '{"field_type":"legal_form","language":"fr","confidence":0.55}'),
+
+    # Compact non-Gregorian dates — classifier must return the date field type
+    # so the CALENDAR strategy can apply the right conversion (T3-4)
+    ("2568/5/8",
+     '{"field_type":"date_of_birth","language":"th","confidence":0.85}'),
+    ("1404/2/15",
+     '{"field_type":"date_of_birth","language":"fa","confidence":0.85}'),
+    ("114/5/8",
+     '{"field_type":"date_of_birth","language":"zh","confidence":0.80}'),
+
+    # Accounting-format negatives — △ and full-width parentheses (T3-5)
+    ("\u25b34,191",
+     '{"field_type":"share_capital","language":"ja","confidence":0.88}'),
+    ("\uff084,191\uff09",
+     '{"field_type":"share_capital","language":"ja","confidence":0.88}'),
+
+    # Space-separated European/Russian thousands (T3-6)
+    ("1 234 567",
+     '{"field_type":"share_capital","language":"fr","confidence":0.70}'),
+
+    # Han spoken-digit phone sequence — per-character digit string, not positional (T3-7)
+    ("\u4e00\u4e09\u516b\u96f6\u96f6\u4e00\u4e09\u516b\u96f6\u96f6\u96f6",
+     '{"field_type":"phone_number","language":"zh","confidence":0.85}'),
+
+    # Short German person name — prevents misclassification as free_text (T9-G2)
+    ("Stra\u00dfe",
+     '{"field_type":"person_name","language":"de","confidence":0.75}'),
 ]

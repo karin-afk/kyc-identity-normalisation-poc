@@ -54,7 +54,7 @@ _SOLAR_HIJRI_RE = re.compile(r"^(1[34]\d{2})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$")
 _EN_SLASH_DATE_RE = re.compile(r"^(\d{1,2})/(\d{1,2})/(\d{4})$")
 _HEBREW_TISHREI_RE = re.compile(r"^(\d{1,2})\s+ב?תשרי\s+(\d{4})$")
 _HEBREW_NUMERIC_RE = re.compile(r"^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$")
-
+_KOREAN_LABELED_DATE_RE = re.compile(r"^(\d{1,4})년\s*(\d{1,2})월\s*(\d{1,2})일$")
 _CURRENCY_SYMBOLS = {
 	"€": "EUR",
 	"£": "GBP",
@@ -212,7 +212,30 @@ def _detect_calendar_and_convert(text: str, language: str, country: str) -> dict
 		if result:
 			return result
 
+	if language == "ko":
+		result = _detect_korean_date(text)
+		if result:
+			return result
+
 	return None
+
+
+def _detect_korean_date(text: str) -> dict | None:
+	"""Detect Korean labelled dates (년/월/일) and convert to Gregorian ISO format."""
+	match = _KOREAN_LABELED_DATE_RE.match(text)
+	if not match:
+		return None
+	year, month, day = int(match.group(1)), int(match.group(2)), int(match.group(3))
+	try:
+		normalised = f"{year:04d}-{month:02d}-{day:02d}"
+	except (ValueError, OverflowError):
+		return None
+	return {
+		"normalised_form": normalised,
+		"original_calendar": "gregorian",
+		"review_required": False,
+		"review_reason": None,
+	}
 
 
 def _detect_en_slash_date(text: str, country: str) -> dict | None:
