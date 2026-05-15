@@ -229,16 +229,16 @@ E.10 (`NTT CORPORATION`) requires a brand-override lookup (NTT is a known entity
 
 
 Tier 8
-T-8-2: Add a test for the closed-enum validator. Confirm that if GPT-4o-mini returns id_no despite the prompt, it gets downgraded to unknown and the router handles unknown gracefully. Right now the router probably routes unknown to UNRESOLVED, which is correct behaviour but worth verifying with a test.
+- [ ] T-8-2: Add a test for the closed-enum validator. Confirm that if GPT-4o-mini returns id_no despite the prompt, it gets downgraded to unknown and the router handles unknown gracefully. Right now the router probably routes unknown to UNRESOLVED, which is correct behaviour but worth verifying with a test.
 
-T-8-4 (in Tier 6): Confirm NMT (Strategy H) actually produces translated output, not just routes correctly. Tier 6 fixes the routing problem. It doesn't tell you whether apply_nmt() actually works. Worth a 5-test isolated H sub-diagnostic that bypasses the router and calls the NMT handler directly with prose inputs.
-T-8-3. Add lei_code to PRESERVE_FIELDS ✅
+- [x] T-8-4 (in Tier 6): `run_strategy_h_diagnostic.py` created — 5-test isolated H sub-diagnostic that calls `apply_nmt()` directly, bypassing the router. Detects credentials + SDK availability separately; reports SKIP (not FAIL) when either is absent. Keyword checks run only when Azure call actually succeeds. Currently: credentials present, SDK (`azure-ai-translation-text`) not installed → all 5 SKIP, exit 0. Install SDK to verify translation output quality.
+
+- [x] T-8-3. Add lei_code to PRESERVE_FIELDS ✅
 
 Test A.6 (LEI code 529900T8BM49AURSDO55) currently fails. The classifier correctly returns lei_code. The router then routes it to CHARACTER_MAP instead of PRESERVE, which produces the right output by accident (uppercase of an already-uppercase input) but with the wrong processing_method label. The test checks the method, so it fails.
 Fix: in app/pipeline/normalisation/router.py, find the PRESERVE_FIELDS list and add "lei_code". Same pattern as iban/passport_no. Should have been in Tier 1 alongside T1-1; missed at the time.
 
-5-second fix. Recovers A.6.
-T-8-4. Drop G.6 from the diagnostic. ✅
+- [x] T-8-4. Drop G.6 from the diagnostic. ✅
 The Scandinavian languages were never explicitly in scope and Norwegian (no) is already there and passing (G.10).
 
 
