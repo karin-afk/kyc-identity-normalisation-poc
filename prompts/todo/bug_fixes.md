@@ -50,10 +50,10 @@ These were originally filed under Tier 4 as "wrong test expectations" but are ac
 
 ### Tier 2.5 todos
 
-- [ ] **T2.5-1** Fix word-final `й → y` in `_transliterate_cyrillic` post-processor in `src/pipeline/transliteration_engine.py`: after character mapping, apply `re.sub(r'J\b', 'Y', result)` (case-insensitive) to convert word-final `J`→`Y` and `EJ`→`EY`. Fixes F.11 (`ALEKSEJ → ALEKSEY`) and F.15 (`DMITRIJ → DMITRIY`).
-- [ ] **T2.5-2** Fix pre-vowel `й → y` in the same post-processor: `Й` before a vowel should also produce `Y` not `J` per BGN/PCGN. Apply `re.sub(r'J([AEIOU])', r'Y\1', result)` after the word-final substitution.
-- [ ] **T2.5-3** Verify F.7 (`IVANOVA NATALYA ALEKSANDROVNA`) still passes — the `lya` ending contains `Л` not `Й`, so it must not be affected by the `j→y` substitution.
-- [ ] **T2.5-4** Update F.11 expected: `ALEKSEJ YUREVICH KOVALEV` → `ALEKSEY YURYEVICH KOVALEV`; update F.15 expected: `DMITRIJ IVANOV` → `DMITRIY IVANOV`.
+- [x] **T2.5-1** Fix word-final `й → y` in `_transliterate_cyrillic` post-processor in `src/pipeline/transliteration_engine.py`: after character mapping, apply `re.sub(r'J\b', 'Y', result)` (case-insensitive) to convert word-final `J`→`Y` and `EJ`→`EY`. Fixes F.11 (`ALEKSEJ → ALEKSEY`) and F.15 (`DMITRIJ → DMITRIY`).
+- [x] **T2.5-2** Fix pre-vowel `й → y` in the same post-processor: `Й` before a vowel should also produce `Y` not `J` per BGN/PCGN. Apply `re.sub(r'J([AEIOU])', r'Y\1', result)` after the word-final substitution.
+- [x] **T2.5-3** Verify F.7 (`IVANOVA NATALYA ALEKSANDROVNA`) still passes — the `lya` ending contains `Л` not `Й`, so it must not be affected by the `j→y` substitution.
+- [x] **T2.5-4** Update F.11 expected: `ALEKSEJ YUREVICH KOVALEV` → `ALEKSEY YURYEVICH KOVALEV`; update F.15 expected: `DMITRIJ IVANOV` → `DMITRIY IVANOV`.
 
 
 ## Tier 3 — Structural (no test recovery, reduces future bugs):

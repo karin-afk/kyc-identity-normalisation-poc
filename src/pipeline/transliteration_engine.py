@@ -61,6 +61,10 @@ def _apply_bgn_pcgn_corrections(text: str) -> str:
     text = _WORD_INITIAL_E_RE.sub(
         lambda m: "Ye" if m.group(1).isupper() else "ye", text
     )
+    # BGN/PCGN Table 1 Rule 7: й → y in word-final position (Aleksej → Aleksey).
+    text = re.sub(r'([Jj])\b', lambda m: 'Y' if m.group(1).isupper() else 'y', text)
+    # BGN/PCGN Table 1 Rule 7: й → y before a vowel (pre-vowel position).
+    text = re.sub(r'([Jj])([AaEeIiOoUu])', lambda m: ('Y' if m.group(1).isupper() else 'y') + m.group(2), text)
     return text
 
 
@@ -146,6 +150,9 @@ def _transliterate_cyrillic(text: str, language: str) -> dict:
     # The transliterate library emits a literal apostrophe for the Cyrillic soft sign
     # (e.g. NATAL'JA, JUR'EVICH).  Strip it — the soft sign has no Latin equivalent
     # in ICAO/BGN romanisation.
+    # BGN/PCGN: soft sign before е palatalises → ye (Юрьевич → Yuryevich).
+    # Must be done BEFORE stripping the apostrophe.
+    lat = lat.replace("'e", "ye").replace("'E", "Ye")
     lat = lat.replace("'", "")
 
     # Apply BGN/PCGN corrections for Russian and Ukrainian only.
