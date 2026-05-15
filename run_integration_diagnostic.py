@@ -912,8 +912,8 @@ TEST_CASES = [
     ("G.15", "German umlaut ö in surname",
      "Schröder",
      "person_name", "de",
-     "SCHRODER", "CHARACTER_MAP",
-     "ö→O primary, SCHROEDER in variants"),
+     "SCHROEDER", "CHARACTER_MAP",
+     "ö→OE primary, SCHRODER in variants — consistent with G.1 umlaut-expansion policy"),
     # ── Composition: Suffix extraction + residual normalisation ────────────────
     ("E.4", "Japanese company with KK suffix",
      "三菱商事株式会社",

@@ -166,9 +166,9 @@ These tests fail because the expected value was drafted incorrectly, not because
 - [x] **T4-1** I.1–I.4: T1-3 gate reverted — all four now reach `_transliterate_arabic`, expected values updated to actual consonant-skeleton output. ✅ Done.
 - [x] **T4-2** F.26/F.27: Family-preference form as primary — `KOREAN_SURNAME_VARIANTS` reordered so first entry is the passport-dominant form (`Park`, `Choi`, etc.). `_normalise_korean` now uses `variants[0]` as surname_rom when the surname is in the table. F.27 (`CHOI SUBIN`) ✅ already expected correctly. F.26 (`PARK JIHUN`) updated from `BAK JIHUN`. RR forms (`BAK`, `CHOE`) now appear in `allowed_variants`.
 - [x] **T4-3** F.29/F.10: `이` → primary `Lee` (was `I`). F.29 (`LEE SEOYEON`) ✅ already expected correctly. F.10 (`LEE MINJUN`) updated from `I MINJUN`. F.28 (`JUNG HANEUL`) updated from `JEONG HANEUL`. RR forms (`I`, `JEONG`) confirmed in `allowed_variants`. D.11 Seoul city unaffected (routes via GEOGRAPHIC, not person_name). Committed.
-- [moved to T2.5] **T4-4** F.11: BGN/PCGN code bug — see **T2.5-1** and **T2.5-4**.
-- [moved to T2.5] **T4-5** F.15: BGN/PCGN code bug — see **T2.5-1** and **T2.5-4**.
-- [ ] **T4-6** G.15: change expected from `SCHRODER` → `SCHROEDER` (consistent with G.1 umlaut-expansion primary)
+- [moved to T2.5] **T4-4** ✅ F.11: BGN/PCGN code bug — see **T2.5-1** and **T2.5-4**.
+- [moved to T2.5] **T4-5** ✅ F.15: BGN/PCGN code bug — see **T2.5-1** and **T2.5-4**.
+- [x] **T4-6** G.15: change expected from `SCHRODER` → `SCHROEDER` (consistent with G.1 umlaut-expansion primary); `SCHRODER` confirmed in `allowed_variants`
 - [ ] **T4-7** B.22: US `MM/DD/YYYY` — verify whether this is a real missing path in `calendar_rules.py` (no `language=en` date-order detector) and add one if so; not a test expectation error
 
 
