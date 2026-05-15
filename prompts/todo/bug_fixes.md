@@ -164,14 +164,8 @@ These tests fail because the expected value was drafted incorrectly, not because
 ### Tier 4 todos
 
 - [x] **T4-1** I.1–I.4: T1-3 gate reverted — all four now reach `_transliterate_arabic`, expected values updated to actual consonant-skeleton output. ✅ Done.
-- [ ] **T4-2** F.27: **Policy decision required** — choose one of:
-  - (a) Accept RR as primary: change expected from `CHOI SUBIN` → `CHOE SUBIN`, confirm `CHOI` is in `allowed_variants`
-  - (b) Keep family-preference as primary: tests stay as-is, add note that this deviates from RR standard
-  - _Recommendation_: if downstream screener is variant-aware, go (a) — RR is consistent and principled.
-- [ ] **T4-3** F.29: **Same policy decision as T4-2** —
-  - (a) Accept RR: change expected from `LEE SEOYEON` → `I SEOYEON`, confirm `LEE`/`YI`/`RHEE` in `allowed_variants`
-  - (b) Keep family-preference: `LEE` stays primary
-  - _Note_: `I` as primary will look wrong to every Korean reviewer. `LEE` is overwhelmingly dominant in Korean passports. Consider (b) with `I` as variant.
+- [x] **T4-2** F.26/F.27: Family-preference form as primary — `KOREAN_SURNAME_VARIANTS` reordered so first entry is the passport-dominant form (`Park`, `Choi`, etc.). `_normalise_korean` now uses `variants[0]` as surname_rom when the surname is in the table. F.27 (`CHOI SUBIN`) ✅ already expected correctly. F.26 (`PARK JIHUN`) updated from `BAK JIHUN`. RR forms (`BAK`, `CHOE`) now appear in `allowed_variants`.
+- [x] **T4-3** F.29/F.10: `이` → primary `Lee` (was `I`). F.29 (`LEE SEOYEON`) ✅ already expected correctly. F.10 (`LEE MINJUN`) updated from `I MINJUN`. F.28 (`JUNG HANEUL`) updated from `JEONG HANEUL`. RR forms (`I`, `JEONG`) confirmed in `allowed_variants`. D.11 Seoul city unaffected (routes via GEOGRAPHIC, not person_name). Committed.
 - [moved to T2.5] **T4-4** F.11: BGN/PCGN code bug — see **T2.5-1** and **T2.5-4**.
 - [moved to T2.5] **T4-5** F.15: BGN/PCGN code bug — see **T2.5-1** and **T2.5-4**.
 - [ ] **T4-6** G.15: change expected from `SCHRODER` → `SCHROEDER` (consistent with G.1 umlaut-expansion primary)

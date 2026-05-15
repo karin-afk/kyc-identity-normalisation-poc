@@ -356,8 +356,8 @@ TEST_CASES = [
     ("F.10", "Korean full name",
      "이민준",
      "person_name", "ko",
-     "I MINJUN", ["TRANSLITERATION", "TRANSLITERATE"],
-     "Korean name romanisation"),
+     "LEE MINJUN", ["TRANSLITERATION", "TRANSLITERATE"],
+     "Korean name romanisation — family-preference LEE primary, I in variants"),
 
     # ── Legal form embedded in company name (suffix extraction) ────────────────
     ("C.10", "Japanese legal form at end of company name",
@@ -858,8 +858,8 @@ TEST_CASES = [
     ("F.26", "Korean surname Bak/Park variant family",
      "박지훈",
      "person_name", "ko",
-     "BAK JIHUN", ["TRANSLITERATION", "TRANSLITERATE"],
-     "RR primary; PARK and PAK must appear in variants"),
+     "PARK JIHUN", ["TRANSLITERATION", "TRANSLITERATE"],
+     "Family-preference PARK primary; BAK and PAK must appear in variants"),
 
     ("F.27", "Korean surname Choi/Choe variant family",
      "최수빈",
@@ -870,8 +870,8 @@ TEST_CASES = [
     ("F.28", "Korean surname Jeong/Jung/Chung family",
      "정하늘",
      "person_name", "ko",
-     "JEONG HANEUL", ["TRANSLITERATION", "TRANSLITERATE"],
-     "JUNG and CHUNG must appear in variants"),
+     "JUNG HANEUL", ["TRANSLITERATION", "TRANSLITERATE"],
+     "Family-preference JUNG primary; JEONG and CHUNG must appear in variants"),
 
     ("F.29", "Korean surname Lee/Yi/Rhee family",
      "이서연",
