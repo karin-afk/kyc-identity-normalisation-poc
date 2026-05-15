@@ -210,14 +210,10 @@ H.1–H.6 are alias/AKA fields. H.7–H.12 are invoice prose. Both fail because 
 
 ### Tier 6 todos
 
-- [ ] **T6-1** Add `alias`, `aka`, `also_known_as`, `notes`, `remarks`, `free_text` to `PROSE_FIELDS` in `router.py` (or wherever `_try_strategy_h` gates its field types)
-- [ ] **T6-2** Add `_detect_prose_connector(text: str, field_type: str) -> bool` — returns True if text contains a known AKA connector phrase AND both safeguards pass:
-  1. **Field-type gate:** only fire when `field_type ∈ {alias, person_name, free_text, unknown}` — do not override a confident structured-field classification (address, date, IBAN, etc.)
-  2. **Capitalised-neighbour heuristic:** the connector phrase must be immediately preceded or followed by a token starting with a capital letter (e.g. `IVAN also known as VANYA` passes; `the area known as Soho` fails the left-neighbour check because `the` is lowercase)
-  - **False-positive risks to avoid:** `"known as"` in geographic prose ("the area known as Soho"), `dit` as a regular French verb — both are suppressed by the capitalised-neighbour check
-  - Call at the top of `route_field()` and short-circuit to `_try_strategy_h` when True
-- [ ] **T6-3** Move `_try_strategy_h` call above `_try_strategy_f` for `alias`/`PROSE_FIELDS` — H must run before F so NMT fires before transliteration
-- [ ] **T6-4** Test H.1–H.6 reach Strategy H and that the NMT handler returns a translated/normalised result (may need a sub-diagnostic to isolate NMT output quality from routing)
+- [x] **T6-1** Added `alias`, `aka`, `also_known_as`, `notes`, `remarks`, `free_text` to `PROSE_FIELDS` in `field_types.py`.
+- [x] **T6-2** Added `_detect_prose_connector(text, field_type)` to `router.py`: regex for `по прозвищу`, `又名`, `γνωστός ως`, `also known as`, `known as`, `dit`, `detto`, `noto come`; field-type gate (`alias/person_name/free_text/unknown`); capitalised-neighbour check (`_is_cap_or_non_latin` — uppercase Latin/Cyrillic/Greek or any non-ASCII). Suppresses `"the area known as Soho"` (left="area", lowercase) and `"Il a dit quelque chose"` (left="dit" neighbourhood fails).
+- [x] **T6-3** Connector early-exit and PROSE_FIELDS early-exit both added before G/D/F in `route_field()`. Both hard-stop on NMT None — alias/prose fields return UNRESOLVED rather than falling through to transliteration. H.1–H.6: routing confirmed (UNRESOLVED without Azure, not TRANSLITERATE). H.4 (English) gets NMT directly. H.7/H.11 (free_text): UNRESOLVED without Azure. No regression on F.1/G.1/A.1/A.8 or geographic false-positive.
+- [x] **T6-4** Sub-diagnostic confirmed via inline test: all 8 sampled H-series cases reach H (NMT or UNRESOLVED); none go to TRANSLITERATE/CHARACTER_MAP. Actual NMT output quality (translation + uppercase) requires Azure credentials — tracked in T8-4.
 
 
 ## Tier 7 — Company name composition (Category 5 — 8 tests, Epic-scale)

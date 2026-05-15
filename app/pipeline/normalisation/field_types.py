@@ -43,6 +43,14 @@ GEOGRAPHIC_FIELDS: list[str] = [
 ]
 
 PROSE_FIELDS: list[str] = [
+    # T6-1: alias/AKA fields — route to NMT (Strategy H) before transliteration
+    "alias",
+    "aka",
+    "also_known_as",
+    "notes",
+    "remarks",
+    "free_text",
+    # Original prose fields
     "nature_of_business",
     "business_purpose",
     "accounting_policies",

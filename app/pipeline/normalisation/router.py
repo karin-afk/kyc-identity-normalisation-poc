@@ -8,11 +8,65 @@ import sys
 import unicodedata
 from pathlib import Path
 
+from app.pipeline.normalisation.field_types import PROSE_FIELDS
 from app.utils.session_trace import log_event
 
 SRC_DIR = Path(__file__).resolve().parents[3] / "src"
 if str(SRC_DIR) not in sys.path:
 	sys.path.insert(0, str(SRC_DIR))
+
+
+# ── T6-2: Prose connector (AKA / alias) detection ──────────────────────
+# These connectors signal that the field is an alias narrative, not a plain name.
+# The capitalised-neighbour guard suppresses geographic false-positives like
+# "the area known as Soho" (left neighbour "area" is lowercase).
+_AKA_CONNECTOR_RE = re.compile(
+	r'(?:also\s+known\s+as|known\s+as|'
+	r'по\s+прозвищу|detto|dit|又名|'
+	r'γνωστός\s+ως|noto\s+come)',
+	re.IGNORECASE,
+)
+# Field types for which connector detection may fire (never override structured
+# types like address, date, iban, company_name).
+_CONNECTOR_FIELD_TYPES = {"alias", "person_name", "free_text", "unknown"}
+
+
+def _is_cap_or_non_latin(token: str) -> bool:
+	"""True if the token starts with an uppercase letter or a non-ASCII character.
+
+	Covers Latin caps (A-Z), Cyrillic (А), Greek (Ν), CJK (王), Arabic (م), etc.
+	Prevents false positives from lowercase Latin prose (e.g. "the", "area").
+	"""
+	if not token:
+		return False
+	c = token[0]
+	return c.isupper() or not c.isascii()
+
+
+def _detect_prose_connector(text: str, field_type: str) -> bool:
+	"""Return True if *text* contains an AKA connector with a capitalised neighbour.
+
+	Algorithm:
+	  1. Field-type gate: only fire for alias/person_name/free_text/unknown.
+	  2. Find the first matching connector phrase.
+	  3. Check the immediate left-hand token.
+	     - If a left token exists: it must be capitalised or non-Latin.
+	     - If no left token (connector at the start of the string): check the
+	       right token instead.
+	"""
+	if field_type not in _CONNECTOR_FIELD_TYPES:
+		return False
+	m = _AKA_CONNECTOR_RE.search(text)
+	if not m:
+		return False
+	before_tokens = text[:m.start()].split()
+	after_tokens = text[m.end():].split()
+	left_token = before_tokens[-1] if before_tokens else ""
+	right_token = after_tokens[0] if after_tokens else ""
+	if left_token:
+		return _is_cap_or_non_latin(left_token)
+	# Connector at the very start of the string — check right neighbour.
+	return _is_cap_or_non_latin(right_token)
 
 
 # ── T5: Script normalisation within PRESERVE fields ──────────────────────────
@@ -127,6 +181,18 @@ def route_field(row: dict) -> dict:
 		log_event("router_unresolved", {"reason": "missing_field_type"}, source="backend")
 		return _unresolved(text, field_type, language, reason="Missing field_type")
 
+	# T6-2: Prose connector early-exit — AKA/alias phrases route directly to H.
+	# Override field_type to "alias" so NMT handler accepts it (alias in PROSE_FIELDS).
+	# If NMT is unavailable (no Azure), return UNRESOLVED rather than falling
+	# through to transliteration — alias narratives must not be treated as person names.
+	if _detect_prose_connector(text, field_type):
+		result = _try_strategy_h(text, "alias", language)
+		if result:
+			log_event("router_selected_strategy", {"strategy": "H", "method": result.get("processing_method"), "via": "prose_connector"}, source="backend")
+			return result
+		log_event("router_unresolved", {"reason": "nmt_unavailable_alias"}, source="backend")
+		return _unresolved(text, field_type, language, reason="Alias connector detected but NMT unavailable — requires native speaker review")
+
 	result = _try_strategy_a(text, field_type)
 	if result:
 		log_event("router_selected_strategy", {"strategy": "A", "method": result.get("processing_method")}, source="backend")
@@ -141,6 +207,17 @@ def route_field(row: dict) -> dict:
 	if result:
 		log_event("router_selected_strategy", {"strategy": "C", "method": result.get("processing_method")}, source="backend")
 		return result
+
+	# T6-3: Prose fields (alias, free_text, etc.) — H must run before G/D/F so
+	# NMT fires before transliteration intercepts the alias narrative.
+	# Hard-stop on NMT None: prose fields must not fall through to transliteration.
+	if field_type in PROSE_FIELDS:
+		result = _try_strategy_h(text, field_type, language)
+		if result:
+			log_event("router_selected_strategy", {"strategy": "H", "method": result.get("processing_method")}, source="backend")
+			return result
+		log_event("router_unresolved", {"reason": "nmt_unavailable_prose", "field_type": field_type}, source="backend")
+		return _unresolved(text, field_type, language, reason="NMT unavailable for prose field — requires native speaker review")
 
 	result = _try_strategy_g(text, field_type, language)
 	if result:
