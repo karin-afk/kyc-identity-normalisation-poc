@@ -381,32 +381,52 @@ def detect_field_type_regex(text: str, language_hint: str = "") -> tuple[str, fl
 
 # ── LLM classifier (GPT-4o-mini) ──────────────────────────────────────────────
 
+VALID_FIELD_TYPES = {
+    "person_name", "alias", "nationality", "city", "address",
+    "passport_no", "iban", "lei_code", "id_number", "tax_id",
+    "registration_no", "reference_no", "phone_number", "email",
+    "date_of_birth", "issue_date", "expiry_date",
+    "company_name", "legal_form", "status", "role",
+    "share_capital", "total_assets", "free_text", "unknown",
+}
+
+VALID_LANGUAGES = {
+    "ar", "de", "el", "en", "es", "fa", "fr", "he", "it",
+    "ja", "ko", "nl", "no", "pl", "pt", "ru", "th", "tr",
+    "uk", "zh", "unknown",
+}
+
 _LLM_CACHE: dict[str, tuple[str, float, str]] = {}
 
 
-def _detect_field_type_llm(text: str, language_hint: str = "") -> tuple[str, float, str]:
-    """Classify pasted text with GPT-4o-mini.
+def detect_field_type_llm(text: str, language_hint: str = "") -> tuple[str, float, str]:
+    """LLM classifier using GPT-4o-mini. Returns (field_type, confidence, language).
 
-    Args:
-        text: The text to classify.
-        language_hint: Optional ISO 639-1 code provided by the analyst. When
-            supplied it is injected into the user message so the model treats
-            it as authoritative for language_code and calendar disambiguation.
-
-    Returns:
-        (field_type, confidence, language_code)
-
-    On any error, returns a safe fallback so processing can continue.
+    Uses the prompt and few-shot examples from classifier_prompt.py.
+    SHA-256 caches results to avoid re-paying latency on repeated inputs.
+    Validates all outputs against VALID_FIELD_TYPES / VALID_LANGUAGES —
+    if the model invents a value, it is downgraded to 'unknown'.
     """
+    from app.pipeline.normalisation.classifier_prompt import (
+        CLASSIFIER_SYSTEM_PROMPT,
+        CLASSIFIER_USER_PROMPT_TEMPLATE,
+        FEW_SHOT_EXAMPLES,
+    )
+
     # SHA-256 cache — avoids re-paying latency on repeated inputs across a run
     cache_key = hashlib.sha256(f"{text}\x00{language_hint}".encode()).hexdigest()
     if cache_key in _LLM_CACHE:
         return _LLM_CACHE[cache_key]
 
+    user_content = CLASSIFIER_USER_PROMPT_TEMPLATE.format(text=(text or "")[:500])
     if language_hint:
-        user_message = f"Language hint provided by analyst: {language_hint}\n\nText to classify:\n{(text or '')[:500]}"
-    else:
-        user_message = (text or "")[:500]
+        user_content = f"Language hint provided by analyst: {language_hint}\n\n{user_content}"
+
+    messages: list[dict] = [{"role": "system", "content": CLASSIFIER_SYSTEM_PROMPT}]
+    for user_text, assistant_response in FEW_SHOT_EXAMPLES:
+        messages.append({"role": "user", "content": f"Classify this text:\n\n{user_text}\n\nReturn JSON only."})
+        messages.append({"role": "assistant", "content": assistant_response})
+    messages.append({"role": "user", "content": user_content})
 
     try:
         log_event(
@@ -421,26 +441,27 @@ def _detect_field_type_llm(text: str, language_hint: str = "") -> tuple[str, flo
         )
         response = _get_client().chat.completions.create(
             model="gpt-4o-mini",
-            max_tokens=60,
-            temperature=0,
-            messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user", "content": user_message},
-            ],
+            messages=messages,
+            temperature=0.0,
+            max_tokens=80,
+            response_format={"type": "json_object"},
         )
 
         content = response.choices[0].message.content or "{}"
         log_event("field_detector_raw_response", {"content": content}, source="backend")
         parsed = json.loads(content)
 
-        field_type = parsed.get("field_type", "unstructured_text")
-        detected_language = parsed.get("language_code", "en")
-        confidence = _coerce_confidence(parsed.get("confidence", 0.5))
+        field_type = parsed.get("field_type", "unknown")
+        detected_language = parsed.get("language", "unknown")
+        confidence = float(parsed.get("confidence", 0.0))
 
-        if field_type not in FIELD_TYPES:
-            field_type = "unstructured_text"
-        if detected_language not in LANGUAGE_CODES:
-            detected_language = "en"
+        # Validate against the closed enum — if the model invented something,
+        # downgrade to unknown rather than break the router.
+        if field_type not in VALID_FIELD_TYPES:
+            field_type = "unknown"
+            confidence = min(confidence, 0.3)
+        if detected_language not in VALID_LANGUAGES:
+            detected_language = "unknown"
 
         log_event(
             "field_detector_completed",
@@ -458,7 +479,11 @@ def _detect_field_type_llm(text: str, language_hint: str = "") -> tuple[str, flo
     except Exception as e:
         logger.error(f"Field type detection failed: {e}", exc_info=True)
         log_event("field_detector_error", {"error": str(e)}, source="backend")
-        return "unstructured_text", 0.5, "en"
+        return "unknown", 0.0, "unknown"
+
+
+# Keep the private alias so any internal callers still work
+_detect_field_type_llm = detect_field_type_llm
 
 
 def detect_field_type(text: str, language_hint: str = "") -> tuple[str, float, str]:
@@ -473,5 +498,5 @@ def detect_field_type(text: str, language_hint: str = "") -> tuple[str, float, s
     """
     mode = os.environ.get("CLASSIFIER_MODE", "regex").lower()
     if mode == "llm":
-        return _detect_field_type_llm(text, language_hint)
+        return detect_field_type_llm(text, language_hint)
     return detect_field_type_regex(text, language_hint)
