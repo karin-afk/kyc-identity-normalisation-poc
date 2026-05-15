@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
+import unicodedata
 from pathlib import Path
 
 from app.utils.session_trace import log_event
@@ -11,6 +13,52 @@ from app.utils.session_trace import log_event
 SRC_DIR = Path(__file__).resolve().parents[3] / "src"
 if str(SRC_DIR) not in sys.path:
 	sys.path.insert(0, str(SRC_DIR))
+
+
+# ── T5: Script normalisation within PRESERVE fields ──────────────────────────
+# Only these fields undergo digit/separator normalisation; all others are verbatim.
+_SCRIPT_NORMALISE_FIELDS = {"passport_no", "id_number", "tax_id"}
+
+# Label prefixes stripped case-insensitively from the start of the value.
+# Each entry includes the trailing space (or boundary character) that separates
+# the label from the identifier value.
+_ID_LABEL_PREFIXES_LOWER = [
+	"steuernummer ",
+	"ni ",
+	"vat ",
+	"ein ",
+	"tin ",
+	"国税",
+]
+
+
+def _normalise_within_preserve(text: str) -> str:
+	"""Normalise digit glyphs, label prefixes, brackets and separators.
+
+	Applied only to fields in _SCRIPT_NORMALISE_FIELDS.  The result keeps
+	processing_method as PRESERVE — the *value* is cleaned, not translated.
+	"""
+	# Step 1: NFKC — collapses full-width digits (\uff10-\uff19) to ASCII.
+	text = unicodedata.normalize("NFKC", text)
+
+	# Step 2: Arabic-Indic (\u0660-\u0669) and Extended (\u06f0-\u06f9) → ASCII.
+	text = text.translate(str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789"))
+	text = text.translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789"))
+
+	# Step 3: Strip known label prefix (case-insensitive).
+	text_lower = text.lower()
+	for prefix in _ID_LABEL_PREFIXES_LOWER:
+		if text_lower.startswith(prefix):
+			text = text[len(prefix):]
+			break
+
+	# Step 4: Unwrap a trailing bracket group — "A123456(3)" → "A1234563".
+	text = re.sub(r'\(([^)]+)\)$', r'\1', text)
+
+	# Step 5: Strip separators — spaces, slashes, hyphens between tokens.
+	text = re.sub(r'[\s/\-]', '', text)
+
+	return text
 
 
 # ── T3-3: Legacy field-name aliases → canonical names ─────────────────────────
@@ -41,6 +89,7 @@ PRESERVE_FIELDS = [
 	"id_no",
 	"id_number",
 	"iban",
+	"lei_code",
 	"email",
 	"registration_no",
 	"company_no",
@@ -135,15 +184,18 @@ def _try_strategy_a(text: str, field_type: str) -> dict | None:
 		result = apply_rules(field_type, text)
 		if result:
 			result["processing_method"] = "PRESERVE"
+			if field_type in _SCRIPT_NORMALISE_FIELDS:
+				result["normalised_form"] = _normalise_within_preserve(text)
 			log_event("strategy_a_hit", {"field_type": field_type}, source="backend")
 			return result
 	except Exception:
 		log_event("strategy_a_error", {"field_type": field_type}, source="backend")
 		pass
 
+	normalised = _normalise_within_preserve(text) if field_type in _SCRIPT_NORMALISE_FIELDS else text
 	return {
 		"original_text": text,
-		"normalised_form": text,
+		"normalised_form": normalised,
 		"allowed_variants": [],
 		"processing_method": "PRESERVE",
 		"confidence": 1.0,
@@ -151,7 +203,7 @@ def _try_strategy_a(text: str, field_type: str) -> dict | None:
 		"review_reason": None,
 		"should_use_in_screening": True,
 		"latin_transliteration": None,
-		"analyst_english_rendering": text,
+		"analyst_english_rendering": normalised,
 	}
 
 

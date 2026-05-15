@@ -188,10 +188,10 @@ Strategy A currently preserves verbatim. The golden dataset distinguishes `PRESE
 
 ### Tier 5 todos
 
-- [ ] **T5-1** Add `_normalise_within_preserve(text: str) -> str` to `router.py` or `app/pipeline/normalisation/preserve.py`: NFKC → digit glyph normalisation → strip known ID label prefixes → collapse/remove separators (spaces, hyphens, slashes) → strip trailing bracket groups
-- [ ] **T5-2** In `_try_strategy_a()`: after `processing_method = "PRESERVE"` is set, call `_normalise_within_preserve` if the text contains non-ASCII digits (`\u0660–\u06f9`, `\uff10–\uff19`) or internal whitespace — set `normalised_form` to the result, keep method as `PRESERVE`
-- [ ] **T5-3** Add the label-prefix table to `data/lookup_tables/` or inline in the function: `Steuernummer`, `NI`, `VAT`, `EIN`, `TIN`, `国税`, etc.
-- [ ] **T5-4** Verify A.7–A.12 pass, then check no existing A.x tests regress (verbatim cases must stay verbatim)
+- [x] **T5-1** Add `_normalise_within_preserve(text: str) -> str` to `router.py`: NFKC → Arabic-Indic digit normalisation → strip known ID label prefixes → unwrap trailing bracket groups → strip separators (spaces, hyphens, slashes). Applied only to `_SCRIPT_NORMALISE_FIELDS = {"passport_no", "id_number", "tax_id"}` to avoid corrupting IBAN, email, etc.
+- [x] **T5-2** In `_try_strategy_a()`: call `_normalise_within_preserve` for fields in `_SCRIPT_NORMALISE_FIELDS`; all other PRESERVE fields remain verbatim.
+- [x] **T5-3** Label prefix table inlined in `router.py`: `Steuernummer`, `NI`, `VAT`, `EIN`, `TIN`, `国税`.
+- [x] **T5-4** A.7–A.12 all PASS; A.1–A.6 and B.11 (id_no Arabic-Indic verbatim) confirmed no regression.
 
 
 ## Tier 6 — Strategy H routing for alias and prose connector detection (Category 4 — 12 tests)
