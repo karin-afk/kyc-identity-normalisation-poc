@@ -11,6 +11,7 @@ from .numeric_rules import (
 	normalise_all_digits,
 	normalise_parenthetical_negative,
 )
+from .han_numeral import han_to_int, is_pure_han_numeral, is_pure_han_spoken, han_spoken_to_str
 from utils.calendar_utils import detect_and_convert_japanese_era, normalise_date_field
 
 CALENDAR_DATE_FIELDS: set[str] = {
@@ -104,6 +105,25 @@ def apply_calendar_rules(
 	}
 
 
+_PHONE_SEPARATOR_RE = re.compile(r'[\s\-().]+')
+
+
+def _numeric_result(original: str, normalised: str) -> dict:
+	"""Build a standard NUMERIC strategy result dict."""
+	return {
+		"original_text": original,
+		"normalised_form": normalised,
+		"allowed_variants": [],
+		"processing_method": "NUMERIC",
+		"confidence": 0.95,
+		"review_required": False,
+		"review_reason": None,
+		"should_use_in_screening": True,
+		"original_calendar": None,
+		"currency_code": "",
+	}
+
+
 def apply_numeric_rules(
 	field_type: str,
 	text: str,
@@ -112,20 +132,65 @@ def apply_numeric_rules(
 ) -> dict | None:
 	"""Apply Strategy B numeric normalisation for financial numeric fields.
 
+	Also handles phone_number and address fields.
 	For fields whose type is unstructured_text (i.e. the LLM classifier could not
 	identify a specific field type), also fires when the text consists entirely of
 	non-ASCII digits and separators, converting the digit glyphs to ASCII without
 	financial number formatting.
 	"""
+	# ── Phone number normalisation (T12-1: B.25, B.27, B.36, B.37) ────────────
+	if field_type == "phone_number":
+		raw = (text or "").strip()
+		if not raw:
+			return None
+		# Spoken Han digits — phone number as digit sequence (B.36)
+		if is_pure_han_spoken(raw):
+			digits = han_spoken_to_str(raw)
+			if digits:
+				return _numeric_result(raw, digits)
+		# Standard: normalise digit glyphs, strip all non-digit chars, keep leading +
+		t = normalise_all_digits(raw)
+		has_plus = t.startswith('+')
+		if has_plus:
+			t = t[1:]
+		t = re.sub(r'\D', '', t)  # strip everything that is not an ASCII digit
+		normalised = ('+' + t) if has_plus else t
+		if not any(c.isdigit() for c in normalised):
+			return None
+		return _numeric_result(raw, normalised)
+
+	# ── Address digit normalisation (T11-2/T12-2: B.26, B.35) ─────────────────
+	if field_type == "address":
+		raw = (text or "").strip()
+		if not raw:
+			return None
+		# Pure Han numeral house/street number (e.g. 八十八 → 88)
+		if is_pure_han_numeral(raw):
+			val = han_to_int(raw)
+			if val is not None:
+				return _numeric_result(raw, str(val))
+		# Digit-glyph normalisation within mixed-text address (e.g. 테헤란로 １２３ → 테헤란로 123)
+		converted = normalise_all_digits(raw)
+		if converted != raw:
+			return _numeric_result(raw, converted)
+		return None
+
 	if field_type not in FINANCIAL_NUMERIC_FIELDS:
 		# Content-driven path: fire for unstructured_text when the value is pure
 		# digit glyphs (e.g. Arabic-Indic digits pasted without a known field context).
 		# Preserve fields (id_no, passport_no, etc.) never reach this because they
 		# are not classified as unstructured_text by the field detector.
-		if field_type != "unstructured_text":
+		if field_type not in ("unstructured_text", "unknown"):
 			return None
 		raw = (text or "").strip()
-		if not raw or not (_NON_ASCII_DIGIT_RE.search(raw) and _ALL_DIGIT_CONTENT_RE.match(raw)):
+		if not raw:
+			return None
+		# Pure Han numeral (e.g. 八十八 with unknown field_type)
+		if is_pure_han_numeral(raw):
+			val = han_to_int(raw)
+			if val is not None:
+				return _numeric_result(raw, str(val))
+		if not (_NON_ASCII_DIGIT_RE.search(raw) and _ALL_DIGIT_CONTENT_RE.match(raw)):
 			return None
 		converted = normalise_all_digits(raw)
 		return {
@@ -147,6 +212,13 @@ def apply_numeric_rules(
 
 	lang = (language or "").lower()
 	ctry = (country or "").upper()
+
+	# Han numeral conversion for financial amounts (T12-2: B.31 五千→5000)
+	stripped = raw_text.strip()
+	if is_pure_han_numeral(stripped):
+		val = han_to_int(stripped)
+		if val is not None:
+			return _numeric_result(stripped, str(val))
 
 	converted = normalise_all_digits(raw_text.strip())
 	converted = normalise_parenthetical_negative(converted)
@@ -201,6 +273,15 @@ def _detect_calendar_and_convert(text: str, language: str, country: str) -> dict
 		result = _detect_minguo_date(text)
 		if result:
 			return result
+		# Han numeral date for zh (e.g. 二零二四年三月十四日 → 2024-03-14)
+		era = detect_and_convert_japanese_era(text)
+		if era.get("gregorian_year"):
+			return {
+				"normalised_form": era["normalised"],
+				"original_calendar": "gregorian",
+				"review_required": era["review_required"],
+				"review_reason": era["review_reason"],
+			}
 
 	if language in ("fa", "ps") or country in ("IR", "AF"):
 		result = _detect_solar_hijri_date(text)

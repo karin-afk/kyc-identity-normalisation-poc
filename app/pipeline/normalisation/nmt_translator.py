@@ -64,7 +64,7 @@ def apply_nmt(text: str, field_type: str, language: str = "") -> dict | None:
             "should_use_in_screening": False,
         }
 
-    if len(text.strip()) < 10:
+    if len(text.strip()) < 4:
         return None
 
     endpoint = os.environ.get("AZURE_TRANSLATOR_ENDPOINT", "")

@@ -349,20 +349,20 @@ Subtotal: ~117 → ~133/164 = ~81%
 
 Priority 2 — Bounded Phase 2 items (≈1 day total)
 Useful if there's time before AIG; otherwise list as Phase 2 scope.
-T6.5-2 — H.2 Chinese alias routing gap (debug, ~30 min, 1 test)
-Why does zh + alias return UNRESOLVED while ru/el/en + alias route to NMT? Probably PROSE_FIELDS check or strategy ordering for zh.
-T10-3 — GEOGRAPHIC adjectival forms (30 min, 1 test: D.12)
-Strip 人 / 人民 / -ese suffix and re-lookup, or add adjectival entries to the table.
-T11-1 — Policy: PRESERVE digit collapse for id_number (decision + ~15 min, 1 test: B.11)
-Should Arabic-Indic digits be preserved verbatim for ID fields? Decide, then either remove the digit-normalise step from PRESERVE for id_no or update the test expectation.
-T11-2 — GEOGRAPHIC substring-match in addresses (~30 min, 1 test: B.26)
-Restrict GEOGRAPHIC to whole-field match for address field type, or add a real address handler.
-T11-3 — Router policy for Latin-script person_name (~30 min, 1 test: G.9)
-"If person_name and the script has any character map, run CHARACTER_MAP regardless of detected language."
-T12-1 — Phone number strategy (½ day, 3 tests: B.25, B.27, B.37)
-Extension of NUMERIC: full-width digit collapse, Arabic-Indic conversion, whitespace strip, preserve +.
-T12-2 — Han numeral semantic converter (½ day, 3 tests: B.24, B.31, B.35)
-Utility module wired into both NUMERIC (amounts/house numbers) and CALENDAR (Han-numeral dates).
+✅ T6.5-2 — H.2 Chinese alias routing gap (debug, ~30 min, 1 test)
+Root cause: `apply_nmt` had `len(text.strip()) < 10` guard blocking 7-char `王强又名王小强`. Fixed: lowered threshold to `< 4`.
+✅ T10-3 — GEOGRAPHIC adjectival forms (30 min, 1 test: D.12)
+Added `日本人`, `中国人`, `韓国人`, `한국인`, `ドイツ人`, `フランス人`, `アメリカ人`, `イギリス人` to `_SUPPLEMENTARY_NATIONALITY_ALIASES`. Cache renamed to v3 to force rebuild.
+✅ T11-1 — Policy: PRESERVE digit collapse for id_number (decision + ~15 min, 1 test: B.11)
+Decision: `id_no` stays verbatim (PRESERVE_FIELDS). `id_number` (A.12) gets digit-collapsed — different field types, different policy. No code change needed.
+✅ T11-2 — GEOGRAPHIC substring-match in addresses (~30 min, 1 test: B.26)
+Added `address` field path to `apply_numeric_rules`: `normalise_all_digits` converts full-width digits; Strategy B fires before D.
+✅ T11-3 — Router policy for Latin-script person_name (~30 min, 1 test: G.9)
+Fixed `character_map_normaliser.py`: (1) bypass guard for `person_name` field_type so nl handler always runs; (2) added pure-ASCII fallback when no handler found (handles LLM language misclassification en→nl).
+✅ T12-1 — Phone number strategy (½ day, 3 tests: B.25, B.27, B.37)
+Added `phone_number` path to `apply_numeric_rules`: spoken Han digits (B.36), full-width digit + separator strip preserving `+`.
+✅ T12-2 — Han numeral semantic converter (½ day, 3 tests: B.24, B.31, B.35)
+Created `app/pipeline/normalisation/han_numeral.py` (positional + spoken modes). Wired into: address path (B.35), financial path (B.31), phone path (B.36), calendar zh branch (B.24). Also extended `unstructured_text`/`unknown` path for LLM misclassification fallback.
 Subtotal: ~133 → ~144/164 = ~88%
 
 

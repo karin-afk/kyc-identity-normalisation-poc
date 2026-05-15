@@ -65,12 +65,19 @@ def apply_character_map(text: str, language: str, field_type: str) -> dict | Non
 
     handler = handlers.get(language)
     if not handler:
+        # T11-3: person_name with no language-specific handler and pure ASCII text
+        # (e.g. LLM mis-detects 'nl' as 'en' for "van den Berg") → uppercase with
+        # CHARACTER_MAP so the screening system sees a consistent cased form.
+        if field_type == "person_name" and all(ord(c) < 128 for c in text):
+            return _build_result(text, text.upper())
         return None
     # T2-G-2: if none of the input characters is a key in the language's map,
     # G has nothing to do — return None so the router tries D or F instead.
-    # Check against map membership, not output equality, to avoid false negatives
-    # on already-uppercased inputs like "MUELLER".
-    if language in LANGUAGE_CHAR_MAPS and not any(c in LANGUAGE_CHAR_MAPS[language] for c in text):
+    # Exception: person_name fields always run the handler (even pure ASCII) so
+    # that Latin-script names are uppercased with CHARACTER_MAP method (T11-3).
+    if (language in LANGUAGE_CHAR_MAPS
+            and field_type != "person_name"
+            and not any(c in LANGUAGE_CHAR_MAPS[language] for c in text)):
         return None
     try:
         result = handler(text, field_type)
