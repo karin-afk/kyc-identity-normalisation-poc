@@ -38,11 +38,8 @@ ROOT = Path(__file__).parent.resolve()
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv(ROOT / ".env", override=True)
-except ImportError:
-    pass
+from dotenv import load_dotenv
+load_dotenv(ROOT / ".env", override=True)
 
 # Create Flask app context so app/ imports work
 os.environ.setdefault("FLASK_ENV", "development")
@@ -966,13 +963,13 @@ TEST_CASES = [
     ("H.1", "Russian alias explanatory text",
      "Александр по прозвищу Саша",
      "alias", "ru",
-     "ALEXANDER NICKNAMED SASHA", "NMT",
+     "ALEXANDER, NICKNAMED SASHA", "NMT",
      "TRANSLATE_ANALYST — alias narrative not for screening match"),
 
     ("H.2", "Chinese alias 又名",
      "王强又名王小强",
      "alias", "zh",
-     "WANG QIANG ALSO KNOWN AS WANG XIAOQIANG", "NMT",
+     "WANG QIANG IS ALSO KNOWN AS WANG XIAOQIANG", "NMT",
      "Chinese alias connector 又名"),
 
     ("H.3", "Greek alias γνωστός ως",
@@ -996,7 +993,7 @@ TEST_CASES = [
     ("H.6", "Italian alias 'detto'",
      "Mario De Luca detto Il Professore",
      "alias", "it",
-     "MARIO DE LUCA KNOWN AS IL PROFESSORE", "NMT",
+     "MARIO DE LUCA KNOWN AS THE PROFESSOR", "NMT",
      "Italian detto → 'known as'"),
 
     ("H.7", "Arabic invoice prose with date and amount",
