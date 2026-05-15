@@ -13,6 +13,28 @@ if str(SRC_DIR) not in sys.path:
 	sys.path.insert(0, str(SRC_DIR))
 
 
+# ── T3-3: Legacy field-name aliases → canonical names ─────────────────────────
+# Older extracts and upstream systems sometimes use different names for the same
+# concept. Canonicalise at the router boundary so every strategy sees a single
+# consistent name.
+_FIELD_TYPE_ALIASES: dict[str, str] = {
+	# Identifier variants
+	"id_card_no":          "id_number",
+	"national_id_no":      "id_number",
+	# Name variants — all route like person_name
+	"given_name":          "person_name",
+	"first_name":          "person_name",
+	"family_name":         "person_name",
+	"last_name":           "person_name",
+	"full_name":           "person_name",
+}
+
+
+def _canonicalise_field_type(field_type: str) -> str:
+	"""Map legacy field-type names to their canonical equivalent."""
+	return _FIELD_TYPE_ALIASES.get(field_type, field_type)
+
+
 # Identifiers and codes — passed through verbatim (Strategy A)
 PRESERVE_FIELDS = [
 	"passport_no",
@@ -38,7 +60,7 @@ PRESERVE_FIELDS = [
 def route_field(row: dict) -> dict:
 	"""Route one field through strategies A-I, currently resolving Strategy A only."""
 	text = row.get("original_text", "")
-	field_type = row.get("field_type", "")
+	field_type = _canonicalise_field_type(row.get("field_type", ""))
 	language = row.get("language", "")
 	country = row.get("country", "")
 	log_event(

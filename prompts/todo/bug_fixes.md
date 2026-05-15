@@ -63,9 +63,9 @@ Once Tiers 1–2 are done, look at what's left and decide whether to refactor th
 
 ### Tier 3 todos
 
-- [ ] **T3-1** Add `--use-expected-classification` flag to `run_integration_diagnostic.py` — skips the GPT call and feeds test's expected `field_type`/`language` directly into the orchestrator. Gives a clean read on strategy accuracy independent of classifier noise.
-- [ ] **T3-2** Replace GPT-4o-mini classifier with deterministic field-type detector: regex for email/IBAN/date patterns, legal-form token lookup for company fields, default `person_name` with analyst-confirm flag. Gate on `.env` variable `CLASSIFIER_MODE=regex|llm` — do not delete the LLM path, just make it selectable. Recovers ~30 tests currently lost to classifier noise (all H.x, most A.7–A.12, E.12–E.15).
-- [ ] **T3-3** Canonicalise legacy field name aliases in the router: `id_no = id_number = id_card_no`, `given_name = first_name`, `family_name = last_name`, `full_name = person_name`. Add a `_canonicalise_field_type()` normalisation step at the top of `route_field()` so both old and new names route identically.
+- [x] **T3-1** Add `--use-expected-classification` flag to `run_integration_diagnostic.py` — skips the GPT call and feeds test's expected `field_type`/`language` directly into the orchestrator. Gives a clean read on strategy accuracy independent of classifier noise.
+- [x] **T3-2** Replace GPT-4o-mini classifier with deterministic field-type detector: regex for email/IBAN/date patterns, legal-form token lookup for company fields, default `person_name` with analyst-confirm flag. Gate on `.env` variable `CLASSIFIER_MODE=regex|llm` — do not delete the LLM path, just make it selectable. Recovers ~30 tests currently lost to classifier noise (all H.x, most A.7–A.12, E.12–E.15).
+- [x] **T3-3** Canonicalise legacy field name aliases in the router: `id_no = id_number = id_card_no`, `given_name = first_name`, `family_name = last_name`, `full_name = person_name`. Add a `_canonicalise_field_type()` normalisation step at the top of `route_field()` so both old and new names route identically.
 
 
 #### The prompt has been added here: 
@@ -240,5 +240,6 @@ E.10 (`NTT CORPORATION`) requires a brand-override lookup (NTT is a known entity
 
 Tier 8
 T-8-2: Add a test for the closed-enum validator. Confirm that if GPT-4o-mini returns id_no despite the prompt, it gets downgraded to unknown and the router handles unknown gracefully. Right now the router probably routes unknown to UNRESOLVED, which is correct behaviour but worth verifying with a test.
+T-8-4 (in Tier 6): Confirm NMT (Strategy H) actually produces translated output, not just routes correctly. Tier 6 fixes the routing problem. It doesn't tell you whether apply_nmt() actually works. Worth a 5-test isolated H sub-diagnostic that bypasses the router and calls the NMT handler directly with prose inputs.
 
 

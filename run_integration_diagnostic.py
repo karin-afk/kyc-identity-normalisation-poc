@@ -1111,10 +1111,13 @@ def md_warn(text): return f"⚠️ {text}"
 
 # ── Main runner ────────────────────────────────────────────────────────────────
 
-def run():
+def run(use_expected_classification: bool = False) -> int:
     print(f"\n{BOLD}KYC Integration Diagnostic Runner{RESET}")
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"Examples: {len(TEST_CASES)}\n")
+    print(f"Examples: {len(TEST_CASES)}")
+    if use_expected_classification:
+        print(warn("Mode: --use-expected-classification (GPT call bypassed, using test-case labels)"))
+    print()
     print("=" * 70)
 
     # Boot Flask app context
@@ -1182,57 +1185,72 @@ def run():
         step_results = []
         overall_pass = True
 
-        # ── Step 1: GPT-4o-mini classification ────────────────────────────────
-        report_lines.append("### Step 1 — GPT-4o-mini classification\n")
-        print(f"  {BOLD}Step 1:{RESET} GPT-4o-mini classification")
+        # ── Step 1: Classification (GPT or expected labels) ───────────────────
+        report_lines.append("### Step 1 — Classification\n")
+        print(f"  {BOLD}Step 1:{RESET} Classification")
 
-        t0 = time.time()
-        try:
-            got_field_type, got_confidence, got_language = detect_field_type(paste_text)
-            elapsed = time.time() - t0
-
-            ft_ok  = got_field_type == exp_field_type
-            lang_ok = got_language == exp_language
-
-            ft_mark   = ok if ft_ok else warn
-            lang_mark = ok if lang_ok else warn
-
-            print(f"    field_type:  {ft_mark(got_field_type)} (expected: {exp_field_type})")
-            print(f"    language:    {lang_mark(got_language)} (expected: {exp_language})")
-            print(f"    confidence:  {got_confidence:.2f}")
-            print(f"    time:        {elapsed:.2f}s")
-
-            ft_icon   = md_pass if ft_ok else md_warn
-            lang_icon = md_pass if lang_ok else md_warn
-
-            report_lines.append(f"| | Expected | Got | Status |")
-            report_lines.append(f"|---|---|---|---|")
-            report_lines.append(f"| **field_type** | `{exp_field_type}` | `{got_field_type}` | {ft_icon('match') if ft_ok else md_warn('mismatch')} |")
-            report_lines.append(f"| **language** | `{exp_language}` | `{got_language}` | {lang_icon('match') if lang_ok else md_warn('mismatch')} |")
-            report_lines.append(f"| **confidence** | — | `{got_confidence:.2f}` | — |")
-            report_lines.append(f"| **latency** | — | `{elapsed:.2f}s` | — |")
+        if use_expected_classification:
+            # Bypass GPT — use the test case's known-good labels directly.
+            actual_field_type = exp_field_type
+            actual_language   = exp_language
+            print(f"    {grey('[bypassed — using expected labels]')}")
+            print(f"    field_type:  {ok(actual_field_type)}")
+            print(f"    language:    {ok(actual_language)}")
+            report_lines.append(f"**BYPASSED** — `--use-expected-classification` flag set; "
+                                 f"using test-case labels directly.\n")
+            report_lines.append(f"| | Value |")
+            report_lines.append(f"|---|---|")
+            report_lines.append(f"| **field_type** | `{actual_field_type}` |")
+            report_lines.append(f"| **language** | `{actual_language}` |")
             report_lines.append("")
+        else:
+            t0 = time.time()
+            try:
+                got_field_type, got_confidence, got_language = detect_field_type(paste_text)
+                elapsed = time.time() - t0
 
-            if not ft_ok:
-                report_lines.append(f"> ⚠️ **Classification mismatch on field_type.** GPT-4o-mini returned `{got_field_type}` but expected `{exp_field_type}`. The router will process the field as `{got_field_type}` which may select the wrong strategy.\n")
+                ft_ok  = got_field_type == exp_field_type
+                lang_ok = got_language == exp_language
 
-            if not lang_ok:
-                report_lines.append(f"> ⚠️ **Classification mismatch on language.** GPT-4o-mini returned `{got_language}` but expected `{exp_language}`. This may affect strategy selection (e.g. character map handler chosen for wrong language).\n")
+                ft_mark   = ok if ft_ok else warn
+                lang_mark = ok if lang_ok else warn
 
-            # Use whatever GPT-4o-mini returned — this is what the real pipeline does
-            actual_field_type = got_field_type
-            actual_language   = got_language
+                print(f"    field_type:  {ft_mark(got_field_type)} (expected: {exp_field_type})")
+                print(f"    language:    {lang_mark(got_language)} (expected: {exp_language})")
+                print(f"    confidence:  {got_confidence:.2f}")
+                print(f"    time:        {elapsed:.2f}s")
 
-        except Exception as e:
-            elapsed = time.time() - t0
-            print(f"    {fail(f'EXCEPTION: {e}')}")
-            print(f"    Traceback: {traceback.format_exc()}")
-            report_lines.append(md_fail(f"**EXCEPTION in detect_field_type:** `{e}`\n"))
-            report_lines.append(f"```\n{traceback.format_exc()}\n```\n")
-            overall_pass = False
-            summary.append((test_id, description, False))
-            report_lines.append("---\n")
-            continue
+                ft_icon   = md_pass if ft_ok else md_warn
+                lang_icon = md_pass if lang_ok else md_warn
+
+                report_lines.append(f"| | Expected | Got | Status |")
+                report_lines.append(f"|---|---|---|---|")
+                report_lines.append(f"| **field_type** | `{exp_field_type}` | `{got_field_type}` | {ft_icon('match') if ft_ok else md_warn('mismatch')} |")
+                report_lines.append(f"| **language** | `{exp_language}` | `{got_language}` | {lang_icon('match') if lang_ok else md_warn('mismatch')} |")
+                report_lines.append(f"| **confidence** | — | `{got_confidence:.2f}` | — |")
+                report_lines.append(f"| **latency** | — | `{elapsed:.2f}s` | — |")
+                report_lines.append("")
+
+                if not ft_ok:
+                    report_lines.append(f"> ⚠️ **Classification mismatch on field_type.** Classifier returned `{got_field_type}` but expected `{exp_field_type}`. The router will process the field as `{got_field_type}` which may select the wrong strategy.\n")
+
+                if not lang_ok:
+                    report_lines.append(f"> ⚠️ **Classification mismatch on language.** Classifier returned `{got_language}` but expected `{exp_language}`. This may affect strategy selection (e.g. character map handler chosen for wrong language).\n")
+
+                # Use whatever the classifier returned — this is what the real pipeline does
+                actual_field_type = got_field_type
+                actual_language   = got_language
+
+            except Exception as e:
+                elapsed = time.time() - t0
+                print(f"    {fail(f'EXCEPTION: {e}')}")
+                print(f"    Traceback: {traceback.format_exc()}")
+                report_lines.append(md_fail(f"**EXCEPTION in detect_field_type:** `{e}`\n"))
+                report_lines.append(f"```\n{traceback.format_exc()}\n```\n")
+                overall_pass = False
+                summary.append((test_id, description, False))
+                report_lines.append("---\n")
+                continue
 
         print()
 
@@ -1505,4 +1523,5 @@ def _diagnose_form_failure(got_form, exp_form, got_method, original_text):
 
 
 if __name__ == "__main__":
-    sys.exit(run())
+    use_expected = "--use-expected-classification" in sys.argv
+    sys.exit(run(use_expected_classification=use_expected))
