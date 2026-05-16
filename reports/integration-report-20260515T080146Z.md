@@ -1,6 +1,6 @@
 # KYC Integration Diagnostic Report
 
-**Run date:** 2026-05-15 10:05:04
+**Run date:** 2026-05-15 07:58:53
 **Classifier mode:** `llm` (read from .env `CLASSIFIER_MODE`)
 **Examples:** 164
 **Pipeline:** `detect_field_type()` → `process_field_row()` → `route_field()` → strategy
@@ -9,8 +9,8 @@
 
 | Result | Count |
 |---|---|
-| ✅ Pass | 138 |
-| ❌ Fail | 26 |
+| ✅ Pass | 132 |
+| ❌ Fail | 32 |
 | Total | 164 |
 
 | ID | Description | Result |
@@ -27,12 +27,12 @@
 | H.9 | Traditional Chinese invoice prose | ❌ FAIL |
 | H.8 | Japanese invoice prose with Kanji numerals | ❌ FAIL |
 | H.7 | Arabic invoice prose with date and amount | ❌ FAIL |
-| H.6 | Italian alias 'detto' | ✅ PASS |
-| H.5 | French alias 'dit' | ✅ PASS |
+| H.6 | Italian alias 'detto' | ❌ FAIL |
+| H.5 | French alias 'dit' | ❌ FAIL |
 | H.4 | English alias 'also known as' | ✅ PASS |
-| H.3 | Greek alias γνωστός ως | ✅ PASS |
-| H.2 | Chinese alias 又名 | ✅ PASS |
-| H.1 | Russian alias explanatory text | ✅ PASS |
+| H.3 | Greek alias γνωστός ως | ❌ FAIL |
+| H.2 | Chinese alias 又名 | ❌ FAIL |
+| H.1 | Russian alias explanatory text | ❌ FAIL |
 | E.11 | Italian company with SpA suffix | ❌ FAIL |
 | E.10 | Japanese brand-name override | ❌ FAIL |
 | E.9 | Mexican company with multi-word legal form | ❌ FAIL |
@@ -66,7 +66,7 @@
 | F.13 | Ukrainian male name distinct from Russian | ✅ PASS |
 | F.12 | Russian female name with patronymic | ✅ PASS |
 | F.11 | Russian male name with patronymic and ё | ✅ PASS |
-| D.12 | Nationality adjective in Japanese | ✅ PASS |
+| D.12 | Nationality adjective in Japanese | ❌ FAIL |
 | D.11 | City name in Korean | ✅ PASS |
 | D.10 | City name in Chinese | ✅ PASS |
 | D.9 | City name in Japanese | ✅ PASS |
@@ -80,13 +80,13 @@
 | C.20 | Italian legal form SpA | ✅ PASS |
 | B.37 | Egyptian Arabic phone number with spaces | ✅ PASS |
 | B.36 | Spoken-style Han digits in phone | ❌ FAIL |
-| B.35 | Han numerals in house number | ✅ PASS |
+| B.35 | Han numerals in house number | ❌ FAIL |
 | B.34 | Korean comma thousands | ✅ PASS |
 | B.33 | UK comma thousands separator | ✅ PASS |
 | B.32 | European dot thousands separator | ✅ PASS |
 | B.31 | Han numerals for amount | ✅ PASS |
-| B.30 | Russian space thousands separator | ❌ FAIL |
-| B.29 | French space thousands separator | ❌ FAIL |
+| B.30 | Russian space thousands separator | ✅ PASS |
+| B.29 | French space thousands separator | ✅ PASS |
 | B.28 | Arabic thousands separator | ✅ PASS |
 | B.27 | Arabic-Indic phone number | ✅ PASS |
 | B.26 | Full-width Korean digits in address | ✅ PASS |
@@ -107,7 +107,7 @@
 | E.2 | Mixed script company name | ✅ PASS |
 | E.1 | Short ambiguous string | ✅ PASS |
 | G.10 | Norwegian o-stroke | ✅ PASS |
-| G.9 | Dutch van particle | ✅ PASS |
+| G.9 | Dutch van particle | ❌ FAIL |
 | G.8 | French accented name | ✅ PASS |
 | C.19 | French role manager | ✅ PASS |
 | C.18 | Russian role general director | ✅ PASS |
@@ -204,7 +204,7 @@
 | **field_type** | `passport_no` | `passport_no` | ✅ match |
 | **language** | `en` | `en` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `1.73s` | — |
+| **latency** | — | `2.40s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -253,7 +253,7 @@
 | **field_type** | `registration_no` | `tax_id` | ⚠️ mismatch |
 | **language** | `en` | `de` | ⚠️ mismatch |
 | **confidence** | — | `0.90` | — |
-| **latency** | — | `0.77s` | — |
+| **latency** | — | `1.74s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** Classifier returned `tax_id` but expected `registration_no`. The router will process the field as `tax_id` which may select the wrong strategy.
 
@@ -305,8 +305,8 @@
 |---|---|---|---|
 | **field_type** | `email` | `email` | ✅ match |
 | **language** | `en` | `en` | ✅ match |
-| **confidence** | — | `0.98` | — |
-| **latency** | — | `0.72s` | — |
+| **confidence** | — | `0.95` | — |
+| **latency** | — | `1.06s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -355,7 +355,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `th` | `unknown` | ⚠️ mismatch |
 | **confidence** | — | `0.60` | — |
-| **latency** | — | `0.83s` | — |
+| **latency** | — | `1.03s` | — |
 
 > ⚠️ **Classification mismatch on language.** Classifier returned `unknown` but expected `th`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
@@ -375,7 +375,7 @@
 | normalised_form | `2568/5/8` |
 | confidence | `0.95` |
 | review_required | `True` |
-| latency | `0.04s` |
+| latency | `0.02s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -408,7 +408,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.90` | — |
-| **latency** | — | `1.06s` | — |
+| **latency** | — | `1.60s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -426,7 +426,7 @@
 | normalised_form | `2023-07-03` |
 | confidence | `0.95` |
 | review_required | `True` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -457,7 +457,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.90` | — |
-| **latency** | — | `1.15s` | — |
+| **latency** | — | `0.93s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -506,7 +506,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.84s` | — |
+| **latency** | — | `0.67s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -555,7 +555,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `fa` | `fa` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.79s` | — |
+| **latency** | — | `1.00s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -573,7 +573,7 @@
 | normalised_form | `2025-05-05` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.04s` |
+| latency | `0.02s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -604,7 +604,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `zh` | `unknown` | ⚠️ mismatch |
 | **confidence** | — | `0.60` | — |
-| **latency** | — | `1.66s` | — |
+| **latency** | — | `0.83s` | — |
 
 > ⚠️ **Classification mismatch on language.** Classifier returned `unknown` but expected `zh`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
@@ -708,7 +708,7 @@
 | **field_type** | `total_assets` | `share_capital` | ⚠️ mismatch |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.88` | — |
-| **latency** | — | `0.88s` | — |
+| **latency** | — | `0.73s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** Classifier returned `share_capital` but expected `total_assets`. The router will process the field as `share_capital` which may select the wrong strategy.
 
@@ -728,7 +728,7 @@
 | normalised_form | `-4191` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -759,7 +759,7 @@
 | **field_type** | `total_assets` | `total_assets` | ✅ match |
 | **language** | `de` | `de` | ✅ match |
 | **confidence** | — | `0.80` | — |
-| **latency** | — | `0.73s` | — |
+| **latency** | — | `0.99s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -808,7 +808,7 @@
 | **field_type** | `total_assets` | `total_assets` | ✅ match |
 | **language** | `fr` | `en` | ⚠️ mismatch |
 | **confidence** | — | `0.70` | — |
-| **latency** | — | `0.96s` | — |
+| **latency** | — | `0.84s` | — |
 
 > ⚠️ **Classification mismatch on language.** Classifier returned `en` but expected `fr`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
@@ -828,7 +828,7 @@
 | normalised_form | `1234567.89` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -859,7 +859,7 @@
 | **field_type** | `id_no` | `phone_number` | ⚠️ mismatch |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.90` | — |
-| **latency** | — | `0.70s` | — |
+| **latency** | — | `0.63s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** Classifier returned `phone_number` but expected `id_no`. The router will process the field as `phone_number` which may select the wrong strategy.
 
@@ -879,7 +879,7 @@
 | normalised_form | `0123456789` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -912,7 +912,7 @@
 | **field_type** | `legal_form` | `legal_form` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.97` | — |
-| **latency** | — | `1.06s` | — |
+| **latency** | — | `0.64s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -961,7 +961,7 @@
 | **field_type** | `legal_form` | `legal_form` | ✅ match |
 | **language** | `de` | `de` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.81s` | — |
+| **latency** | — | `0.76s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -979,7 +979,7 @@
 | normalised_form | `GMBH` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1010,7 +1010,7 @@
 | **field_type** | `legal_form` | `legal_form` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.84s` | — |
+| **latency** | — | `0.79s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1028,7 +1028,7 @@
 | normalised_form | `LLC` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1059,7 +1059,7 @@
 | **field_type** | `status` | `status` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.85s` | — |
+| **latency** | — | `0.80s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1077,7 +1077,7 @@
 | normalised_form | `ACTIVE` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1108,7 +1108,7 @@
 | **field_type** | `status` | `status` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.75s` | — |
+| **latency** | — | `0.93s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1126,7 +1126,7 @@
 | normalised_form | `DISSOLVED` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1157,7 +1157,7 @@
 | **field_type** | `role` | `role` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.53s` | — |
+| **latency** | — | `0.91s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1175,7 +1175,7 @@
 | normalised_form | `DIRECTOR` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1206,7 +1206,7 @@
 | **field_type** | `role` | `role` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.82s` | — |
+| **latency** | — | `0.98s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1255,7 +1255,7 @@
 | **field_type** | `status` | `status` | ✅ match |
 | **language** | `de` | `de` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.88s` | — |
+| **latency** | — | `0.72s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1273,7 +1273,7 @@
 | normalised_form | `DISSOLVED` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1304,7 +1304,7 @@
 | **field_type** | `legal_form` | `legal_form` | ✅ match |
 | **language** | `el` | `el` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.90s` | — |
+| **latency** | — | `0.95s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1322,7 +1322,7 @@
 | normalised_form | `SA` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1353,7 +1353,7 @@
 | **field_type** | `nationality` | `nationality` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.90` | — |
-| **latency** | — | `0.93s` | — |
+| **latency** | — | `0.72s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1371,7 +1371,7 @@
 | normalised_form | `GERMANY` |
 | confidence | `0.88` |
 | review_required | `False` |
-| latency | `0.04s` |
+| latency | `0.02s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1402,7 +1402,7 @@
 | **field_type** | `nationality` | `nationality` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.97s` | — |
+| **latency** | — | `0.75s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1420,7 +1420,7 @@
 | normalised_form | `JAPAN` |
 | confidence | `0.88` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1451,7 +1451,7 @@
 | **field_type** | `nationality` | `nationality` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.90` | — |
-| **latency** | — | `0.98s` | — |
+| **latency** | — | `0.85s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1500,7 +1500,7 @@
 | **field_type** | `nationality` | `nationality` | ✅ match |
 | **language** | `el` | `el` | ✅ match |
 | **confidence** | — | `0.90` | — |
-| **latency** | — | `0.78s` | — |
+| **latency** | — | `0.94s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1518,7 +1518,7 @@
 | normalised_form | `GERMANY` |
 | confidence | `0.88` |
 | review_required | `False` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1549,7 +1549,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.78s` | — |
+| **latency** | — | `0.86s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1567,7 +1567,7 @@
 | normalised_form | `NATALYA` |
 | confidence | `0.90` |
 | review_required | `False` |
-| latency | `0.04s` |
+| latency | `0.02s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1598,7 +1598,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.90` | — |
-| **latency** | — | `0.80s` | — |
+| **latency** | — | `0.95s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1647,7 +1647,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `el` | `el` | ✅ match |
 | **confidence** | — | `0.90` | — |
-| **latency** | — | `0.72s` | — |
+| **latency** | — | `0.85s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1696,7 +1696,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `1.28s` | — |
+| **latency** | — | `1.93s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1714,7 +1714,7 @@
 | normalised_form | `TANAKA` |
 | confidence | `0.70` |
 | review_required | `True` |
-| latency | `0.23s` |
+| latency | `0.18s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1745,7 +1745,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.69s` | — |
+| **latency** | — | `1.30s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1763,7 +1763,7 @@
 | normalised_form | `WANG XIAOMING` |
 | confidence | `0.70` |
 | review_required | `True` |
-| latency | `0.25s` |
+| latency | `0.14s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1794,7 +1794,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `de` | `de` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.82s` | — |
+| **latency** | — | `0.85s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1813,7 +1813,7 @@
 | confidence | `0.90` |
 | review_required | `False` |
 | allowed_variants | `MULLER` |
-| latency | `0.02s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1844,7 +1844,7 @@
 | **field_type** | `person_name` | `unknown` | ⚠️ mismatch |
 | **language** | `de` | `unknown` | ⚠️ mismatch |
 | **confidence** | — | `0.00` | — |
-| **latency** | — | `1.00s` | — |
+| **latency** | — | `11.76s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** Classifier returned `unknown` but expected `person_name`. The router will process the field as `unknown` which may select the wrong strategy.
 
@@ -1866,7 +1866,7 @@
 | normalised_form | `None` |
 | confidence | `0.00` |
 | review_required | `True` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -1899,7 +1899,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `es` | `es` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `1.21s` | — |
+| **latency** | — | `1.02s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -1949,7 +1949,7 @@
 | **field_type** | `person_name` | `city` | ⚠️ mismatch |
 | **language** | `tr` | `tr` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.86s` | — |
+| **latency** | — | `0.76s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** Classifier returned `city` but expected `person_name`. The router will process the field as `city` which may select the wrong strategy.
 
@@ -1969,7 +1969,7 @@
 | normalised_form | `ISTANBUL` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2000,7 +2000,7 @@
 | **field_type** | `person_name` | `city` | ⚠️ mismatch |
 | **language** | `pl` | `pl` | ✅ match |
 | **confidence** | — | `0.90` | — |
-| **latency** | — | `0.90s` | — |
+| **latency** | — | `0.79s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** Classifier returned `city` but expected `person_name`. The router will process the field as `city` which may select the wrong strategy.
 
@@ -2020,7 +2020,7 @@
 | normalised_form | `LODZ` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2051,7 +2051,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `pt` | `pt` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `1.13s` | — |
+| **latency** | — | `0.84s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2069,7 +2069,7 @@
 | normalised_form | `JOAO` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.02s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2100,7 +2100,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.93s` | — |
+| **latency** | — | `0.80s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2118,7 +2118,7 @@
 | normalised_form | `MHMD ABDULLAH` |
 | confidence | `0.70` |
 | review_required | `True` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2149,7 +2149,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.05s` | — |
+| **latency** | — | `0.98s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2198,7 +2198,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.87s` | — |
+| **latency** | — | `0.67s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2216,7 +2216,7 @@
 | normalised_form | `NWRH BNT SD AL- GHAMDY` |
 | confidence | `0.70` |
 | review_required | `True` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2247,7 +2247,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.89s` | — |
+| **latency** | — | `0.91s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2265,7 +2265,7 @@
 | normalised_form | `AHMD SMYR NSR BD AL- NASR` |
 | confidence | `0.70` |
 | review_required | `True` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2296,7 +2296,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.12s` | — |
+| **latency** | — | `0.63s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2346,7 +2346,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.12s` | — |
+| **latency** | — | `0.89s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2364,7 +2364,7 @@
 | normalised_form | `IVANOVA NATALYA ALEKSANDROVNA` |
 | confidence | `0.90` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2413,7 +2413,7 @@
 | normalised_form | `WANG XIAOMING` |
 | confidence | `0.70` |
 | review_required | `True` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2444,7 +2444,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `el` | `el` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.80s` | — |
+| **latency** | — | `0.65s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2462,7 +2462,7 @@
 | normalised_form | `NIKOS PAPADOPOULOS` |
 | confidence | `0.90` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2493,7 +2493,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ko` | `ko` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.37s` | — |
+| **latency** | — | `0.95s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2512,7 +2512,7 @@
 | confidence | `0.70` |
 | review_required | `True` |
 | allowed_variants | `I MINJUN`, `MINJUN I`, `MINJUN LEE`, `MINJUN RHEE`, `MINJUN RHIE`, `MINJUN RI`, `MINJUN YI`, `RHEE MINJUN`, `RHIE MINJUN`, `RI MINJUN`, `YI MINJUN` |
-| latency | `0.02s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2543,7 +2543,7 @@
 | **field_type** | `company_name` | `company_name` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.61s` | — |
+| **latency** | — | `0.79s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2561,7 +2561,7 @@
 | normalised_form | `KK` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2592,7 +2592,7 @@
 | **field_type** | `company_name` | `company_name` | ✅ match |
 | **language** | `de` | `de` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.13s` | — |
+| **latency** | — | `1.30s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2690,7 +2690,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `th` | `th` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.92s` | — |
+| **latency** | — | `0.72s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2708,7 +2708,7 @@
 | normalised_form | `2025-05-08` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2739,7 +2739,7 @@
 | **field_type** | `issue_date` | `date_of_birth` | ⚠️ mismatch |
 | **language** | `th` | `th` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.92s` | — |
+| **latency** | — | `0.68s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** Classifier returned `date_of_birth` but expected `issue_date`. The router will process the field as `date_of_birth` which may select the wrong strategy.
 
@@ -2790,7 +2790,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.81s` | — |
+| **latency** | — | `0.65s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2808,7 +2808,7 @@
 | normalised_form | `2023-09-29` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -2839,7 +2839,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `he` | `he` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.90s` | — |
+| **latency** | — | `0.61s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2888,7 +2888,7 @@
 | **field_type** | `iban` | `iban` | ✅ match |
 | **language** | `en` | `en` | ✅ match |
 | **confidence** | — | `0.98` | — |
-| **latency** | — | `0.98s` | — |
+| **latency** | — | `0.82s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2937,7 +2937,7 @@
 | **field_type** | `tax_id` | `tax_id` | ✅ match |
 | **language** | `de` | `de` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `0.95s` | — |
+| **latency** | — | `1.25s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -2986,7 +2986,7 @@
 | **field_type** | `lei_code` | `lei_code` | ✅ match |
 | **language** | `en` | `en` | ✅ match |
 | **confidence** | — | `0.97` | — |
-| **latency** | — | `0.84s` | — |
+| **latency** | — | `0.81s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3035,7 +3035,7 @@
 | **field_type** | `share_capital` | `share_capital` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `0.73s` | — |
+| **latency** | — | `0.74s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3084,7 +3084,7 @@
 | **field_type** | `share_capital` | `share_capital` | ✅ match |
 | **language** | `de` | `de` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.80s` | — |
+| **latency** | — | `0.77s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3102,7 +3102,7 @@
 | normalised_form | `2500000.00` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -3133,7 +3133,7 @@
 | **field_type** | `share_capital` | `share_capital` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `1.29s` | — |
+| **latency** | — | `0.91s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3151,7 +3151,7 @@
 | normalised_form | `500000` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -3182,7 +3182,7 @@
 | **field_type** | `nationality` | `nationality` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `1.16s` | — |
+| **latency** | — | `0.74s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3230,8 +3230,8 @@
 |---|---|---|---|
 | **field_type** | `nationality` | `nationality` | ✅ match |
 | **language** | `ko` | `ko` | ✅ match |
-| **confidence** | — | `0.90` | — |
-| **latency** | — | `1.66s` | — |
+| **confidence** | — | `0.85` | — |
+| **latency** | — | `0.87s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3280,7 +3280,7 @@
 | **field_type** | `nationality` | `nationality` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.88` | — |
-| **latency** | — | `0.75s` | — |
+| **latency** | — | `1.04s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3329,7 +3329,7 @@
 | **field_type** | `status` | `status` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.76s` | — |
+| **latency** | — | `0.73s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3347,7 +3347,7 @@
 | normalised_form | `ACTIVE` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -3378,7 +3378,7 @@
 | **field_type** | `status` | `status` | ✅ match |
 | **language** | `fr` | `fr` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.87s` | — |
+| **latency** | — | `0.73s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3427,7 +3427,7 @@
 | **field_type** | `status` | `status` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.84s` | — |
+| **latency** | — | `0.66s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3445,7 +3445,7 @@
 | normalised_form | `ACTIVE` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -3476,7 +3476,7 @@
 | **field_type** | `status` | `status` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.80` | — |
-| **latency** | — | `0.76s` | — |
+| **latency** | — | `0.83s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3494,7 +3494,7 @@
 | normalised_form | `STRUCK_OFF` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -3525,7 +3525,7 @@
 | **field_type** | `role` | `role` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.90` | — |
-| **latency** | — | `0.74s` | — |
+| **latency** | — | `1.51s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3574,7 +3574,7 @@
 | **field_type** | `role` | `role` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.85s` | — |
+| **latency** | — | `1.06s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3592,7 +3592,7 @@
 | normalised_form | `GENERAL DIRECTOR` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -3622,8 +3622,8 @@
 |---|---|---|---|
 | **field_type** | `role` | `role` | ✅ match |
 | **language** | `fr` | `fr` | ✅ match |
-| **confidence** | — | `0.85` | — |
-| **latency** | — | `0.91s` | — |
+| **confidence** | — | `0.90` | — |
+| **latency** | — | `1.01s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3641,7 +3641,7 @@
 | normalised_form | `MANAGER` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -3672,7 +3672,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `fr` | `fr` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.96s` | — |
+| **latency** | — | `0.76s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3721,7 +3721,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `nl` | `en` | ⚠️ mismatch |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.80s` | — |
+| **latency** | — | `0.92s` | — |
 
 > ⚠️ **Classification mismatch on language.** Classifier returned `en` but expected `nl`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
@@ -3737,20 +3737,22 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `CHARACTER_MAP` |
+| processing_method | `TRANSLITERATE` |
 | normalised_form | `VAN DEN BERG` |
-| confidence | `0.95` |
+| confidence | `0.90` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `CHARACTER_MAP` | `CHARACTER_MAP` | ✅ PASS |
+| **method** | `CHARACTER_MAP` | `TRANSLITERATE` | ❌ FAIL |
 | **normalised_form** | `VAN DEN BERG` | `VAN DEN BERG` | ✅ PASS |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** Expected CHARACTER_MAP but got TRANSLITERATE. Check that character_map_normaliser.py is wired in _try_strategy_g() and that language 'en' is in LANGUAGE_CHAR_MAPS.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -3772,7 +3774,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `no` | `no` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.80s` | — |
+| **latency** | — | `0.89s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3790,7 +3792,7 @@
 | normalised_form | `BJORNSTAD` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -3820,8 +3822,8 @@
 |---|---|---|---|
 | **field_type** | `legal_form` | `legal_form` | ✅ match |
 | **language** | `fr` | `es` | ⚠️ mismatch |
-| **confidence** | — | `0.55` | — |
-| **latency** | — | `0.94s` | — |
+| **confidence** | — | `0.60` | — |
+| **latency** | — | `0.80s` | — |
 
 > ⚠️ **Classification mismatch on language.** Classifier returned `es` but expected `fr`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
@@ -3841,7 +3843,7 @@
 | normalised_form | `SA` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -3872,7 +3874,7 @@
 | **field_type** | `company_name` | `company_name` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.81s` | — |
+| **latency** | — | `0.83s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -3890,7 +3892,7 @@
 | normalised_form | `KK` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -3921,7 +3923,7 @@
 | **field_type** | `date_of_birth` | `unknown` | ⚠️ mismatch |
 | **language** | `en` | `unknown` | ⚠️ mismatch |
 | **confidence** | — | `0.00` | — |
-| **latency** | — | `1.04s` | — |
+| **latency** | — | `0.75s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** Classifier returned `unknown` but expected `date_of_birth`. The router will process the field as `unknown` which may select the wrong strategy.
 
@@ -3976,7 +3978,7 @@
 | **field_type** | `passport_no` | `id_number` | ⚠️ mismatch |
 | **language** | `de` | `ja` | ⚠️ mismatch |
 | **confidence** | — | `0.80` | — |
-| **latency** | — | `0.79s` | — |
+| **latency** | — | `0.82s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** Classifier returned `id_number` but expected `passport_no`. The router will process the field as `id_number` which may select the wrong strategy.
 
@@ -3998,7 +4000,7 @@
 | normalised_form | `C87654321` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -4029,7 +4031,7 @@
 | **field_type** | `passport_no` | `id_number` | ⚠️ mismatch |
 | **language** | `ru` | `fr` | ⚠️ mismatch |
 | **confidence** | — | `0.70` | — |
-| **latency** | — | `1.18s` | — |
+| **latency** | — | `0.82s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** Classifier returned `id_number` but expected `passport_no`. The router will process the field as `id_number` which may select the wrong strategy.
 
@@ -4051,7 +4053,7 @@
 | normalised_form | `4509123456` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -4082,7 +4084,7 @@
 | **field_type** | `tax_id` | `tax_id` | ✅ match |
 | **language** | `de` | `de` | ✅ match |
 | **confidence** | — | `0.90` | — |
-| **latency** | — | `0.92s` | — |
+| **latency** | — | `0.73s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -4131,7 +4133,7 @@
 | **field_type** | `id_number` | `id_number` | ✅ match |
 | **language** | `zh` | `en` | ⚠️ mismatch |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `1.01s` | — |
+| **latency** | — | `0.66s` | — |
 
 > ⚠️ **Classification mismatch on language.** Classifier returned `en` but expected `zh`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
@@ -4182,7 +4184,7 @@
 | **field_type** | `id_number` | `id_number` | ✅ match |
 | **language** | `en` | `en` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.85s` | — |
+| **latency** | — | `0.73s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -4231,7 +4233,7 @@
 | **field_type** | `id_number` | `id_number` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.90` | — |
-| **latency** | — | `0.75s` | — |
+| **latency** | — | `0.88s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -4249,7 +4251,7 @@
 | normalised_form | `29803141501234` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -4280,7 +4282,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `ko` | `ko` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.97s` | — |
+| **latency** | — | `0.72s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -4328,8 +4330,8 @@
 |---|---|---|---|
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `ru` | `en` | ⚠️ mismatch |
-| **confidence** | — | `0.85` | — |
-| **latency** | — | `0.85s` | — |
+| **confidence** | — | `0.90` | — |
+| **latency** | — | `0.95s` | — |
 
 > ⚠️ **Classification mismatch on language.** Classifier returned `en` but expected `ru`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
@@ -4349,7 +4351,7 @@
 | normalised_form | `1990-06-21` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -4380,7 +4382,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `de` | `en` | ⚠️ mismatch |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.95s` | — |
+| **latency** | — | `1.35s` | — |
 
 > ⚠️ **Classification mismatch on language.** Classifier returned `en` but expected `de`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
@@ -4431,7 +4433,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `en` | `en` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `1.05s` | — |
+| **latency** | — | `0.82s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -4449,7 +4451,7 @@
 | normalised_form | `1990-03-14` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -4480,7 +4482,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `ja` | `zh` | ⚠️ mismatch |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `1.26s` | — |
+| **latency** | — | `1.20s` | — |
 
 > ⚠️ **Classification mismatch on language.** Classifier returned `zh` but expected `ja`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
@@ -4500,7 +4502,7 @@
 | normalised_form | `2024-03-14` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -4531,7 +4533,7 @@
 | **field_type** | `date_of_birth` | `date_of_birth` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.82s` | — |
+| **latency** | — | `0.78s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -4549,7 +4551,7 @@
 | normalised_form | `2024-03-14` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -4580,7 +4582,7 @@
 | **field_type** | `phone_number` | `phone_number` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.99s` | — |
+| **latency** | — | `0.65s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -4629,7 +4631,7 @@
 | **field_type** | `address` | `address` | ✅ match |
 | **language** | `ko` | `ko` | ✅ match |
 | **confidence** | — | `0.90` | — |
-| **latency** | — | `0.70s` | — |
+| **latency** | — | `0.81s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -4678,7 +4680,7 @@
 | **field_type** | `phone_number` | `phone_number` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.04s` | — |
+| **latency** | — | `0.98s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -4727,7 +4729,7 @@
 | **field_type** | `share_capital` | `share_capital` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.70` | — |
-| **latency** | — | `1.30s` | — |
+| **latency** | — | `1.21s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -4773,43 +4775,41 @@
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **field_type** | `share_capital` | `unknown` | ⚠️ mismatch |
-| **language** | `fr` | `unknown` | ⚠️ mismatch |
-| **confidence** | — | `0.00` | — |
-| **latency** | — | `0.71s` | — |
+| **field_type** | `share_capital` | `total_assets` | ⚠️ mismatch |
+| **language** | `fr` | `en` | ⚠️ mismatch |
+| **confidence** | — | `0.55` | — |
+| **latency** | — | `1.14s` | — |
 
-> ⚠️ **Classification mismatch on field_type.** Classifier returned `unknown` but expected `share_capital`. The router will process the field as `unknown` which may select the wrong strategy.
+> ⚠️ **Classification mismatch on field_type.** Classifier returned `total_assets` but expected `share_capital`. The router will process the field as `total_assets` which may select the wrong strategy.
 
-> ⚠️ **Classification mismatch on language.** Classifier returned `unknown` but expected `fr`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
+> ⚠️ **Classification mismatch on language.** Classifier returned `en` but expected `fr`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
 ### Step 2 — Orchestrator + Router
 
 **Row passed to orchestrator:**
 
 ```json
-{"original_text": "12 500", "field_type": "unknown", "language": "unknown"}
+{"original_text": "12 500", "field_type": "total_assets", "language": "en"}
 ```
 
 **Router result:**
 
 | Field | Value |
 |---|---|
-| processing_method | `UNRESOLVED` |
-| normalised_form | `None` |
-| confidence | `0.00` |
-| review_required | `True` |
-| latency | `0.01s` |
+| processing_method | `NUMERIC` |
+| normalised_form | `12500` |
+| confidence | `0.95` |
+| review_required | `False` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NUMERIC` | `UNRESOLVED` | ❌ FAIL |
-| **normalised_form** | `12500` | `None` | ❌ FAIL |
+| **method** | `NUMERIC` | `NUMERIC` | ✅ PASS |
+| **normalised_form** | `12500` | `12500` | ✅ PASS |
 
-> ❌ **Method failure diagnosis:** GPT-4o-mini classified as 'unknown' instead of 'share_capital'. The router received the wrong field type and could not find a matching strategy.
-
-### Overall: ❌ FAIL
+### Overall: ✅ PASS
 
 ---
 
@@ -4828,43 +4828,41 @@
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **field_type** | `share_capital` | `unknown` | ⚠️ mismatch |
-| **language** | `ru` | `unknown` | ⚠️ mismatch |
-| **confidence** | — | `0.00` | — |
+| **field_type** | `share_capital` | `total_assets` | ⚠️ mismatch |
+| **language** | `ru` | `en` | ⚠️ mismatch |
+| **confidence** | — | `0.55` | — |
 | **latency** | — | `0.00s` | — |
 
-> ⚠️ **Classification mismatch on field_type.** Classifier returned `unknown` but expected `share_capital`. The router will process the field as `unknown` which may select the wrong strategy.
+> ⚠️ **Classification mismatch on field_type.** Classifier returned `total_assets` but expected `share_capital`. The router will process the field as `total_assets` which may select the wrong strategy.
 
-> ⚠️ **Classification mismatch on language.** Classifier returned `unknown` but expected `ru`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
+> ⚠️ **Classification mismatch on language.** Classifier returned `en` but expected `ru`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
 ### Step 2 — Orchestrator + Router
 
 **Row passed to orchestrator:**
 
 ```json
-{"original_text": "12 500", "field_type": "unknown", "language": "unknown"}
+{"original_text": "12 500", "field_type": "total_assets", "language": "en"}
 ```
 
 **Router result:**
 
 | Field | Value |
 |---|---|
-| processing_method | `UNRESOLVED` |
-| normalised_form | `None` |
-| confidence | `0.00` |
-| review_required | `True` |
+| processing_method | `NUMERIC` |
+| normalised_form | `12500` |
+| confidence | `0.95` |
+| review_required | `False` |
 | latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NUMERIC` | `UNRESOLVED` | ❌ FAIL |
-| **normalised_form** | `12500` | `None` | ❌ FAIL |
+| **method** | `NUMERIC` | `NUMERIC` | ✅ PASS |
+| **normalised_form** | `12500` | `12500` | ✅ PASS |
 
-> ❌ **Method failure diagnosis:** GPT-4o-mini classified as 'unknown' instead of 'share_capital'. The router received the wrong field type and could not find a matching strategy.
-
-### Overall: ❌ FAIL
+### Overall: ✅ PASS
 
 ---
 
@@ -4885,8 +4883,8 @@
 |---|---|---|---|
 | **field_type** | `share_capital` | `share_capital` | ✅ match |
 | **language** | `ja` | `zh` | ⚠️ mismatch |
-| **confidence** | — | `0.80` | — |
-| **latency** | — | `1.18s` | — |
+| **confidence** | — | `0.70` | — |
+| **latency** | — | `1.03s` | — |
 
 > ⚠️ **Classification mismatch on language.** Classifier returned `zh` but expected `ja`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
@@ -4906,7 +4904,7 @@
 | normalised_form | `5000` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -4937,7 +4935,7 @@
 | **field_type** | `share_capital` | `share_capital` | ✅ match |
 | **language** | `es` | `de` | ⚠️ mismatch |
 | **confidence** | — | `0.55` | — |
-| **latency** | — | `1.53s` | — |
+| **latency** | — | `0.97s` | — |
 
 > ⚠️ **Classification mismatch on language.** Classifier returned `de` but expected `es`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
@@ -4988,7 +4986,7 @@
 | **field_type** | `share_capital` | `total_assets` | ⚠️ mismatch |
 | **language** | `en` | `en` | ✅ match |
 | **confidence** | — | `0.65` | — |
-| **latency** | — | `0.85s` | — |
+| **latency** | — | `1.34s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** Classifier returned `total_assets` but expected `share_capital`. The router will process the field as `total_assets` which may select the wrong strategy.
 
@@ -5092,7 +5090,7 @@
 | **field_type** | `address` | `unknown` | ⚠️ mismatch |
 | **language** | `zh` | `unknown` | ⚠️ mismatch |
 | **confidence** | — | `0.00` | — |
-| **latency** | — | `1.36s` | — |
+| **latency** | — | `0.74s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** Classifier returned `unknown` but expected `address`. The router will process the field as `unknown` which may select the wrong strategy.
 
@@ -5110,20 +5108,22 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `NUMERIC` |
-| normalised_form | `88` |
-| confidence | `0.95` |
-| review_required | `False` |
-| latency | `0.01s` |
+| processing_method | `UNRESOLVED` |
+| normalised_form | `None` |
+| confidence | `0.00` |
+| review_required | `True` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NUMERIC` | `NUMERIC` | ✅ PASS |
-| **normalised_form** | `88` | `88` | ✅ PASS |
+| **method** | `NUMERIC` | `UNRESOLVED` | ❌ FAIL |
+| **normalised_form** | `88` | `None` | ❌ FAIL |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** GPT-4o-mini classified as 'unknown' instead of 'address'. The router received the wrong field type and could not find a matching strategy.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -5145,7 +5145,7 @@
 | **field_type** | `phone_number` | `id_number` | ⚠️ mismatch |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.99s` | — |
+| **latency** | — | `0.69s` | — |
 
 > ⚠️ **Classification mismatch on field_type.** Classifier returned `id_number` but expected `phone_number`. The router will process the field as `id_number` which may select the wrong strategy.
 
@@ -5165,7 +5165,7 @@
 | normalised_form | `一三八〇〇一三八〇〇〇` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -5196,18 +5196,16 @@
 | | Expected | Got | Status |
 |---|---|---|---|
 | **field_type** | `phone_number` | `phone_number` | ✅ match |
-| **language** | `ar` | `en` | ⚠️ mismatch |
+| **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.04s` | — |
-
-> ⚠️ **Classification mismatch on language.** Classifier returned `en` but expected `ar`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
+| **latency** | — | `0.86s` | — |
 
 ### Step 2 — Orchestrator + Router
 
 **Row passed to orchestrator:**
 
 ```json
-{"original_text": "+20 100 123 4567", "field_type": "phone_number", "language": "en"}
+{"original_text": "+20 100 123 4567", "field_type": "phone_number", "language": "ar"}
 ```
 
 **Router result:**
@@ -5218,7 +5216,7 @@
 | normalised_form | `+201001234567` |
 | confidence | `0.95` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -5249,7 +5247,7 @@
 | **field_type** | `legal_form` | `legal_form` | ✅ match |
 | **language** | `it` | `it` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.79s` | — |
+| **latency** | — | `0.83s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -5267,7 +5265,7 @@
 | normalised_form | `SPA` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -5298,7 +5296,7 @@
 | **field_type** | `legal_form` | `legal_form` | ✅ match |
 | **language** | `fr` | `fr` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.00s` | — |
+| **latency** | — | `1.07s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -5316,7 +5314,7 @@
 | normalised_form | `SARL` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -5347,7 +5345,7 @@
 | **field_type** | `legal_form` | `legal_form` | ✅ match |
 | **language** | `es` | `es` | ✅ match |
 | **confidence** | — | `0.93` | — |
-| **latency** | — | `0.87s` | — |
+| **latency** | — | `1.07s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -5365,7 +5363,7 @@
 | normalised_form | `SAB DE CV` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -5396,7 +5394,7 @@
 | **field_type** | `legal_form` | `legal_form` | ✅ match |
 | **language** | `ko` | `ko` | ✅ match |
 | **confidence** | — | `0.97` | — |
-| **latency** | — | `1.00s` | — |
+| **latency** | — | `1.04s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -5445,7 +5443,7 @@
 | **field_type** | `legal_form` | `legal_form` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `0.84s` | — |
+| **latency** | — | `0.77s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -5494,7 +5492,7 @@
 | **field_type** | `status` | `status` | ✅ match |
 | **language** | `es` | `es` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.75s` | — |
+| **latency** | — | `0.78s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -5512,7 +5510,7 @@
 | normalised_form | `IN_LIQUIDATION` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -5543,7 +5541,7 @@
 | **field_type** | `role` | `role` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.88s` | — |
+| **latency** | — | `0.76s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -5561,7 +5559,7 @@
 | normalised_form | `AUDITOR` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -5592,7 +5590,7 @@
 | **field_type** | `city` | `city` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.90` | — |
-| **latency** | — | `0.79s` | — |
+| **latency** | — | `5.08s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -5610,7 +5608,7 @@
 | normalised_form | `CAIRO` |
 | confidence | `0.92` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -5641,7 +5639,7 @@
 | **field_type** | `city` | `city` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `0.98s` | — |
+| **latency** | — | `0.68s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -5690,7 +5688,7 @@
 | **field_type** | `city` | `city` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `0.86s` | — |
+| **latency** | — | `0.77s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -5739,7 +5737,7 @@
 | **field_type** | `city` | `city` | ✅ match |
 | **language** | `ko` | `ko` | ✅ match |
 | **confidence** | — | `0.92` | — |
-| **latency** | — | `0.80s` | — |
+| **latency** | — | `0.67s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -5757,7 +5755,7 @@
 | normalised_form | `SEOUL` |
 | confidence | `0.92` |
 | review_required | `False` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -5788,7 +5786,7 @@
 | **field_type** | `nationality` | `nationality` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.93` | — |
-| **latency** | — | `0.94s` | — |
+| **latency** | — | `1.99s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -5802,20 +5800,22 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `GEOGRAPHIC` |
-| normalised_form | `JAPAN` |
-| confidence | `0.88` |
-| review_required | `False` |
-| latency | `0.00s` |
+| processing_method | `UNRESOLVED` |
+| normalised_form | `None` |
+| confidence | `0.00` |
+| review_required | `True` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `GEOGRAPHIC` | `GEOGRAPHIC` | ✅ PASS |
-| **normalised_form** | `JAPAN` | `JAPAN` | ✅ PASS |
+| **method** | `GEOGRAPHIC` | `UNRESOLVED` | ❌ FAIL |
+| **normalised_form** | `JAPAN` | `None` | ❌ FAIL |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** The strategy for field_type='nationality' language='ja' returned None or raised NotImplementedError. Check that the strategy module is fully implemented and wired into the router.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -5837,7 +5837,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.81s` | — |
+| **latency** | — | `0.92s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -5855,7 +5855,7 @@
 | normalised_form | `ALEKSEY YURYEVICH KOVALEV` |
 | confidence | `0.90` |
 | review_required | `False` |
-| latency | `0.02s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -5886,7 +5886,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.78s` | — |
+| **latency** | — | `0.86s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -5904,7 +5904,7 @@
 | normalised_form | `NATALYA VIKTOROVNA ORLOVA` |
 | confidence | `0.90` |
 | review_required | `False` |
-| latency | `0.02s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -5935,7 +5935,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `uk` | `uk` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.98s` | — |
+| **latency** | — | `1.10s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -5953,7 +5953,7 @@
 | normalised_form | `OLEKSANDR IVANENKO` |
 | confidence | `0.70` |
 | review_required | `True` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -5984,7 +5984,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `uk` | `uk` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.05s` | — |
+| **latency** | — | `1.18s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6002,7 +6002,7 @@
 | normalised_form | `IRYNA MYKOLAIVNA SHEVCHENKO` |
 | confidence | `0.70` |
 | review_required | `True` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -6033,7 +6033,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.77s` | — |
+| **latency** | — | `0.71s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6082,7 +6082,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `el` | `el` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `3.63s` | — |
+| **latency** | — | `1.11s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6131,7 +6131,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `el` | `el` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.64s` | — |
+| **latency** | — | `0.74s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6180,7 +6180,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `el` | `el` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.89s` | — |
+| **latency** | — | `0.93s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6198,7 +6198,7 @@
 | normalised_form | `VASILIS NIKOLAOU` |
 | confidence | `0.90` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -6229,7 +6229,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.85s` | — |
+| **latency** | — | `0.93s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6248,7 +6248,7 @@
 | confidence | `0.70` |
 | review_required | `True` |
 | allowed_variants | `ITO KOOICHI`, `ITO KOUICHI`, `ITO TSUNEKAZU`, `ITOH KOICHI` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -6279,7 +6279,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.74s` | — |
+| **latency** | — | `0.78s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6298,7 +6298,7 @@
 | confidence | `0.70` |
 | review_required | `True` |
 | allowed_variants | `NAKAMURA KAKERU` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -6329,7 +6329,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `12.13s` | — |
+| **latency** | — | `0.98s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6379,7 +6379,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.25s` | — |
+| **latency** | — | `0.82s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6428,7 +6428,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.16s` | — |
+| **latency** | — | `0.73s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6446,7 +6446,7 @@
 | normalised_form | `ZHANG WEI` |
 | confidence | `0.70` |
 | review_required | `True` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -6477,7 +6477,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.13s` | — |
+| **latency** | — | `0.84s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6496,7 +6496,7 @@
 | confidence | `0.70` |
 | review_required | `True` |
 | allowed_variants | `CHAN ZHIQIANG` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -6527,7 +6527,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.20s` | — |
+| **latency** | — | `0.96s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6546,7 +6546,7 @@
 | confidence | `0.70` |
 | review_required | `True` |
 | allowed_variants | `LEE WEI` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -6577,7 +6577,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ko` | `ko` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.04s` | — |
+| **latency** | — | `0.75s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6627,7 +6627,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ko` | `ko` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.82s` | — |
+| **latency** | — | `0.91s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6646,7 +6646,7 @@
 | confidence | `0.70` |
 | review_required | `True` |
 | allowed_variants | `CH'OE SUBIN`, `CHOE SUBIN`, `SUBIN CH'OE`, `SUBIN CHOE`, `SUBIN CHOI` |
-| latency | `0.02s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -6677,7 +6677,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ko` | `ko` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.36s` | — |
+| **latency** | — | `3.77s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6696,7 +6696,7 @@
 | confidence | `0.70` |
 | review_required | `True` |
 | allowed_variants | `CHUNG HANEUL`, `CHŎNG HANEUL`, `HANEUL CHUNG`, `HANEUL CHŎNG`, `HANEUL JEONG`, `HANEUL JUNG`, `JEONG HANEUL` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -6727,7 +6727,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ko` | `ko` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.91s` | — |
+| **latency** | — | `0.85s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6777,7 +6777,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `ko` | `ko` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.75s` | — |
+| **latency** | — | `1.46s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6796,7 +6796,7 @@
 | confidence | `0.70` |
 | review_required | `True` |
 | allowed_variants | `LYU MINSEOK`, `MINSEOK LYU`, `MINSEOK RYU`, `MINSEOK YOO`, `MINSEOK YU`, `YOO MINSEOK`, `YU MINSEOK` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -6827,7 +6827,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `es` | `es` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.07s` | — |
+| **latency** | — | `1.20s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6845,7 +6845,7 @@
 | normalised_form | `JOSE LUIS GARCIA` |
 | confidence | `0.90` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -6876,7 +6876,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `fr` | `fr` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.29s` | — |
+| **latency** | — | `1.24s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6925,7 +6925,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `fr` | `fr` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.79s` | — |
+| **latency** | — | `1.04s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6974,7 +6974,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `it` | `it` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.03s` | — |
+| **latency** | — | `0.72s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -6992,7 +6992,7 @@
 | normalised_form | `NICCOLO BIANCHI` |
 | confidence | `0.90` |
 | review_required | `False` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -7023,7 +7023,7 @@
 | **field_type** | `person_name` | `person_name` | ✅ match |
 | **language** | `de` | `de` | ✅ match |
 | **confidence** | — | `0.85` | — |
-| **latency** | — | `0.84s` | — |
+| **latency** | — | `1.25s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7124,7 +7124,7 @@
 | **field_type** | `company_name` | `company_name` | ✅ match |
 | **language** | `ko` | `ko` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.83s` | — |
+| **latency** | — | `0.71s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7142,7 +7142,7 @@
 | normalised_form | `CO LTD` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -7175,7 +7175,7 @@
 | **field_type** | `company_name` | `company_name` | ✅ match |
 | **language** | `el` | `el` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.92s` | — |
+| **latency** | — | `1.11s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7193,7 +7193,7 @@
 | normalised_form | `SA` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -7226,7 +7226,7 @@
 | **field_type** | `company_name` | `company_name` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.33s` | — |
+| **latency** | — | `1.04s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7244,7 +7244,7 @@
 | normalised_form | `PAO GAZPROM` |
 | confidence | `0.90` |
 | review_required | `False` |
-| latency | `0.00s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -7277,7 +7277,7 @@
 | **field_type** | `company_name` | `company_name` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.23s` | — |
+| **latency** | — | `2.06s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7346,7 +7346,7 @@
 | normalised_form | `SAB DE CV` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -7379,7 +7379,7 @@
 | **field_type** | `company_name` | `company_name` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.07s` | — |
+| **latency** | — | `0.85s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7430,7 +7430,7 @@
 | **field_type** | `company_name` | `company_name` | ✅ match |
 | **language** | `it` | `it` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.18s` | — |
+| **latency** | — | `0.86s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7470,7 +7470,7 @@
 | **Input** | `Александр по прозвищу Саша` |
 | **Expected field type** | `alias` |
 | **Expected language** | `ru` |
-| **Expected normalised form** | `ALEXANDER, NICKNAMED SASHA` |
+| **Expected normalised form** | `ALEXANDER NICKNAMED SASHA` |
 | **Expected method** | `NMT` |
 | **Notes** | TRANSLATE_ANALYST — alias narrative not for screening match |
 
@@ -7481,7 +7481,7 @@
 | **field_type** | `alias` | `alias` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.10s` | — |
+| **latency** | — | `1.07s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7495,20 +7495,22 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `NMT` |
-| normalised_form | `ALEXANDER, NICKNAMED SASHA` |
-| confidence | `0.80` |
-| review_required | `False` |
-| latency | `1.13s` |
+| processing_method | `UNRESOLVED` |
+| normalised_form | `None` |
+| confidence | `0.00` |
+| review_required | `True` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NMT` | `NMT` | ✅ PASS |
-| **normalised_form** | `ALEXANDER, NICKNAMED SASHA` | `ALEXANDER, NICKNAMED SASHA` | ✅ PASS |
+| **method** | `NMT` | `UNRESOLVED` | ❌ FAIL |
+| **normalised_form** | `ALEXANDER NICKNAMED SASHA` | `None` | ❌ FAIL |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** The strategy for field_type='alias' language='ru' returned None or raised NotImplementedError. Check that the strategy module is fully implemented and wired into the router.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -7519,7 +7521,7 @@
 | **Input** | `王强又名王小强` |
 | **Expected field type** | `alias` |
 | **Expected language** | `zh` |
-| **Expected normalised form** | `WANG QIANG IS ALSO KNOWN AS WANG XIAOQIANG` |
+| **Expected normalised form** | `WANG QIANG ALSO KNOWN AS WANG XIAOQIANG` |
 | **Expected method** | `NMT` |
 | **Notes** | Chinese alias connector 又名 |
 
@@ -7530,7 +7532,7 @@
 | **field_type** | `alias` | `alias` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.19s` | — |
+| **latency** | — | `0.98s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7544,20 +7546,22 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `NMT` |
-| normalised_form | `WANG QIANG IS ALSO KNOWN AS WANG XIAOQIANG` |
-| confidence | `0.80` |
-| review_required | `False` |
-| latency | `0.85s` |
+| processing_method | `UNRESOLVED` |
+| normalised_form | `None` |
+| confidence | `0.00` |
+| review_required | `True` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NMT` | `NMT` | ✅ PASS |
-| **normalised_form** | `WANG QIANG IS ALSO KNOWN AS WANG XIAOQIANG` | `WANG QIANG IS ALSO KNOWN AS WANG XIAOQIANG` | ✅ PASS |
+| **method** | `NMT` | `UNRESOLVED` | ❌ FAIL |
+| **normalised_form** | `WANG QIANG ALSO KNOWN AS WANG XIAOQIANG` | `None` | ❌ FAIL |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** The strategy for field_type='alias' language='zh' returned None or raised NotImplementedError. Check that the strategy module is fully implemented and wired into the router.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -7579,7 +7583,7 @@
 | **field_type** | `alias` | `alias` | ✅ match |
 | **language** | `el` | `el` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.35s` | — |
+| **latency** | — | `0.87s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7593,20 +7597,22 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `NMT` |
-| normalised_form | `KNOWN AS NIKOS` |
-| confidence | `0.80` |
-| review_required | `False` |
-| latency | `0.90s` |
+| processing_method | `UNRESOLVED` |
+| normalised_form | `None` |
+| confidence | `0.00` |
+| review_required | `True` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NMT` | `NMT` | ✅ PASS |
-| **normalised_form** | `KNOWN AS NIKOS` | `KNOWN AS NIKOS` | ✅ PASS |
+| **method** | `NMT` | `UNRESOLVED` | ❌ FAIL |
+| **normalised_form** | `KNOWN AS NIKOS` | `None` | ❌ FAIL |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** The strategy for field_type='alias' language='el' returned None or raised NotImplementedError. Check that the strategy module is fully implemented and wired into the router.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -7628,7 +7634,7 @@
 | **field_type** | `alias` | `alias` | ✅ match |
 | **language** | `en` | `en` | ✅ match |
 | **confidence** | — | `0.97` | — |
-| **latency** | — | `0.96s` | — |
+| **latency** | — | `0.74s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7646,7 +7652,7 @@
 | normalised_form | `John Michael Smith also known as Johnny Smith` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -7677,7 +7683,7 @@
 | **field_type** | `alias` | `alias` | ✅ match |
 | **language** | `fr` | `fr` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.99s` | — |
+| **latency** | — | `1.33s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7691,20 +7697,22 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `NMT` |
-| normalised_form | `PIERRE-HENRI LEFEVRE KNOWN AS LE VIEUX` |
-| confidence | `0.80` |
-| review_required | `False` |
-| latency | `0.82s` |
+| processing_method | `UNRESOLVED` |
+| normalised_form | `None` |
+| confidence | `0.00` |
+| review_required | `True` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NMT` | `NMT` | ✅ PASS |
-| **normalised_form** | `PIERRE-HENRI LEFEVRE KNOWN AS LE VIEUX` | `PIERRE-HENRI LEFEVRE KNOWN AS LE VIEUX` | ✅ PASS |
+| **method** | `NMT` | `UNRESOLVED` | ❌ FAIL |
+| **normalised_form** | `PIERRE-HENRI LEFEVRE KNOWN AS LE VIEUX` | `None` | ❌ FAIL |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** The strategy for field_type='alias' language='fr' returned None or raised NotImplementedError. Check that the strategy module is fully implemented and wired into the router.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -7715,7 +7723,7 @@
 | **Input** | `Mario De Luca detto Il Professore` |
 | **Expected field type** | `alias` |
 | **Expected language** | `it` |
-| **Expected normalised form** | `MARIO DE LUCA KNOWN AS THE PROFESSOR` |
+| **Expected normalised form** | `MARIO DE LUCA KNOWN AS IL PROFESSORE` |
 | **Expected method** | `NMT` |
 | **Notes** | Italian detto → 'known as' |
 
@@ -7726,7 +7734,7 @@
 | **field_type** | `alias` | `alias` | ✅ match |
 | **language** | `it` | `it` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.84s` | — |
+| **latency** | — | `1.03s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7740,20 +7748,22 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `NMT` |
-| normalised_form | `MARIO DE LUCA KNOWN AS THE PROFESSOR` |
-| confidence | `0.80` |
-| review_required | `False` |
-| latency | `0.77s` |
+| processing_method | `UNRESOLVED` |
+| normalised_form | `None` |
+| confidence | `0.00` |
+| review_required | `True` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NMT` | `NMT` | ✅ PASS |
-| **normalised_form** | `MARIO DE LUCA KNOWN AS THE PROFESSOR` | `MARIO DE LUCA KNOWN AS THE PROFESSOR` | ✅ PASS |
+| **method** | `NMT` | `UNRESOLVED` | ❌ FAIL |
+| **normalised_form** | `MARIO DE LUCA KNOWN AS IL PROFESSORE` | `None` | ❌ FAIL |
 
-### Overall: ✅ PASS
+> ❌ **Method failure diagnosis:** The strategy for field_type='alias' language='it' returned None or raised NotImplementedError. Check that the strategy module is fully implemented and wired into the router.
+
+### Overall: ❌ FAIL
 
 ---
 
@@ -7775,7 +7785,7 @@
 | **field_type** | `free_text` | `free_text` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.14s` | — |
+| **latency** | — | `0.87s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7789,20 +7799,20 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `NMT` |
-| normalised_form | `MATURITY DATE 05/09/2026 AND THE AMOUNT IS 12,500 RIYALS` |
-| confidence | `0.80` |
-| review_required | `False` |
-| latency | `0.87s` |
+| processing_method | `UNRESOLVED` |
+| normalised_form | `None` |
+| confidence | `0.00` |
+| review_required | `True` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NMT` | `NMT` | ✅ PASS |
-| **normalised_form** | `DUE DATE 2026-09-05 AMOUNT 12500 QAR` | `MATURITY DATE 05/09/2026 AND THE AMOUNT IS 12,500 RIYALS` | ❌ FAIL |
+| **method** | `NMT` | `UNRESOLVED` | ❌ FAIL |
+| **normalised_form** | `DUE DATE 2026-09-05 AMOUNT 12500 QAR` | `None` | ❌ FAIL |
 
-> ❌ **Form failure diagnosis:** Got 'MATURITY DATE 05/09/2026 AND THE AMOUNT IS 12,500 RIYALS', expected 'DUE DATE 2026-09-05 AMOUNT 12500 QAR'. Inspect the strategy module output.
+> ❌ **Method failure diagnosis:** The strategy for field_type='free_text' language='ar' returned None or raised NotImplementedError. Check that the strategy module is fully implemented and wired into the router.
 
 ### Overall: ❌ FAIL
 
@@ -7826,7 +7836,7 @@
 | **field_type** | `free_text` | `free_text` | ✅ match |
 | **language** | `ja` | `ja` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.73s` | — |
+| **latency** | — | `4.41s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7840,20 +7850,20 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `NMT` |
-| normalised_form | `THE PAYMENT DEADLINE IS SEPTEMBER 5, 2026, AND THE AMOUNT IS 5,000 YEN.` |
-| confidence | `0.80` |
-| review_required | `False` |
-| latency | `0.68s` |
+| processing_method | `UNRESOLVED` |
+| normalised_form | `None` |
+| confidence | `0.00` |
+| review_required | `True` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NMT` | `NMT` | ✅ PASS |
-| **normalised_form** | `DUE DATE 2026-09-05 AMOUNT 5000 JPY` | `THE PAYMENT DEADLINE IS SEPTEMBER 5, 2026, AND THE AMOUNT IS 5,000 YEN.` | ❌ FAIL |
+| **method** | `NMT` | `UNRESOLVED` | ❌ FAIL |
+| **normalised_form** | `DUE DATE 2026-09-05 AMOUNT 5000 JPY` | `None` | ❌ FAIL |
 
-> ❌ **Form failure diagnosis:** Got 'THE PAYMENT DEADLINE IS SEPTEMBER 5, 2026, AND THE AMOUNT IS 5,000 YEN.', expected 'DUE DATE 2026-09-05 AMOUNT 5000 JPY'. Inspect the strategy module output.
+> ❌ **Method failure diagnosis:** The strategy for field_type='free_text' language='ja' returned None or raised NotImplementedError. Check that the strategy module is fully implemented and wired into the router.
 
 ### Overall: ❌ FAIL
 
@@ -7877,7 +7887,7 @@
 | **field_type** | `free_text` | `free_text` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.17s` | — |
+| **latency** | — | `1.11s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7891,20 +7901,20 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `NMT` |
-| normalised_form | `THE PAYMENT DATE IS SEPTEMBER 5, 2026, AND THE AMOUNT IS NT$5,000.` |
-| confidence | `0.80` |
-| review_required | `False` |
-| latency | `0.85s` |
+| processing_method | `UNRESOLVED` |
+| normalised_form | `None` |
+| confidence | `0.00` |
+| review_required | `True` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NMT` | `NMT` | ✅ PASS |
-| **normalised_form** | `PAYMENT DATE 2026-09-05 AMOUNT 5000 TWD` | `THE PAYMENT DATE IS SEPTEMBER 5, 2026, AND THE AMOUNT IS NT$5,000.` | ❌ FAIL |
+| **method** | `NMT` | `UNRESOLVED` | ❌ FAIL |
+| **normalised_form** | `PAYMENT DATE 2026-09-05 AMOUNT 5000 TWD` | `None` | ❌ FAIL |
 
-> ❌ **Form failure diagnosis:** Got 'THE PAYMENT DATE IS SEPTEMBER 5, 2026, AND THE AMOUNT IS NT$5,000.', expected 'PAYMENT DATE 2026-09-05 AMOUNT 5000 TWD'. Inspect the strategy module output.
+> ❌ **Method failure diagnosis:** The strategy for field_type='free_text' language='zh' returned None or raised NotImplementedError. Check that the strategy module is fully implemented and wired into the router.
 
 ### Overall: ❌ FAIL
 
@@ -7928,7 +7938,7 @@
 | **field_type** | `free_text` | `free_text` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.85s` | — |
+| **latency** | — | `1.22s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7942,20 +7952,20 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `NMT` |
-| normalised_form | `PAYMENT DEADLINE: 05.09.2026, AMOUNT: 12 500 RUBLES.` |
-| confidence | `0.80` |
-| review_required | `False` |
-| latency | `0.72s` |
+| processing_method | `UNRESOLVED` |
+| normalised_form | `None` |
+| confidence | `0.00` |
+| review_required | `True` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NMT` | `NMT` | ✅ PASS |
-| **normalised_form** | `DUE DATE 2026-09-05 AMOUNT 12500 RUB` | `PAYMENT DEADLINE: 05.09.2026, AMOUNT: 12 500 RUBLES.` | ❌ FAIL |
+| **method** | `NMT` | `UNRESOLVED` | ❌ FAIL |
+| **normalised_form** | `DUE DATE 2026-09-05 AMOUNT 12500 RUB` | `None` | ❌ FAIL |
 
-> ❌ **Form failure diagnosis:** Got 'PAYMENT DEADLINE: 05.09.2026, AMOUNT: 12 500 RUBLES.', expected 'DUE DATE 2026-09-05 AMOUNT 12500 RUB'. Inspect the strategy module output.
+> ❌ **Method failure diagnosis:** The strategy for field_type='free_text' language='ru' returned None or raised NotImplementedError. Check that the strategy module is fully implemented and wired into the router.
 
 ### Overall: ❌ FAIL
 
@@ -7979,7 +7989,7 @@
 | **field_type** | `free_text` | `free_text` | ✅ match |
 | **language** | `de` | `de` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `0.80s` | — |
+| **latency** | — | `0.93s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -7993,20 +8003,20 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `NMT` |
-| normalised_form | `PAYMENT TERM: 05.09.2026, AMOUNT: 12.500 EUR` |
-| confidence | `0.80` |
-| review_required | `False` |
-| latency | `0.88s` |
+| processing_method | `UNRESOLVED` |
+| normalised_form | `None` |
+| confidence | `0.00` |
+| review_required | `True` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NMT` | `NMT` | ✅ PASS |
-| **normalised_form** | `DUE DATE 2026-09-05 AMOUNT 12500 EUR` | `PAYMENT TERM: 05.09.2026, AMOUNT: 12.500 EUR` | ❌ FAIL |
+| **method** | `NMT` | `UNRESOLVED` | ❌ FAIL |
+| **normalised_form** | `DUE DATE 2026-09-05 AMOUNT 12500 EUR` | `None` | ❌ FAIL |
 
-> ❌ **Form failure diagnosis:** Got 'PAYMENT TERM: 05.09.2026, AMOUNT: 12.500 EUR', expected 'DUE DATE 2026-09-05 AMOUNT 12500 EUR'. Inspect the strategy module output.
+> ❌ **Method failure diagnosis:** The strategy for field_type='free_text' language='de' returned None or raised NotImplementedError. Check that the strategy module is fully implemented and wired into the router.
 
 ### Overall: ❌ FAIL
 
@@ -8030,7 +8040,7 @@
 | **field_type** | `free_text` | `free_text` | ✅ match |
 | **language** | `ko` | `ko` | ✅ match |
 | **confidence** | — | `0.95` | — |
-| **latency** | — | `1.08s` | — |
+| **latency** | — | `0.94s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -8044,20 +8054,20 @@
 
 | Field | Value |
 |---|---|
-| processing_method | `NMT` |
-| normalised_form | `PAYMENT DEADLINE: 2026/09/05, AMOUNT: 12,500 KRW` |
-| confidence | `0.80` |
-| review_required | `False` |
-| latency | `0.84s` |
+| processing_method | `UNRESOLVED` |
+| normalised_form | `None` |
+| confidence | `0.00` |
+| review_required | `True` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
 | | Expected | Got | Status |
 |---|---|---|---|
-| **method** | `NMT` | `NMT` | ✅ PASS |
-| **normalised_form** | `DUE DATE 2026-09-05 AMOUNT 12500 KRW` | `PAYMENT DEADLINE: 2026/09/05, AMOUNT: 12,500 KRW` | ❌ FAIL |
+| **method** | `NMT` | `UNRESOLVED` | ❌ FAIL |
+| **normalised_form** | `DUE DATE 2026-09-05 AMOUNT 12500 KRW` | `None` | ❌ FAIL |
 
-> ❌ **Form failure diagnosis:** Got 'PAYMENT DEADLINE: 2026/09/05, AMOUNT: 12,500 KRW', expected 'DUE DATE 2026-09-05 AMOUNT 12500 KRW'. Inspect the strategy module output.
+> ❌ **Method failure diagnosis:** The strategy for field_type='free_text' language='ko' returned None or raised NotImplementedError. Check that the strategy module is fully implemented and wired into the router.
 
 ### Overall: ❌ FAIL
 
@@ -8081,7 +8091,7 @@
 | **field_type** | `id_number` | `id_number` | ✅ match |
 | **language** | `ar` | `ar` | ✅ match |
 | **confidence** | — | `0.80` | — |
-| **latency** | — | `1.06s` | — |
+| **latency** | — | `0.81s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -8099,7 +8109,7 @@
 | normalised_form | `O12345678` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -8132,7 +8142,7 @@
 | **field_type** | `id_number` | `id_number` | ✅ match |
 | **language** | `ja` | `zh` | ⚠️ mismatch |
 | **confidence** | — | `0.70` | — |
-| **latency** | — | `0.84s` | — |
+| **latency** | — | `1.02s` | — |
 
 > ⚠️ **Classification mismatch on language.** Classifier returned `zh` but expected `ja`. This may affect strategy selection (e.g. character map handler chosen for wrong language).
 
@@ -8152,7 +8162,7 @@
 | normalised_form | `I2345B8` |
 | confidence | `1.00` |
 | review_required | `False` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -8185,7 +8195,7 @@
 | **field_type** | `address` | `address` | ✅ match |
 | **language** | `zh` | `zh` | ✅ match |
 | **confidence** | — | `0.80` | — |
-| **latency** | — | `0.98s` | — |
+| **latency** | — | `0.79s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -8203,7 +8213,7 @@
 | normalised_form | `None` |
 | confidence | `0.00` |
 | review_required | `True` |
-| latency | `0.01s` |
+| latency | `0.00s` |
 
 ### Step 3 — Expected vs Actual
 
@@ -8234,7 +8244,7 @@
 | **field_type** | `reference_no` | `reference_no` | ✅ match |
 | **language** | `el` | `el` | ✅ match |
 | **confidence** | — | `0.65` | — |
-| **latency** | — | `0.82s` | — |
+| **latency** | — | `1.90s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -8285,7 +8295,7 @@
 | **field_type** | `reference_no` | `reference_no` | ✅ match |
 | **language** | `ru` | `ru` | ✅ match |
 | **confidence** | — | `0.65` | — |
-| **latency** | — | `0.99s` | — |
+| **latency** | — | `0.86s` | — |
 
 ### Step 2 — Orchestrator + Router
 
@@ -8356,7 +8366,7 @@
 | normalised_form | `None` |
 | confidence | `0.00` |
 | review_required | `True` |
-| latency | `0.02s` |
+| latency | `0.01s` |
 
 ### Step 3 — Expected vs Actual
 

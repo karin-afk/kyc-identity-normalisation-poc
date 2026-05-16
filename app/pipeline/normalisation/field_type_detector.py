@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
+import os
+import re
 
 from openai import OpenAI
 
@@ -207,24 +210,223 @@ def _coerce_confidence(value: object) -> float:
     return max(0.0, min(1.0, confidence))
 
 
-def detect_field_type(text: str, language_hint: str = "") -> tuple[str, float, str]:
-    """Classify pasted text with GPT-4o-mini.
+# ── Regex / deterministic classifier ──────────────────────────────────────────
 
-    Args:
-        text: The text to classify.
-        language_hint: Optional ISO 639-1 code provided by the analyst. When
-            supplied it is injected into the user message so the model treats
-            it as authoritative for language_code and calendar disambiguation.
+_EMAIL_RE    = re.compile(r'[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}')
+_IBAN_RE     = re.compile(r'^[A-Z]{2}[0-9]{2}[A-Z0-9 ]{4,32}$')
+_LEI_RE      = re.compile(r'^[A-Z0-9]{18}[0-9]{2}$')            # 20-char LEI
+_DATE_ISO_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+_DATE_COMPACT_RE = re.compile(r'^\d{8}$')                         # YYYYMMDD
+_DATE_DOT_EU_RE  = re.compile(r'^\d{1,2}\.\d{1,2}\.\d{4}$')     # DD.MM.YYYY
+_DATE_SLASH_RE   = re.compile(r'^(\d{1,4})/(\d{1,2})/(\d{2,4})$')  # any slash date
+_THAI_ERA_RE     = re.compile(r'พ\.ศ\.|พศ\.')
+_KOREAN_DATE_RE  = re.compile(r'\d+년\s*\d+월\s*\d+일')
+_JAPANESE_DATE_RE= re.compile(r'\d+年\d+月\d+日')
+_HAN_DATE_RE     = re.compile(r'[〇一二三四五六七八九十百千]+年[〇一二三四五六七八九十百千]+月[〇一二三四五六七八九十百千]+日')
+_HEBREW_MONTHS   = ('ניסן','אייר','סיוון','תמוז','אב','אלול',
+                    'תשרי','חשון','כסלו','טבת','שבט','אדר')
+_CURRENCY_RE = re.compile(
+    r'^[¥€£\$﷼₪₩฿₺]'            # leading currency symbol
+    r'|[\u0660-\u0669\uff10-\uff19]'  # Arabic-Indic / full-width digits
+    r'|[△▲\uff08\uff09（）]'           # accounting notation
+    r'|^\d[\d,.\' ]+$'               # plain number with separators only
+)
+_AKA_RE = re.compile(
+    r'\b(?:also\s+known\s+as|known\s+as|a\.?k\.?a\.?|по\s+прозвищу'
+    r'|γνωστός\s+ως|noto\s+come|detto|dite?)\b'
+    r'|又名|별칭',
+    re.IGNORECASE,
+)
+
+
+def _detect_language_from_script(text: str) -> str:
+    """Return an ISO 639-1 code from the dominant Unicode script block."""
+    thai = kana = hangul = cjk = arabic = hebrew = cyrillic = greek = fa = 0
+    for ch in text:
+        cp = ord(ch)
+        if 0x0E00 <= cp <= 0x0E7F:
+            thai += 1
+        elif 0x3040 <= cp <= 0x30FF:          # Hiragana + Katakana
+            kana += 1
+        elif (0xAC00 <= cp <= 0xD7FF or 0x1100 <= cp <= 0x11FF
+              or 0x3130 <= cp <= 0x318F):      # Hangul
+            hangul += 1
+        elif (0x4E00 <= cp <= 0x9FFF or 0x3400 <= cp <= 0x4DBF
+              or 0xF900 <= cp <= 0xFAFF):      # CJK Unified Ideographs
+            cjk += 1
+        elif 0x0600 <= cp <= 0x06FF or 0xFB50 <= cp <= 0xFDFF:   # Arabic
+            arabic += 1
+        elif 0x0660 <= cp <= 0x0669 or 0x06F0 <= cp <= 0x06F9:   # Arabic-Indic digits
+            arabic += 1
+        elif 0x0590 <= cp <= 0x05FF:           # Hebrew
+            hebrew += 1
+        elif 0x0400 <= cp <= 0x04FF:           # Cyrillic
+            cyrillic += 1
+        elif 0x0370 <= cp <= 0x03FF or 0x1F00 <= cp <= 0x1FFF:   # Greek
+            greek += 1
+    if thai:     return "th"
+    if hangul:   return "ko"
+    if kana:     return "ja"
+    if cjk:      return "zh"   # CJK without kana → Chinese (not Japanese)
+    if arabic:   return "ar"
+    if hebrew:   return "he"
+    if cyrillic: return "ru"
+    if greek:    return "el"
+    return "en"
+
+
+def detect_field_type_regex(text: str, language_hint: str = "") -> tuple[str, float, str]:
+    """Deterministic field-type detector.
+
+    Covers structural patterns (email, IBAN, LEI, dates, currency amounts,
+    AKA prose) and uses Unicode script detection for language. Falls back to
+    ``person_name`` with low confidence for unrecognised inputs.
 
     Returns:
         (field_type, confidence, language_code)
-
-    On any error, returns a safe fallback so processing can continue.
     """
+    t = (text or "").strip()
+    if not t:
+        return "person_name", 0.5, language_hint or "en"
+
+    lang = language_hint or _detect_language_from_script(t)
+
+    # 1. Email
+    if _EMAIL_RE.search(t):
+        return "email", 0.99, "en"
+
+    # 2. IBAN — 2 uppercase letters + 2 digits + 4-32 alphanum, min 15 chars
+    compact = t.replace(" ", "")
+    if (len(compact) >= 15 and _IBAN_RE.match(compact.upper())
+            and compact[:2].isalpha() and compact[2:4].isdigit()):
+        return "iban", 0.99, "en"
+
+    # 3. LEI — 20 chars uppercase alphanumeric, last 2 digits
+    if len(compact) == 20 and _LEI_RE.match(compact.upper()):
+        return "lei_code", 0.95, "en"
+
+    # 4. AKA prose connector → alias (checked before long-sentence prose)
+    if _AKA_RE.search(t):
+        return "alias", 0.88, lang
+
+    # 5. Long prose sentence → free_text
+    #    Heuristic: >8 whitespace-separated tokens AND contains end-punctuation
+    #    or Arabic/Japanese/Chinese prose marker
+    tokens = t.split()
+    has_prose_punct = bool(re.search(r'[.!?،。、！？…]', t))
+    if len(tokens) > 8 and (has_prose_punct or lang in ("ar", "ja", "zh", "ko")):
+        return "free_text", 0.75, lang
+
+    # 6. Thai era label (year-only Buddhist Era)
+    if _THAI_ERA_RE.search(t):
+        return "issue_date", 0.92, "th"
+
+    # 7. Korean date (year/month/day labels)
+    if _KOREAN_DATE_RE.search(t):
+        return "date_of_birth", 0.92, "ko"
+
+    # 8. Japanese/Chinese Han numeral date
+    if _JAPANESE_DATE_RE.search(t) or _HAN_DATE_RE.search(t):
+        return "date_of_birth", 0.92, lang
+
+    # 9. Hebrew spelled-out month → date
+    if any(m in t for m in _HEBREW_MONTHS):
+        return "date_of_birth", 0.88, "he"
+
+    # 10. ISO date YYYY-MM-DD
+    if _DATE_ISO_RE.match(t):
+        return "date_of_birth", 0.93, lang
+
+    # 11. Compact 8-digit date YYYYMMDD
+    if _DATE_COMPACT_RE.match(t) and 19000101 <= int(t) <= 20991231:
+        return "date_of_birth", 0.88, lang
+
+    # 12. European dot date DD.MM.YYYY
+    if _DATE_DOT_EU_RE.match(t):
+        return "date_of_birth", 0.90, lang
+
+    # 13. Slash-separated date — classify by year magnitude
+    m = _DATE_SLASH_RE.match(t)
+    if m:
+        a, b, c = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        # Thai Buddhist: last component 2400–2700
+        if 2400 <= c <= 2800:
+            return "date_of_birth", 0.90, "th"
+        # Solar Hijri: first component 1300–1499
+        if 1300 <= a <= 1499:
+            return "date_of_birth", 0.88, "fa"
+        # Minguo: first component 50–200 (years since 1912)
+        if 50 <= a <= 200:
+            return "date_of_birth", 0.85, "zh"
+        return "date_of_birth", 0.85, lang
+
+    # 14. Arabic-Indic slash date (digits in Arabic-Indic range)
+    ar_indic_slash = re.match(
+        r'^[\u0660-\u0669]{1,4}[/\u060C][\u0660-\u0669]{1,2}[/\u060C][\u0660-\u0669]{2,4}$',
+        t,
+    )
+    if ar_indic_slash:
+        return "date_of_birth", 0.88, "ar"
+
+    # 15. Currency / financial amount
+    if _CURRENCY_RE.match(t) and re.search(r'\d', t):
+        # Plain number string with only digits + separators → share_capital
+        if re.match(r'^[\d\s,.\u0660-\u0669\uff10-\uff19\u066c\']+$', t):
+            return "share_capital", 0.82, lang
+        return "share_capital", 0.82, lang
+
+    # 16. Default — unstructured / name-like
+    return "person_name", 0.50, lang
+
+
+# ── LLM classifier (GPT-4o-mini) ──────────────────────────────────────────────
+
+VALID_FIELD_TYPES = {
+    "person_name", "alias", "nationality", "city", "address",
+    "passport_no", "iban", "lei_code", "id_number", "tax_id",
+    "registration_no", "reference_no", "phone_number", "email",
+    "date_of_birth", "issue_date", "expiry_date",
+    "company_name", "legal_form", "status", "role",
+    "share_capital", "total_assets", "free_text", "unknown",
+}
+
+VALID_LANGUAGES = {
+    "ar", "de", "el", "en", "es", "fa", "fr", "he", "it",
+    "ja", "ko", "nl", "no", "pl", "pt", "ru", "th", "tr",
+    "uk", "zh", "unknown",
+}
+
+_LLM_CACHE: dict[str, tuple[str, float, str]] = {}
+
+
+def detect_field_type_llm(text: str, language_hint: str = "") -> tuple[str, float, str]:
+    """LLM classifier using GPT-4o-mini. Returns (field_type, confidence, language).
+
+    Uses the prompt and few-shot examples from classifier_prompt.py.
+    SHA-256 caches results to avoid re-paying latency on repeated inputs.
+    Validates all outputs against VALID_FIELD_TYPES / VALID_LANGUAGES —
+    if the model invents a value, it is downgraded to 'unknown'.
+    """
+    from app.pipeline.normalisation.classifier_prompt import (
+        CLASSIFIER_SYSTEM_PROMPT,
+        CLASSIFIER_USER_PROMPT_TEMPLATE,
+        FEW_SHOT_EXAMPLES,
+    )
+
+    # SHA-256 cache — avoids re-paying latency on repeated inputs across a run
+    cache_key = hashlib.sha256(f"{text}\x00{language_hint}".encode()).hexdigest()
+    if cache_key in _LLM_CACHE:
+        return _LLM_CACHE[cache_key]
+
+    user_content = CLASSIFIER_USER_PROMPT_TEMPLATE.format(text=(text or "")[:500])
     if language_hint:
-        user_message = f"Language hint provided by analyst: {language_hint}\n\nText to classify:\n{(text or '')[:500]}"
-    else:
-        user_message = (text or "")[:500]
+        user_content = f"Language hint provided by analyst: {language_hint}\n\n{user_content}"
+
+    messages: list[dict] = [{"role": "system", "content": CLASSIFIER_SYSTEM_PROMPT}]
+    for user_text, assistant_response in FEW_SHOT_EXAMPLES:
+        messages.append({"role": "user", "content": f"Classify this text:\n\n{user_text}\n\nReturn JSON only."})
+        messages.append({"role": "assistant", "content": assistant_response})
+    messages.append({"role": "user", "content": user_content})
 
     try:
         log_event(
@@ -239,26 +441,27 @@ def detect_field_type(text: str, language_hint: str = "") -> tuple[str, float, s
         )
         response = _get_client().chat.completions.create(
             model="gpt-4o-mini",
-            max_tokens=60,
-            temperature=0,
-            messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user", "content": user_message},
-            ],
+            messages=messages,
+            temperature=0.0,
+            max_tokens=80,
+            response_format={"type": "json_object"},
         )
 
         content = response.choices[0].message.content or "{}"
         log_event("field_detector_raw_response", {"content": content}, source="backend")
         parsed = json.loads(content)
 
-        field_type = parsed.get("field_type", "unstructured_text")
-        detected_language = parsed.get("language_code", "en")
-        confidence = _coerce_confidence(parsed.get("confidence", 0.5))
+        field_type = parsed.get("field_type", "unknown")
+        detected_language = parsed.get("language", "unknown")
+        confidence = float(parsed.get("confidence", 0.0))
 
-        if field_type not in FIELD_TYPES:
-            field_type = "unstructured_text"
-        if detected_language not in LANGUAGE_CODES:
-            detected_language = "en"
+        # Validate against the closed enum — if the model invented something,
+        # downgrade to unknown rather than break the router.
+        if field_type not in VALID_FIELD_TYPES:
+            field_type = "unknown"
+            confidence = min(confidence, 0.3)
+        if detected_language not in VALID_LANGUAGES:
+            detected_language = "unknown"
 
         log_event(
             "field_detector_completed",
@@ -270,8 +473,30 @@ def detect_field_type(text: str, language_hint: str = "") -> tuple[str, float, s
             source="backend",
         )
 
-        return field_type, confidence, detected_language
+        result: tuple[str, float, str] = (field_type, confidence, detected_language)
+        _LLM_CACHE[cache_key] = result
+        return result
     except Exception as e:
         logger.error(f"Field type detection failed: {e}", exc_info=True)
         log_event("field_detector_error", {"error": str(e)}, source="backend")
-        return "unstructured_text", 0.5, "en"
+        return "unknown", 0.0, "unknown"
+
+
+# Keep the private alias so any internal callers still work
+_detect_field_type_llm = detect_field_type_llm
+
+
+def detect_field_type(text: str, language_hint: str = "") -> tuple[str, float, str]:
+    """Dispatch to regex or LLM classifier based on ``CLASSIFIER_MODE`` env var.
+
+    Set ``CLASSIFIER_MODE=llm`` in ``.env`` to use GPT-4o-mini.
+    The default (``CLASSIFIER_MODE=regex``) uses the deterministic regex
+    detector — fully reproducible, zero latency, zero cost.
+
+    Returns:
+        (field_type, confidence, language_code)
+    """
+    mode = os.environ.get("CLASSIFIER_MODE", "regex").lower()
+    if mode == "llm":
+        return detect_field_type_llm(text, language_hint)
+    return detect_field_type_regex(text, language_hint)

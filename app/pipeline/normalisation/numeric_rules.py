@@ -228,6 +228,7 @@ def normalise_all_digits(text: str) -> str:
         .translate(_FULLWIDTH_TABLE)
         .replace("，", ",")
         .replace("．", ".")
+        .replace("\u066c", ",")   # U+066C Arabic Thousands Separator → standard comma
         .translate(_DEVANAGARI_TABLE)
         .translate(_THAI_TABLE)
         .translate(_ARABIC_INDIC_TABLE)

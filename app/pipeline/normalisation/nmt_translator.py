@@ -24,6 +24,7 @@ Target:    AZURE_TRANSLATOR_TARGET_LANGUAGE (from .env, default "en")
 """
 
 import os
+import unicodedata
 from app.pipeline.normalisation.field_types import (
     PROSE_FIELDS, ProcessingMethod, STRATEGY_CONFIDENCE,
 )
@@ -64,7 +65,7 @@ def apply_nmt(text: str, field_type: str, language: str = "") -> dict | None:
             "should_use_in_screening": False,
         }
 
-    if len(text.strip()) < 10:
+    if len(text.strip()) < 4:
         return None
 
     endpoint = os.environ.get("AZURE_TRANSLATOR_ENDPOINT", "")
@@ -80,9 +81,12 @@ def apply_nmt(text: str, field_type: str, language: str = "") -> dict | None:
         if not translated:
             return None
 
+        # ASCII-fold: strip diacritics (e.g. É→E) so output is plain-ASCII
+        ascii_normalised = unicodedata.normalize('NFD', translated)
+        ascii_normalised = ''.join(c for c in ascii_normalised if unicodedata.category(c) != 'Mn')
         return {
             "original_text":           text,
-            "normalised_form":         translated,
+            "normalised_form":         ascii_normalised.upper(),
             "allowed_variants":        [],
             "processing_method":       ProcessingMethod.NMT,
             "confidence":              STRATEGY_CONFIDENCE[ProcessingMethod.NMT],

@@ -152,6 +152,15 @@ _SUPPLEMENTARY_NATIONALITY_ALIASES: dict[str, str] = {
     "rus": "RU",       # Russian (tr)
     "İranlı": "IR",    # Iranian (tr)
     "iranlı": "IR",    # Iranian (tr, normalised)
+    # Japanese adjectival/person forms (e.g. 日本人 = Japanese person → Japan)
+    "日本人": "JP",     # Japanese person
+    "中国人": "CN",     # Chinese person
+    "韓国人": "KR",     # Korean person (hanja)
+    "한국인": "KR",     # Korean person (hangul)
+    "ドイツ人": "DE",   # German person
+    "フランス人": "FR", # French person
+    "アメリカ人": "US", # American person
+    "イギリス人": "GB", # British person
 }
 
 # ---------------------------------------------------------------------------
@@ -311,25 +320,9 @@ def _build_index() -> tuple[dict, dict, dict, dict]:
     except ImportError as exc:
         log.warning("babel/pycountry not available for country index: %s", exc)
 
-    # ── Supplementary nationality adjective aliases (demonym/adjectival forms) ─
-    try:
-        import pycountry
-
-        supp_count = 0
-        for raw_text, iso2 in _SUPPLEMENTARY_NATIONALITY_ALIASES.items():
-            key = _normalise_text(raw_text)
-            if key and key not in alias_index:
-                c = pycountry.countries.get(alpha_2=iso2)
-                canonical_name = country_by_code.get(iso2, {}).get("name") or (c.name if c else iso2)
-                alias_index[key] = {
-                    "english_name": canonical_name,
-                    "country_code": iso2,
-                    "feature": "country",
-                }
-                supp_count += 1
-        log.info("Supplementary nationality alias entries added: %d", supp_count)
-    except ImportError:
-        pass
+    # Note: _SUPPLEMENTARY_NATIONALITY_ALIASES are NOT added to the cache here.
+    # They are checked at query time in lookup_geographic() so that new aliases
+    # take effect without requiring a cache rebuild.
 
     # Index canonical city English names (so "Tokyo", "Moscow" etc. resolve directly)
     for geonameid, record in canonical_index.items():
@@ -621,6 +614,24 @@ def lookup_geographic(
 
     # Step 1: exact alias lookup
     match = _ALIAS_INDEX.get(normalised)
+
+    # Step 1b: supplementary nationality aliases (checked at query time so they
+    # don't need to be in the pickled cache — handles adjectival forms added
+    # after the cache was built, e.g. 日本人, 中国人, 韓国人).
+    if match is None and field_type in NATIONALITY_FIELDS:
+        iso2 = _SUPPLEMENTARY_NATIONALITY_ALIASES.get(text.strip())
+        if iso2 is None:
+            # Also try normalised key for case-insensitive match
+            iso2 = _SUPPLEMENTARY_NATIONALITY_ALIASES.get(normalised)
+        if iso2:
+            try:
+                import pycountry as _pc
+                c = _pc.countries.get(alpha_2=iso2)
+                canonical_name = c.name if c else iso2
+            except ImportError:
+                canonical_name = iso2
+            match = {"english_name": canonical_name, "country_code": iso2, "feature": "country"}
+
     if match:
         english_name = match["english_name"]
         confidence = 0.92

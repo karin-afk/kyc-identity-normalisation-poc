@@ -1,5 +1,7 @@
 # Integration Diagnostic — Fix Tracker
 
+# ALL DONE EXCEPT 7
+
 ## Todo
 
 - [x] **Fix 1** — Add missing field types to `field_type_detector.py` (`passport_no`, `registration_no`, `email`, `id_no`, `total_assets`, `revenue`, `net_assets`) → fixes A.1, A.2, A.3, B.7–B.11

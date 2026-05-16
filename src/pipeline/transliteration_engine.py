@@ -61,6 +61,10 @@ def _apply_bgn_pcgn_corrections(text: str) -> str:
     text = _WORD_INITIAL_E_RE.sub(
         lambda m: "Ye" if m.group(1).isupper() else "ye", text
     )
+    # BGN/PCGN Table 1 Rule 7: й → y in word-final position (Aleksej → Aleksey).
+    text = re.sub(r'([Jj])\b', lambda m: 'Y' if m.group(1).isupper() else 'y', text)
+    # BGN/PCGN Table 1 Rule 7: й → y before a vowel (pre-vowel position).
+    text = re.sub(r'([Jj])([AaEeIiOoUu])', lambda m: ('Y' if m.group(1).isupper() else 'y') + m.group(2), text)
     return text
 
 
@@ -146,6 +150,9 @@ def _transliterate_cyrillic(text: str, language: str) -> dict:
     # The transliterate library emits a literal apostrophe for the Cyrillic soft sign
     # (e.g. NATAL'JA, JUR'EVICH).  Strip it — the soft sign has no Latin equivalent
     # in ICAO/BGN romanisation.
+    # BGN/PCGN: soft sign before е palatalises → ye (Юрьевич → Yuryevich).
+    # Must be done BEFORE stripping the apostrophe.
+    lat = lat.replace("'e", "ye").replace("'E", "Ye")
     lat = lat.replace("'", "")
 
     # Apply BGN/PCGN corrections for Russian and Ukrainian only.
@@ -788,7 +795,14 @@ def _normalise_korean(text: str, field_type: str) -> dict:
         # Romanise the first syllable (surname) and the remainder (given name)
         # separately so that a space is inserted between them, matching the
         # KYC convention "BAK JIHUN" rather than the fused form "BAKJIHUN".
-        surname_rom = _rom(text[0])
+        surname_char = text[0]
+        if surname_char in KOREAN_SURNAME_VARIANTS:
+            # Use family-preference form (first entry) as primary — this is
+            # the form dominant on passports, bank records and KYC watchlists.
+            surname_rom = KOREAN_SURNAME_VARIANTS[surname_char][0]
+        else:
+            # Surname not in lookup — fall back to RR romanisation.
+            surname_rom = _rom(surname_char)
         given_rom = _rom(text[1:])
         romanised = f"{surname_rom} {given_rom}" if given_rom else surname_rom
     else:

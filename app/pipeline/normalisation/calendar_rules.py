@@ -5,12 +5,13 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from convertdate import hebrew, persian
+from convertdate import hebrew, islamic, persian
 
 from .numeric_rules import (
 	normalise_all_digits,
 	normalise_parenthetical_negative,
 )
+from .han_numeral import han_to_int, is_pure_han_numeral, is_pure_han_spoken, han_spoken_to_str
 from utils.calendar_utils import detect_and_convert_japanese_era, normalise_date_field
 
 CALENDAR_DATE_FIELDS: set[str] = {
@@ -48,11 +49,13 @@ _ALL_DIGIT_CONTENT_RE = re.compile(
 	r"^[\u0660-\u0669\u06f0-\u06f9\uff10-\uff19\u0e50-\u0e59\u0966-\u096f\d\s,.\/\-]+$"
 )
 _THAI_DATE_RE = re.compile(r"^(\d{1,4})[\/\-.](\d{1,2})[\/\-.](\d{1,4})$")
+_THAI_LABELED_YEAR_RE = re.compile(r"^พ\.ศ\.\s*(\d{4})$")
 _MINGUO_DATE_RE = re.compile(r"^(\d{2,3})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$")
 _SOLAR_HIJRI_RE = re.compile(r"^(1[34]\d{2})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$")
+_EN_SLASH_DATE_RE = re.compile(r"^(\d{1,2})/(\d{1,2})/(\d{4})$")
 _HEBREW_TISHREI_RE = re.compile(r"^(\d{1,2})\s+ב?תשרי\s+(\d{4})$")
 _HEBREW_NUMERIC_RE = re.compile(r"^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$")
-
+_KOREAN_LABELED_DATE_RE = re.compile(r"^(\d{1,4})년\s*(\d{1,2})월\s*(\d{1,2})일$")
 _CURRENCY_SYMBOLS = {
 	"€": "EUR",
 	"£": "GBP",
@@ -102,6 +105,25 @@ def apply_calendar_rules(
 	}
 
 
+_PHONE_SEPARATOR_RE = re.compile(r'[\s\-().]+')
+
+
+def _numeric_result(original: str, normalised: str) -> dict:
+	"""Build a standard NUMERIC strategy result dict."""
+	return {
+		"original_text": original,
+		"normalised_form": normalised,
+		"allowed_variants": [],
+		"processing_method": "NUMERIC",
+		"confidence": 0.95,
+		"review_required": False,
+		"review_reason": None,
+		"should_use_in_screening": True,
+		"original_calendar": None,
+		"currency_code": "",
+	}
+
+
 def apply_numeric_rules(
 	field_type: str,
 	text: str,
@@ -110,20 +132,65 @@ def apply_numeric_rules(
 ) -> dict | None:
 	"""Apply Strategy B numeric normalisation for financial numeric fields.
 
+	Also handles phone_number and address fields.
 	For fields whose type is unstructured_text (i.e. the LLM classifier could not
 	identify a specific field type), also fires when the text consists entirely of
 	non-ASCII digits and separators, converting the digit glyphs to ASCII without
 	financial number formatting.
 	"""
+	# ── Phone number normalisation (T12-1: B.25, B.27, B.36, B.37) ────────────
+	if field_type == "phone_number":
+		raw = (text or "").strip()
+		if not raw:
+			return None
+		# Spoken Han digits — phone number as digit sequence (B.36)
+		if is_pure_han_spoken(raw):
+			digits = han_spoken_to_str(raw)
+			if digits:
+				return _numeric_result(raw, digits)
+		# Standard: normalise digit glyphs, strip all non-digit chars, keep leading +
+		t = normalise_all_digits(raw)
+		has_plus = t.startswith('+')
+		if has_plus:
+			t = t[1:]
+		t = re.sub(r'\D', '', t)  # strip everything that is not an ASCII digit
+		normalised = ('+' + t) if has_plus else t
+		if not any(c.isdigit() for c in normalised):
+			return None
+		return _numeric_result(raw, normalised)
+
+	# ── Address digit normalisation (T11-2/T12-2: B.26, B.35) ─────────────────
+	if field_type == "address":
+		raw = (text or "").strip()
+		if not raw:
+			return None
+		# Pure Han numeral house/street number (e.g. 八十八 → 88)
+		if is_pure_han_numeral(raw):
+			val = han_to_int(raw)
+			if val is not None:
+				return _numeric_result(raw, str(val))
+		# Digit-glyph normalisation within mixed-text address (e.g. 테헤란로 １２３ → 테헤란로 123)
+		converted = normalise_all_digits(raw)
+		if converted != raw:
+			return _numeric_result(raw, converted)
+		return None
+
 	if field_type not in FINANCIAL_NUMERIC_FIELDS:
 		# Content-driven path: fire for unstructured_text when the value is pure
 		# digit glyphs (e.g. Arabic-Indic digits pasted without a known field context).
 		# Preserve fields (id_no, passport_no, etc.) never reach this because they
 		# are not classified as unstructured_text by the field detector.
-		if field_type != "unstructured_text":
+		if field_type not in ("unstructured_text", "unknown"):
 			return None
 		raw = (text or "").strip()
-		if not raw or not (_NON_ASCII_DIGIT_RE.search(raw) and _ALL_DIGIT_CONTENT_RE.match(raw)):
+		if not raw:
+			return None
+		# Pure Han numeral (e.g. 八十八 with unknown field_type)
+		if is_pure_han_numeral(raw):
+			val = han_to_int(raw)
+			if val is not None:
+				return _numeric_result(raw, str(val))
+		if not (_NON_ASCII_DIGIT_RE.search(raw) and _ALL_DIGIT_CONTENT_RE.match(raw)):
 			return None
 		converted = normalise_all_digits(raw)
 		return {
@@ -145,6 +212,13 @@ def apply_numeric_rules(
 
 	lang = (language or "").lower()
 	ctry = (country or "").upper()
+
+	# Han numeral conversion for financial amounts (T12-2: B.31 五千→5000)
+	stripped = raw_text.strip()
+	if is_pure_han_numeral(stripped):
+		val = han_to_int(stripped)
+		if val is not None:
+			return _numeric_result(stripped, str(val))
 
 	converted = normalise_all_digits(raw_text.strip())
 	converted = normalise_parenthetical_negative(converted)
@@ -190,21 +264,126 @@ def _detect_calendar_and_convert(text: str, language: str, country: str) -> dict
 		if result:
 			return result
 
-	if (language == "zh" and country == "TW") or country == "TW":
+	if language == "ar":
+		result = _detect_hijri_date(text)
+		if result:
+			return result
+
+	if language == "zh" or country == "TW":
 		result = _detect_minguo_date(text)
 		if result:
 			return result
+		# Han numeral date for zh (e.g. 二零二四年三月十四日 → 2024-03-14)
+		era = detect_and_convert_japanese_era(text)
+		if era.get("gregorian_year"):
+			return {
+				"normalised_form": era["normalised"],
+				"original_calendar": "gregorian",
+				"review_required": era["review_required"],
+				"review_reason": era["review_reason"],
+			}
 
 	if language in ("fa", "ps") or country in ("IR", "AF"):
 		result = _detect_solar_hijri_date(text)
 		if result:
 			return result
 
+	if language == "en":
+		result = _detect_en_slash_date(text, country)
+		if result:
+			return result
+
+	if language == "ko":
+		result = _detect_korean_date(text)
+		if result:
+			return result
+
 	return None
+
+
+def _detect_korean_date(text: str) -> dict | None:
+	"""Detect Korean labelled dates (년/월/일) and convert to Gregorian ISO format."""
+	match = _KOREAN_LABELED_DATE_RE.match(text)
+	if not match:
+		return None
+	year, month, day = int(match.group(1)), int(match.group(2)), int(match.group(3))
+	try:
+		normalised = f"{year:04d}-{month:02d}-{day:02d}"
+	except (ValueError, OverflowError):
+		return None
+	return {
+		"normalised_form": normalised,
+		"original_calendar": "gregorian",
+		"review_required": False,
+		"review_reason": None,
+	}
+
+
+def _detect_en_slash_date(text: str, country: str) -> dict | None:
+	"""Detect English-language slash-separated dates (MM/DD/YYYY or DD/MM/YYYY).
+
+	Date-order resolution:
+	- If first part > 12 → unambiguous DD/MM/YYYY.
+	- If second part > 12 → unambiguous MM/DD/YYYY (e.g. 03/14/1990).
+	- If country in US-convention group → MM/DD/YYYY, no review flag.
+	- If country in UK-convention group → DD/MM/YYYY, no review flag.
+	- Otherwise → MM/DD/YYYY with review_required=True.
+	"""
+	match = _EN_SLASH_DATE_RE.match(text)
+	if not match:
+		return None
+
+	a, b, year = int(match.group(1)), int(match.group(2)), int(match.group(3))
+	if not (1 <= a <= 31 and 1 <= b <= 31 and 1900 <= year <= 2100):
+		return None
+
+	_UK_COUNTRIES = {"GB", "UK", "AU", "NZ", "IE"}
+	review = False
+	review_reason = None
+
+	if a > 12:
+		# Unambiguous: first part can only be day
+		day, month = a, b
+	elif b > 12:
+		# Unambiguous: second part can only be day
+		month, day = a, b
+	elif country in _UK_COUNTRIES:
+		day, month = a, b
+	else:
+		# US convention (including unknown country)
+		month, day = a, b
+		if country not in ("US", "CA"):
+			review = True
+			review_reason = (
+				"Ambiguous English date order: assumed MM/DD/YYYY (US convention); "
+				"confirm with country context"
+			)
+
+	if not (1 <= month <= 12 and 1 <= day <= 31):
+		return None
+
+	return {
+		"normalised_form": f"{year:04d}-{month:02d}-{day:02d}",
+		"original_calendar": "gregorian",
+		"review_required": review,
+		"review_reason": review_reason,
+	}
 
 
 def _detect_thai_date(text: str) -> dict | None:
 	"""Detect Thai Buddhist dates in numeric forms and convert to Gregorian."""
+	# Year-only with พ.ศ. label: e.g. "พ.ศ. 2568" → "2025"
+	labeled = _THAI_LABELED_YEAR_RE.match(text)
+	if labeled:
+		be_year = int(labeled.group(1))
+		if 2400 <= be_year <= 2700:
+			return {
+				"normalised_form": str(be_year - 543),
+				"original_calendar": "thai_buddhist",
+				"review_required": False,
+				"review_reason": None,
+			}
+
 	match = _THAI_DATE_RE.match(text)
 	if not match:
 		return None
@@ -245,6 +424,42 @@ def _detect_minguo_date(text: str) -> dict | None:
 		"review_required": False,
 		"review_reason": None,
 	}
+
+
+def _detect_hijri_date(text: str) -> dict | None:
+	"""Detect Hijri (Islamic) dates in DD/MM/YYYY or YYYY/MM/DD form and convert."""
+	# Hijri years are currently ~1400-1450; distinguish from Gregorian 4-digit years.
+	# Day-first: DD/MM/1300-1499
+	day_first = re.match(r"^(\d{1,2})[\/\-.](\d{1,2})[\/\.\-](1[34]\d{2})$", text)
+	if day_first:
+		day, month, year = int(day_first.group(1)), int(day_first.group(2)), int(day_first.group(3))
+		if 1 <= month <= 12 and 1 <= day <= 30:
+			try:
+				g_year, g_month, g_day = islamic.to_gregorian(year, month, day)
+				return {
+					"normalised_form": f"{g_year:04d}-{g_month:02d}-{g_day:02d}",
+					"original_calendar": "hijri",
+					"review_required": False,
+					"review_reason": None,
+				}
+			except Exception:
+				pass
+	# Year-first: 1300-1499/MM/DD
+	year_first = re.match(r"^(1[34]\d{2})[\/\-.](\d{1,2})[\/\.\-](\d{1,2})$", text)
+	if year_first:
+		year, month, day = int(year_first.group(1)), int(year_first.group(2)), int(year_first.group(3))
+		if 1 <= month <= 12 and 1 <= day <= 30:
+			try:
+				g_year, g_month, g_day = islamic.to_gregorian(year, month, day)
+				return {
+					"normalised_form": f"{g_year:04d}-{g_month:02d}-{g_day:02d}",
+					"original_calendar": "hijri",
+					"review_required": False,
+					"review_reason": None,
+				}
+			except Exception:
+				pass
+	return None
 
 
 def _detect_solar_hijri_date(text: str) -> dict | None:
