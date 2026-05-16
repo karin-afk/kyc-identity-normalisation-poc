@@ -1,3 +1,6 @@
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+# Run with: C:\Python314\python.exe -m pytest -q
+# Flask and all app dependencies are installed in Python 3.14 user site-packages.
+# The .venv uses Python 3.13 (Windows Store) which does NOT have Flask installed.

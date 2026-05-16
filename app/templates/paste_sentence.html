@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Sentence Normalisation{% endblock %}
+{% block content %}
+<section class="section">
+	<h1 class="page-title">Sentence Normalisation</h1>
+	<p class="page-subtitle">Paste a name, date, company status, legal form, or any short text from a KYC document. The tool will classify and normalise it automatically. If you know the language, you can provide a hint below — this helps with ambiguous dates. Maximum 2,000 characters.</p>
+
+	<form class="stack-20" hx-post="{{ url_for('paste.translate') }}" hx-target="#paste-result" hx-swap="innerHTML">
+		<label class="section-label" for="original-text">Input text</label>
+		<textarea id="original-text" name="original_text" maxlength="2000" dir="auto" required></textarea>
+		<div id="char-counter" class="counter">0 / 2,000</div>
+
+		<details class="lang-hint">
+			<summary class="lang-hint-toggle">Add language hint (optional)</summary>
+			<div class="lang-hint-body">
+				<label class="section-label" for="language-hint">Language</label>
+				<select id="language-hint" name="language_hint">
+					<option value="">&#8212; auto-detect &#8212;</option>
+					<option value="ar">Arabic</option>
+					<option value="be">Belarusian</option>
+					<option value="bg">Bulgarian</option>
+					<option value="da">Danish</option>
+					<option value="de">German</option>
+					<option value="el">Greek</option>
+					<option value="en">English</option>
+					<option value="es">Spanish</option>
+					<option value="fa">Farsi / Persian</option>
+					<option value="fr">French</option>
+					<option value="he">Hebrew</option>
+					<option value="it">Italian</option>
+					<option value="ja">Japanese</option>
+					<option value="ko">Korean</option>
+					<option value="nl">Dutch</option>
+					<option value="no">Norwegian</option>
+					<option value="pl">Polish</option>
+					<option value="pt">Portuguese</option>
+					<option value="ru">Russian</option>
+					<option value="sv">Swedish</option>
+					<option value="th">Thai</option>
+					<option value="tr">Turkish</option>
+					<option value="uk">Ukrainian</option>
+					<option value="zh">Chinese</option>
+				</select>
+			</div>
+		</details>
+
+		<button type="submit" class="btn btn-primary">Normalise</button>
+		<div class="htmx-indicator muted">Normalising text...</div>
+	</form>
+
+	<div id="paste-result" class="results-block"></div>
+</section>
+
+<script>
+	const input = document.getElementById('original-text');
+	const counter = document.getElementById('char-counter');
+	const syncCounter = () => { counter.textContent = `${input.value.length} / 2,000`; };
+	input.addEventListener('input', syncCounter);
+	syncCounter();
+</script>
+{% endblock %}

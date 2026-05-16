@@ -61,6 +61,10 @@ def _apply_bgn_pcgn_corrections(text: str) -> str:
     text = _WORD_INITIAL_E_RE.sub(
         lambda m: "Ye" if m.group(1).isupper() else "ye", text
     )
+    # BGN/PCGN Table 1 Rule 7: й → y in word-final position (Aleksej → Aleksey).
+    text = re.sub(r'([Jj])\b', lambda m: 'Y' if m.group(1).isupper() else 'y', text)
+    # BGN/PCGN Table 1 Rule 7: й → y before a vowel (pre-vowel position).
+    text = re.sub(r'([Jj])([AaEeIiOoUu])', lambda m: ('Y' if m.group(1).isupper() else 'y') + m.group(2), text)
     return text
 
 
@@ -146,6 +150,9 @@ def _transliterate_cyrillic(text: str, language: str) -> dict:
     # The transliterate library emits a literal apostrophe for the Cyrillic soft sign
     # (e.g. NATAL'JA, JUR'EVICH).  Strip it — the soft sign has no Latin equivalent
     # in ICAO/BGN romanisation.
+    # BGN/PCGN: soft sign before е palatalises → ye (Юрьевич → Yuryevich).
+    # Must be done BEFORE stripping the apostrophe.
+    lat = lat.replace("'e", "ye").replace("'E", "Ye")
     lat = lat.replace("'", "")
 
     # Apply BGN/PCGN corrections for Russian and Ukrainian only.
@@ -699,6 +706,59 @@ def _normalise_italian(text: str, field_type: str) -> dict:
     return result
 
 
+def _transliterate_hebrew(text: str) -> dict:
+    """Hebrew → Latin transliteration using the transliterate library (ISO 259).
+
+    Final letter forms (ך ם ן ף ץ) are the same phonemes as (כ מ נ פ צ)
+    written differently at word end — the library handles them correctly.
+    Shin (שׁ) → SH; unvocalised ש defaults to SH (most common in names).
+    review_required: False for standard output.
+    """
+    try:
+        from transliterate import translit
+        lat = translit(text, "he", reversed=True)
+    except Exception:
+        lat = _to_latin_fallback(text)
+    return _build_result(text, lat)
+
+
+def _transliterate_persian(text: str) -> dict:
+    """Persian/Farsi → Latin consonant skeleton.
+
+    Persian is a vowel-omitting abjad: short vowels are not written in standard
+    text. Result is always flagged review_required=True because the output cannot
+    be a confirmed romanisation without vowel insertion.
+    """
+    try:
+        from transliterate import translit
+        lat = translit(text, "fa", reversed=True)
+    except Exception:
+        lat = _to_latin_fallback(text)
+    return _build_result(
+        text, lat,
+        review=True,
+        reason=(
+            "Persian vowel ambiguity: short vowels are not written in standard text. "
+            "Result is a consonant skeleton only. Native speaker review required."
+        ),
+    )
+
+
+def _transliterate_thai(text: str) -> dict:
+    """Thai → Latin using Royal Thai General System of Transcription (RTGS)
+    via the transliterate library.
+
+    Tones are not represented in RTGS output — correct for KYC purposes.
+    review_required: False for standard output.
+    """
+    try:
+        from transliterate import translit
+        lat = translit(text, "th", reversed=True)
+    except Exception:
+        lat = _to_latin_fallback(text)
+    return _build_result(text, lat)
+
+
 def _normalise_korean(text: str, field_type: str) -> dict:
     """Normalise Korean Hangul text using Revised Romanisation of Korea (RR).
 
@@ -735,7 +795,14 @@ def _normalise_korean(text: str, field_type: str) -> dict:
         # Romanise the first syllable (surname) and the remainder (given name)
         # separately so that a space is inserted between them, matching the
         # KYC convention "BAK JIHUN" rather than the fused form "BAKJIHUN".
-        surname_rom = _rom(text[0])
+        surname_char = text[0]
+        if surname_char in KOREAN_SURNAME_VARIANTS:
+            # Use family-preference form (first entry) as primary — this is
+            # the form dominant on passports, bank records and KYC watchlists.
+            surname_rom = KOREAN_SURNAME_VARIANTS[surname_char][0]
+        else:
+            # Surname not in lookup — fall back to RR romanisation.
+            surname_rom = _rom(surname_char)
         given_rom = _rom(text[1:])
         romanised = f"{surname_rom} {given_rom}" if given_rom else surname_rom
     else:
@@ -873,6 +940,12 @@ def transliterate(text: str, row: dict) -> dict:
         return _normalise_korean(text, field_type)
     elif language == "en":
         return _normalise_english(text, field_type)
+    elif language == "he":
+        return _transliterate_hebrew(text)
+    elif language == "fa":
+        return _transliterate_persian(text)
+    elif language == "th":
+        return _transliterate_thai(text)
     else:
         lat = _to_latin_fallback(text)
         return _build_result(

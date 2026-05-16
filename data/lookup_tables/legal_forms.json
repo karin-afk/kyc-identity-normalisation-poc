@@ -1,0 +1,368 @@
+{
+  "_note": "Keyed by ISO 3166-1 alpha-2 country code. Values are uppercase canonical abbreviations used in KYC screening databases. Abbreviated forms only — no full written-out legal names.",
+
+  "AE": {
+    "LLC": "LLC",
+    "PJSC": "PJSC",
+    "PSC": "PSC",
+    "FZ LLC": "FZ LLC",
+    "FZ CO": "FZ CO",
+    "FZCO": "FZCO",
+    "FZE": "FZE",
+    "EST": "EST",
+    "ش.م.م": "LLC",
+    "ش.م.ع": "PJSC",
+    "م.م.ح": "LLC",
+    "ف.ز": "FZ LLC",
+    "م.ف.ز": "FZE"
+  },
+
+  "AT": {
+    "GmbH": "GMBH",
+    "AG": "AG",
+    "KG": "KG",
+    "OG": "OG",
+    "EG": "COOP",
+    "GesnbR": "GESNBR",
+    "eU": "EU"
+  },
+
+  "AU": {
+    "Pty Ltd": "PTY LTD",
+    "Pty. Ltd.": "PTY LTD",
+    "Ltd": "LTD",
+    "Ltd.": "LTD",
+    "No Liability": "NL",
+    "NL": "NL",
+    "Inc": "INC",
+    "Inc.": "INC",
+    "ATFT": "ATFT"
+  },
+
+  "BE": {
+    "NV": "NV",
+    "SA": "SA",
+    "BV": "BV",
+    "SRL": "SRL",
+    "BVBA": "BVBA",
+    "SPRL": "SPRL",
+    "CV": "CV",
+    "CVBA": "CVBA",
+    "SCRL": "SCRL",
+    "VZW": "VZW",
+    "ASBL": "ASBL",
+    "Comm.V": "COMMV",
+    "SNC": "SNC"
+  },
+
+  "BR": {
+    "SA": "SA",
+    "S.A.": "SA",
+    "Ltda": "LTDA",
+    "Ltda.": "LTDA",
+    "EIRELI": "EIRELI",
+    "MEI": "MEI",
+    "SS": "SS",
+    "SLU": "SLU"
+  },
+
+  "CA": {
+    "Inc": "INC",
+    "Inc.": "INC",
+    "Ltd": "LTD",
+    "Ltd.": "LTD",
+    "Corp": "CORP",
+    "Corp.": "CORP",
+    "Ltée": "LTEE",
+    "Ltee": "LTEE",
+    "ULC": "ULC",
+    "LP": "LP",
+    "LLP": "LLP"
+  },
+
+  "CN": {
+    "有限责任公司": "LLC",
+    "股份有限公司": "JSC",
+    "外商独资企业": "WFOE",
+    "合伙企业": "PART",
+    "个人独资企业": "SOLE",
+    "有限合伙企业": "LP"
+  },
+
+  "DE": {
+    "GmbH": "GMBH",
+    "AG": "AG",
+    "KG": "KG",
+    "OHG": "OHG",
+    "GbR": "GBR",
+    "UG": "UG",
+    "eG": "COOP",
+    "KGaA": "KGAA",
+    "PartG": "PARTG",
+    "PartGmbB": "PARTGMBB"
+  },
+
+  "EG": {
+    "SAE": "SAE",
+    "LLC": "LLC",
+    "شركة مساهمة": "SAE",
+    "ش.م.م": "LLC",
+    "ش.م.": "SAE",
+    "شركة ذات مسؤولية محدودة": "LLC",
+    "شركة توصية بالأسهم": "SCA",
+    "شركة تضامن": "GP",
+    "شركة محدودة": "LTD"
+  },
+
+  "ES": {
+    "SA": "SA",
+    "SL": "SL",
+    "SLU": "SLU",
+    "SC": "SC",
+    "SCA": "SCA",
+    "SLL": "SLL",
+    "SAU": "SAU",
+    "CB": "CB",
+    "AIE": "AIE"
+  },
+
+  "FR": {
+    "SA": "SA",
+    "SAS": "SAS",
+    "SASU": "SASU",
+    "SARL": "SARL",
+    "S.A.R.L.": "SARL",
+    "EURL": "EURL",
+    "SNC": "SNC",
+    "SCA": "SCA",
+    "SCS": "SCS",
+    "SCI": "SCI",
+    "GIE": "GIE",
+    "SCOP": "SCOP",
+    "SE": "SE"
+  },
+
+  "GB": {
+    "Ltd": "LTD",
+    "Ltd.": "LTD",
+    "Limited": "LTD",
+    "PLC": "PLC",
+    "LLP": "LLP",
+    "LP": "LP",
+    "CIC": "CIC",
+    "CIO": "CIO",
+    "LBG": "LBG",
+    "SICAR": "SICAR"
+  },
+
+  "GR": {
+    "ΑΕ": "SA",
+    "Α.Ε.": "SA",
+    "ΕΠΕ": "LLC",
+    "Ε.Π.Ε.": "LLC",
+    "ΟΕ": "GP",
+    "Ο.Ε.": "GP",
+    "ΕΕ": "LP",
+    "Ε.Ε.": "LP",
+    "ΙΚΕ": "IKE",
+    "Ι.Κ.Ε.": "IKE",
+    "ΑΕΒΕ": "SA"
+  },
+
+  "HK": {
+    "Ltd": "LTD",
+    "Ltd.": "LTD",
+    "Limited": "LTD",
+    "有限公司": "LTD",
+    "私人有限公司": "PTE LTD",
+    "Pte Ltd": "PTE LTD",
+    "UC": "UC"
+  },
+
+  "IE": {
+    "Ltd": "LTD",
+    "Ltd.": "LTD",
+    "Limited": "LTD",
+    "PLC": "PLC",
+    "DAC": "DAC",
+    "LTD": "LTD",
+    "UC": "UC",
+    "CLS": "CLS",
+    "ICAV": "ICAV",
+    "UCITS": "UCITS"
+  },
+
+  "IL": {
+    "בע\"מ": "LTD",
+    "ע\"ר": "NPO",
+    "שותפות": "PART",
+    "שותפות מוגבלת": "LP",
+    "חברה ציבורית": "PLC"
+  },
+
+  "IN": {
+    "Ltd": "LTD",
+    "Ltd.": "LTD",
+    "Pvt Ltd": "PVT LTD",
+    "Pvt. Ltd.": "PVT LTD",
+    "Private Limited": "PVT LTD",
+    "Public Limited": "LTD",
+    "LLP": "LLP",
+    "OPC": "OPC",
+    "NBFC": "NBFC"
+  },
+
+  "IT": {
+    "SpA": "SPA",
+    "S.p.A.": "SPA",
+    "Srl": "SRL",
+    "S.r.l.": "SRL",
+    "Srl a socio unico": "SRL",
+    "Snc": "SNC",
+    "S.n.c.": "SNC",
+    "Sas": "SAS",
+    "S.a.s.": "SAS",
+    "SS": "SS",
+    "SE": "SE",
+    "Scarl": "SCARL"
+  },
+
+  "JP": {
+    "株式会社": "KK",
+    "合同会社": "GK",
+    "有限会社": "YK",
+    "合資会社": "KS",
+    "合名会社": "KM",
+    "一般社団法人": "CORP",
+    "一般財団法人": "FOUND",
+    "医療法人": "MED CORP",
+    "学校法人": "EDU CORP",
+    "農業協同組合": "AG COOP"
+  },
+
+  "KR": {
+    "주식회사": "CO LTD",
+    "유한회사": "LLC",
+    "합자회사": "LP",
+    "합명회사": "GP",
+    "유한책임회사": "LLC",
+    "사회적협동조합": "SOC COOP"
+  },
+
+  "NL": {
+    "BV": "BV",
+    "B.V.": "BV",
+    "NV": "NV",
+    "N.V.": "NV",
+    "VOF": "VOF",
+    "CV": "CV",
+    "Coöp": "COOP",
+    "SE": "SE",
+    "Stichting": "FOUND"
+  },
+
+  "PT": {
+    "SA": "SA",
+    "S.A.": "SA",
+    "Lda": "LDA",
+    "Lda.": "LDA",
+    "Unipessoal Lda": "UNIPESSOAL LDA",
+    "SGPS": "SGPS",
+    "ACE": "ACE",
+    "AEIE": "AEIE"
+  },
+
+  "RU": {
+    "ООО": "LLC",
+    "ПАО": "PJSC",
+    "АО": "JSC",
+    "ЗАО": "CJSC",
+    "ОАО": "OJSC",
+    "ИП": "IE",
+    "НКО": "NPO",
+    "ГУП": "SUE",
+    "МУП": "MUE",
+    "АНО": "ANO"
+  },
+
+  "SA": {
+    "شركة مساهمة": "JSC",
+    "ش.م.": "JSC",
+    "شركة ذات مسؤولية محدودة": "LLC",
+    "ش.ذ.م.م": "LLC",
+    "مؤسسة": "EST",
+    "شركة تضامن": "GP",
+    "شركة توصية": "LP"
+  },
+
+  "SG": {
+    "Pte Ltd": "PTE LTD",
+    "Pte. Ltd.": "PTE LTD",
+    "Ltd": "LTD",
+    "Ltd.": "LTD",
+    "LLP": "LLP",
+    "LP": "LP",
+    "VCC": "VCC"
+  },
+
+  "TH": {
+    "บจก.": "CO LTD",
+    "บริษัท จำกัด": "CO LTD",
+    "บมจ.": "PLC",
+    "บริษัท มหาชน จำกัด": "PLC",
+    "หจก.": "LP",
+    "ห้างหุ้นส่วนจำกัด": "LP",
+    "ห้างหุ้นส่วนสามัญ": "GP"
+  },
+
+  "TR": {
+    "A.Ş.": "JSC",
+    "AŞ": "JSC",
+    "Ltd. Şti.": "LLC",
+    "Ltd.Şti.": "LLC",
+    "Koll. Şti.": "GP",
+    "Kom. Şti.": "LP",
+    "Kooperatif": "COOP"
+  },
+
+  "UA": {
+    "ТОВ": "LLC",
+    "ПАТ": "PJSC",
+    "ПрАТ": "PrJSC",
+    "ФОП": "SOLE",
+    "ДП": "SE",
+    "КП": "ME"
+  },
+
+  "US": {
+    "Inc": "INC",
+    "Inc.": "INC",
+    "Corp": "CORP",
+    "Corp.": "CORP",
+    "LLC": "LLC",
+    "L.L.C.": "LLC",
+    "LP": "LP",
+    "L.P.": "LP",
+    "LLP": "LLP",
+    "L.L.P.": "LLP",
+    "Ltd": "LTD",
+    "Ltd.": "LTD",
+    "PC": "PC",
+    "P.C.": "PC",
+    "PA": "PA",
+    "P.A.": "PA",
+    "PLLC": "PLLC",
+    "NA": "NA",
+    "FSB": "FSB"
+  },
+
+  "MX": {
+    "SA de CV": "SA DE CV",
+    "SAB de CV": "SAB DE CV",
+    "S.A.B. de C.V.": "SAB DE CV",
+    "SAPI de CV": "SAPI DE CV",
+    "SC": "SC",
+    "SRL de CV": "SRL DE CV",
+    "AC": "AC"
+  }
+}

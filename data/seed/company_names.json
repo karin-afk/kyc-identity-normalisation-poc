@@ -1,0 +1,345 @@
+[
+  {
+    "_note": "This file is a structural seed only. It contains illustrative examples of high-frequency company names across target languages to validate JSON structure and demonstrate the token-level matching pattern. It is NOT exhaustive. New entries are added automatically to the verified repository when confirmed by a native speaker or analyst. Do not manually maintain this file as the primary source of company name translations — the verified repository database is the live source of truth.",
+    "_how_to_add": "Add entries in the same format below. The 'token' field is the company name exactly as it appears in source documents (original script). The 'romanised_form' is the uppercase English form used in KYC screening databases. The 'allowed_variants' list covers other forms that appear on sanctions databases for the same entity.",
+    "_token_matching": "Tokens are also stored individually. '三菱商事株式会社' stores '三菱' and '商事' as separate tokens, so future documents containing '三菱UFJ' will resolve '三菱' from the token store without a new review."
+  },
+
+  {
+    "_comment": "JAPAN — Major trading houses and financial institutions"
+  },
+  {
+    "token": "三菱商事株式会社",
+    "language_code": "ja",
+    "field_type": "company_name",
+    "romanised_form": "MITSUBISHI CORPORATION KK",
+    "allowed_variants": ["MITSUBISHI CORPORATION", "MITSUBISHI SHOJI KABUSHIKI KAISHA", "MITSUBISHI CORP KK"]
+  },
+  {
+    "token": "三井物産株式会社",
+    "language_code": "ja",
+    "field_type": "company_name",
+    "romanised_form": "MITSUI AND CO LTD",
+    "allowed_variants": ["MITSUI AND CO", "MITSUI BUSSAN KABUSHIKI KAISHA", "MITSUI CO LTD"]
+  },
+  {
+    "token": "住友商事株式会社",
+    "language_code": "ja",
+    "field_type": "company_name",
+    "romanised_form": "SUMITOMO CORPORATION KK",
+    "allowed_variants": ["SUMITOMO CORPORATION", "SUMITOMO SHOJI KABUSHIKI KAISHA"]
+  },
+  {
+    "token": "伊藤忠商事株式会社",
+    "language_code": "ja",
+    "field_type": "company_name",
+    "romanised_form": "ITOCHU CORPORATION KK",
+    "allowed_variants": ["ITOCHU CORPORATION", "ITOCHU SHOJI KABUSHIKI KAISHA"]
+  },
+  {
+    "token": "丸紅株式会社",
+    "language_code": "ja",
+    "field_type": "company_name",
+    "romanised_form": "MARUBENI CORPORATION KK",
+    "allowed_variants": ["MARUBENI CORPORATION", "MARUBENI KABUSHIKI KAISHA"]
+  },
+  {
+    "token": "トヨタ自動車株式会社",
+    "language_code": "ja",
+    "field_type": "company_name",
+    "romanised_form": "TOYOTA MOTOR CORPORATION KK",
+    "allowed_variants": ["TOYOTA MOTOR CORPORATION", "TOYOTA JIDOSHA KABUSHIKI KAISHA"]
+  },
+  {
+    "token": "株式会社三菱UFJフィナンシャル・グループ",
+    "language_code": "ja",
+    "field_type": "company_name",
+    "romanised_form": "MITSUBISHI UFJ FINANCIAL GROUP INC",
+    "allowed_variants": ["MUFG", "MITSUBISHI UFJ FINANCIAL GROUP", "MUFG BANK"]
+  },
+  {
+    "token": "株式会社みずほフィナンシャルグループ",
+    "language_code": "ja",
+    "field_type": "company_name",
+    "romanised_form": "MIZUHO FINANCIAL GROUP INC",
+    "allowed_variants": ["MIZUHO FINANCIAL GROUP", "MIZUHO BANK"]
+  },
+  {
+    "token": "株式会社三井住友フィナンシャルグループ",
+    "language_code": "ja",
+    "field_type": "company_name",
+    "romanised_form": "SUMITOMO MITSUI FINANCIAL GROUP INC",
+    "allowed_variants": ["SMFG", "SMBC", "SUMITOMO MITSUI BANKING CORPORATION"]
+  },
+
+  {
+    "_comment": "JAPAN — Token-level entries for common corporate name stems"
+  },
+  {
+    "token": "三菱",
+    "language_code": "ja",
+    "field_type": "company_name",
+    "romanised_form": "MITSUBISHI",
+    "allowed_variants": []
+  },
+  {
+    "token": "三井",
+    "language_code": "ja",
+    "field_type": "company_name",
+    "romanised_form": "MITSUI",
+    "allowed_variants": []
+  },
+  {
+    "token": "住友",
+    "language_code": "ja",
+    "field_type": "company_name",
+    "romanised_form": "SUMITOMO",
+    "allowed_variants": []
+  },
+  {
+    "token": "伊藤忠",
+    "language_code": "ja",
+    "field_type": "company_name",
+    "romanised_form": "ITOCHU",
+    "allowed_variants": []
+  },
+
+  {
+    "_comment": "CHINA — Major state-owned enterprises and financial institutions"
+  },
+  {
+    "token": "中国石油天然气股份有限公司",
+    "language_code": "zh",
+    "field_type": "company_name",
+    "romanised_form": "PETROCHINA COMPANY LIMITED",
+    "allowed_variants": ["PETROCHINA CO LTD", "CNPC", "CHINA NATIONAL PETROLEUM CORPORATION"]
+  },
+  {
+    "token": "中国石油化工股份有限公司",
+    "language_code": "zh",
+    "field_type": "company_name",
+    "romanised_form": "CHINA PETROLEUM AND CHEMICAL CORPORATION",
+    "allowed_variants": ["SINOPEC", "SINOPEC CORP", "SINOPEC GROUP"]
+  },
+  {
+    "token": "中国工商银行股份有限公司",
+    "language_code": "zh",
+    "field_type": "company_name",
+    "romanised_form": "INDUSTRIAL AND COMMERCIAL BANK OF CHINA LIMITED",
+    "allowed_variants": ["ICBC", "ICBC LIMITED"]
+  },
+  {
+    "token": "中国建设银行股份有限公司",
+    "language_code": "zh",
+    "field_type": "company_name",
+    "romanised_form": "CHINA CONSTRUCTION BANK CORPORATION",
+    "allowed_variants": ["CCB", "CHINA CONSTRUCTION BANK"]
+  },
+  {
+    "token": "中国银行股份有限公司",
+    "language_code": "zh",
+    "field_type": "company_name",
+    "romanised_form": "BANK OF CHINA LIMITED",
+    "allowed_variants": ["BOC", "BANK OF CHINA"]
+  },
+  {
+    "token": "阿里巴巴集团控股有限公司",
+    "language_code": "zh",
+    "field_type": "company_name",
+    "romanised_form": "ALIBABA GROUP HOLDING LIMITED",
+    "allowed_variants": ["ALIBABA GROUP", "ALIBABA HOLDING"]
+  },
+  {
+    "token": "腾讯控股有限公司",
+    "language_code": "zh",
+    "field_type": "company_name",
+    "romanised_form": "TENCENT HOLDINGS LIMITED",
+    "allowed_variants": ["TENCENT HOLDINGS", "TENCENT"]
+  },
+
+  {
+    "_comment": "SAUDI ARABIA — Major state-owned and sovereign entities"
+  },
+  {
+    "token": "أرامكو السعودية",
+    "language_code": "ar",
+    "country_code": "SA",
+    "field_type": "company_name",
+    "romanised_form": "SAUDI ARAMCO",
+    "allowed_variants": ["SAUDI ARABIAN OIL COMPANY", "ARAMCO", "SAUDI ARAMCO JSC"]
+  },
+  {
+    "token": "شركة أرامكو السعودية",
+    "language_code": "ar",
+    "country_code": "SA",
+    "field_type": "company_name",
+    "romanised_form": "SAUDI ARABIAN OIL COMPANY",
+    "allowed_variants": ["SAUDI ARAMCO", "ARAMCO"]
+  },
+  {
+    "token": "صندوق الاستثمارات العامة",
+    "language_code": "ar",
+    "country_code": "SA",
+    "field_type": "company_name",
+    "romanised_form": "PUBLIC INVESTMENT FUND",
+    "allowed_variants": ["PIF", "PIF SAUDI ARABIA"]
+  },
+  {
+    "token": "سابك",
+    "language_code": "ar",
+    "country_code": "SA",
+    "field_type": "company_name",
+    "romanised_form": "SABIC",
+    "allowed_variants": ["SAUDI BASIC INDUSTRIES CORPORATION", "SAUDI BASIC INDUSTRIES"]
+  },
+
+  {
+    "_comment": "UAE — Major entities"
+  },
+  {
+    "token": "أبوظبي للاستثمار",
+    "language_code": "ar",
+    "country_code": "AE",
+    "field_type": "company_name",
+    "romanised_form": "ABU DHABI INVESTMENT AUTHORITY",
+    "allowed_variants": ["ADIA"]
+  },
+  {
+    "token": "مجموعة موانئ دبي العالمية",
+    "language_code": "ar",
+    "country_code": "AE",
+    "field_type": "company_name",
+    "romanised_form": "DP WORLD GROUP",
+    "allowed_variants": ["DP WORLD", "DUBAI PORTS WORLD"]
+  },
+  {
+    "token": "إعمار العقارية",
+    "language_code": "ar",
+    "country_code": "AE",
+    "field_type": "company_name",
+    "romanised_form": "EMAAR PROPERTIES PJSC",
+    "allowed_variants": ["EMAAR PROPERTIES", "EMAAR"]
+  },
+
+  {
+    "_comment": "RUSSIA — Major energy and financial companies"
+  },
+  {
+    "token": "Публичное акционерное общество «Газпром»",
+    "language_code": "ru",
+    "field_type": "company_name",
+    "romanised_form": "GAZPROM PJSC",
+    "allowed_variants": ["GAZPROM", "PAO GAZPROM", "PJSC GAZPROM"]
+  },
+  {
+    "token": "ПАО «Газпром»",
+    "language_code": "ru",
+    "field_type": "company_name",
+    "romanised_form": "GAZPROM PJSC",
+    "allowed_variants": ["GAZPROM", "PAO GAZPROM"]
+  },
+  {
+    "token": "Публичное акционерное общество «Роснефть»",
+    "language_code": "ru",
+    "field_type": "company_name",
+    "romanised_form": "ROSNEFT OIL COMPANY PJSC",
+    "allowed_variants": ["ROSNEFT", "PAO ROSNEFT", "ROSNEFT PJSC"]
+  },
+  {
+    "token": "Сбербанк России",
+    "language_code": "ru",
+    "field_type": "company_name",
+    "romanised_form": "SBERBANK OF RUSSIA",
+    "allowed_variants": ["SBERBANK", "SBERBANK PJSC"]
+  },
+  {
+    "token": "ВТБ",
+    "language_code": "ru",
+    "field_type": "company_name",
+    "romanised_form": "VTB BANK PJSC",
+    "allowed_variants": ["VTB", "VTB BANK", "BANK VTB"]
+  },
+
+  {
+    "_comment": "KOREA — Major conglomerates"
+  },
+  {
+    "token": "삼성전자 주식회사",
+    "language_code": "ko",
+    "field_type": "company_name",
+    "romanised_form": "SAMSUNG ELECTRONICS CO LTD",
+    "allowed_variants": ["SAMSUNG ELECTRONICS", "SAMSUNG ELECTRONICS COMPANY"]
+  },
+  {
+    "token": "현대자동차 주식회사",
+    "language_code": "ko",
+    "field_type": "company_name",
+    "romanised_form": "HYUNDAI MOTOR COMPANY",
+    "allowed_variants": ["HYUNDAI MOTOR CO", "HYUNDAI MOTOR CO LTD"]
+  },
+  {
+    "token": "주식회사 하나은행",
+    "language_code": "ko",
+    "field_type": "company_name",
+    "romanised_form": "HANA BANK CO LTD",
+    "allowed_variants": ["HANA BANK", "HANA FINANCIAL GROUP"]
+  },
+
+  {
+    "_comment": "GREECE — Common corporate structures"
+  },
+  {
+    "token": "Εθνική Τράπεζα της Ελλάδος Α.Ε.",
+    "language_code": "el",
+    "field_type": "company_name",
+    "romanised_form": "NATIONAL BANK OF GREECE SA",
+    "allowed_variants": ["NBG", "NATIONAL BANK OF GREECE", "ETHNIKI TRAPEZA ELLADOS"]
+  },
+  {
+    "token": "Άλφα Τράπεζα Α.Ε.",
+    "language_code": "el",
+    "field_type": "company_name",
+    "romanised_form": "ALPHA BANK SA",
+    "allowed_variants": ["ALPHA BANK", "ALPHA TRAPEZA"]
+  },
+
+  {
+    "_comment": "HONG KONG — Common corporate names"
+  },
+  {
+    "token": "匯豐控股有限公司",
+    "language_code": "zh",
+    "country_code": "HK",
+    "field_type": "company_name",
+    "romanised_form": "HSBC HOLDINGS PLC",
+    "allowed_variants": ["HSBC HOLDINGS", "HSBC", "HONGKONG AND SHANGHAI BANKING CORPORATION"]
+  },
+  {
+    "token": "長江和記實業有限公司",
+    "language_code": "zh",
+    "country_code": "HK",
+    "field_type": "company_name",
+    "romanised_form": "CK HUTCHISON HOLDINGS LIMITED",
+    "allowed_variants": ["CK HUTCHISON", "HUTCHISON WHAMPOA"]
+  },
+
+  {
+    "_comment": "SINGAPORE — Common corporate names"
+  },
+  {
+    "token": "DBS Group Holdings Ltd",
+    "language_code": "en",
+    "country_code": "SG",
+    "field_type": "company_name",
+    "romanised_form": "DBS GROUP HOLDINGS LTD",
+    "allowed_variants": ["DBS BANK", "DBS GROUP", "DEVELOPMENT BANK OF SINGAPORE"]
+  },
+  {
+    "token": "Oversea-Chinese Banking Corporation Limited",
+    "language_code": "en",
+    "country_code": "SG",
+    "field_type": "company_name",
+    "romanised_form": "OVERSEA-CHINESE BANKING CORPORATION LIMITED",
+    "allowed_variants": ["OCBC", "OCBC BANK", "OCBC LIMITED"]
+  }
+]

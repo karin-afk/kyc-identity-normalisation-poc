@@ -1,0 +1,128 @@
+{
+  "_note": "Keyed by ISO 3166-1 alpha-2 country code. Values are uppercase canonical English authority names.",
+  "JP": {
+    "外務省": "MINISTRY OF FOREIGN AFFAIRS",
+    "法務省": "MINISTRY OF JUSTICE",
+    "警察庁": "NATIONAL POLICE AGENCY",
+    "公安委員会": "PUBLIC SAFETY COMMISSION",
+    "東京都公安委員会": "TOKYO METROPOLITAN PUBLIC SAFETY COMMISSION",
+    "大阪府公安委員会": "OSAKA PREFECTURAL PUBLIC SAFETY COMMISSION",
+    "法務局": "LEGAL AFFAIRS BUREAU",
+    "東京法務局": "TOKYO LEGAL AFFAIRS BUREAU",
+    "大阪法務局": "OSAKA LEGAL AFFAIRS BUREAU"
+  },
+  "AE": {
+    "وزارة الداخلية": "MINISTRY OF INTERIOR",
+    "الهيئة الاتحادية للهوية والجنسية": "FEDERAL AUTHORITY FOR IDENTITY AND CITIZENSHIP",
+    "دائرة التنمية الاقتصادية": "DEPARTMENT OF ECONOMIC DEVELOPMENT",
+    "دائرة التنمية الاقتصادية - دبي": "DUBAI DEPARTMENT OF ECONOMIC DEVELOPMENT"
+  },
+  "SA": {
+    "وزارة الداخلية": "MINISTRY OF INTERIOR",
+    "الأحوال المدنية": "GENERAL DIRECTORATE OF CIVIL STATUS",
+    "وزارة الخارجية": "MINISTRY OF FOREIGN AFFAIRS",
+    "وزارة التجارة": "MINISTRY OF COMMERCE"
+  },
+  "EG": {
+    "وزارة الداخلية": "MINISTRY OF INTERIOR",
+    "مصلحة الجوازات والهجرة والجنسية": "PASSPORTS IMMIGRATION AND NATIONALITY AUTHORITY",
+    "مصلحة السجل التجاري": "COMMERCIAL REGISTRY AUTHORITY",
+    "الهيئة العامة للاستثمار والمناطق الحرة": "GENERAL AUTHORITY FOR INVESTMENT AND FREE ZONES"
+  },
+  "RU": {
+    "МВД России": "MINISTRY OF INTERNAL AFFAIRS OF RUSSIA",
+    "ФНС России": "FEDERAL TAX SERVICE OF RUSSIA",
+    "ФМС России": "FEDERAL MIGRATION SERVICE OF RUSSIA"
+  },
+  "UA": {
+    "МВС України": "MINISTRY OF INTERNAL AFFAIRS OF UKRAINE",
+    "Державна міграційна служба України": "STATE MIGRATION SERVICE OF UKRAINE",
+    "Міністерство юстиції України": "MINISTRY OF JUSTICE OF UKRAINE"
+  },
+  "DE": {
+    "Bundesministerium der Justiz": "FEDERAL MINISTRY OF JUSTICE",
+    "Amtsgericht": "LOCAL COURT",
+    "Handelsregister": "COMMERCIAL REGISTER"
+  },
+  "GB": {
+    "Companies House": "COMPANIES HOUSE",
+    "HM Passport Office": "HM PASSPORT OFFICE",
+    "Home Office": "HOME OFFICE"
+  },
+  "SG": {
+    "Accounting and Corporate Regulatory Authority": "ACCOUNTING AND CORPORATE REGULATORY AUTHORITY",
+    "Immigration and Checkpoints Authority": "IMMIGRATION AND CHECKPOINTS AUTHORITY",
+    "Ministry of Home Affairs": "MINISTRY OF HOME AFFAIRS"
+  },
+  "IN": {
+    "Ministry of Corporate Affairs": "MINISTRY OF CORPORATE AFFAIRS",
+    "Registrar of Companies": "REGISTRAR OF COMPANIES",
+    "Ministry of External Affairs": "MINISTRY OF EXTERNAL AFFAIRS"
+  },
+  "TH": {
+    "กรมพัฒนาธุรกิจการค้า": "DEPARTMENT OF BUSINESS DEVELOPMENT",
+    "กระทรวงพาณิชย์": "MINISTRY OF COMMERCE",
+    "กระทรวงมหาดไทย": "MINISTRY OF INTERIOR"
+  },
+  "TR": {
+    "İçişleri Bakanlığı": "MINISTRY OF INTERIOR",
+    "Ticaret Bakanlığı": "MINISTRY OF TRADE",
+    "Nüfus ve Vatandaşlık İşleri Genel Müdürlüğü": "DIRECTORATE GENERAL OF POPULATION AND CITIZENSHIP"
+  },
+  "IL": {
+    "משרד הפנים": "MINISTRY OF INTERIOR",
+    "רשות האוכלוסין וההגירה": "POPULATION AND IMMIGRATION AUTHORITY",
+    "רשם החברות": "REGISTRAR OF COMPANIES"
+  },
+  "KR": {
+    "법무부": "MINISTRY OF JUSTICE",
+    "행정안전부": "MINISTRY OF THE INTERIOR AND SAFETY",
+    "대법원": "SUPREME COURT OF KOREA"
+  },
+  "CN": {
+    "中华人民共和国公安部": "MINISTRY OF PUBLIC SECURITY",
+    "国家市场监督管理总局": "STATE ADMINISTRATION FOR MARKET REGULATION",
+    "中华人民共和国外交部": "MINISTRY OF FOREIGN AFFAIRS"
+  },
+  "HK": {
+    "公司註冊處": "COMPANIES REGISTRY",
+    "入境事務處": "IMMIGRATION DEPARTMENT",
+    "香港警務處": "HONG KONG POLICE FORCE"
+  },
+  "FR": {
+    "Ministère de l'Intérieur": "MINISTRY OF THE INTERIOR",
+    "Greffe du Tribunal de Commerce": "COMMERCIAL COURT REGISTRY",
+    "INPI": "NATIONAL INSTITUTE OF INDUSTRIAL PROPERTY"
+  },
+  "IT": {
+    "Ministero dell'Interno": "MINISTRY OF THE INTERIOR",
+    "Camera di Commercio": "CHAMBER OF COMMERCE",
+    "Agenzia delle Entrate": "REVENUE AGENCY"
+  },
+  "ES": {
+    "Ministerio del Interior": "MINISTRY OF THE INTERIOR",
+    "Registro Mercantil": "COMMERCIAL REGISTRY",
+    "Dirección General de la Policía": "NATIONAL POLICE DIRECTORATE"
+  },
+  "PT": {
+    "Ministério da Administração Interna": "MINISTRY OF INTERNAL ADMINISTRATION",
+    "Instituto dos Registos e do Notariado": "INSTITUTE OF REGISTRIES AND NOTARY",
+    "Conservatória do Registo Comercial": "COMMERCIAL REGISTRY OFFICE"
+  },
+  "NL": {
+    "Kamer van Koophandel": "CHAMBER OF COMMERCE",
+    "Ministerie van Justitie en Veiligheid": "MINISTRY OF JUSTICE AND SECURITY"
+  },
+  "BE": {
+    "FOD Justitie": "FEDERAL PUBLIC SERVICE JUSTICE",
+    "Kruispuntbank van Ondernemingen": "CROSSROADS BANK FOR ENTERPRISES"
+  },
+  "IE": {
+    "Companies Registration Office": "COMPANIES REGISTRATION OFFICE",
+    "Department of Justice": "DEPARTMENT OF JUSTICE"
+  },
+  "GR": {
+    "Υπουργείο Εσωτερικών": "MINISTRY OF INTERIOR",
+    "Γενικό Εμπορικό Μητρώο": "GENERAL COMMERCIAL REGISTRY"
+  }
+}

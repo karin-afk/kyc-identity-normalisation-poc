@@ -1,3 +1,27 @@
 ﻿{% extends "base.html" %}
-{% block title %}Paste{% endblock %}
-{% block content %}Placeholder{% endblock %}
+{% block title %}Sentence Normalisation{% endblock %}
+{% block content %}
+<section class="section">
+	<h1 class="page-title">Sentence Normalisation</h1>
+	<p class="page-subtitle">Paste a name, address, company name, date, or short phrase. The tool normalises it to English. Maximum 2,000 characters.</p>
+
+	<form class="stack-20" hx-post="{{ url_for('paste.translate') }}" hx-target="#paste-result" hx-swap="innerHTML">
+		<label class="section-label" for="original-text">Input text</label>
+		<textarea id="original-text" name="original_text" maxlength="2000" dir="auto" required></textarea>
+		<div id="char-counter" class="counter">0 / 2,000</div>
+
+		<button type="submit" class="btn btn-primary">Normalise</button>
+		<div class="htmx-indicator muted">Normalising text...</div>
+	</form>
+
+	<div id="paste-result" class="results-block"></div>
+</section>
+
+<script>
+	const input = document.getElementById('original-text');
+	const counter = document.getElementById('char-counter');
+	const syncCounter = () => { counter.textContent = `${input.value.length} / 2,000`; };
+	input.addEventListener('input', syncCounter);
+	syncCounter();
+</script>
+{% endblock %}

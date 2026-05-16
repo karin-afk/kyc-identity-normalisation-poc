@@ -34,10 +34,64 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 from pipeline.pipeline import process_field  # noqa: E402
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-# Field types the KYC pipeline actively normalises
+# All available field types for normalisation, sorted alphabetically
+_ALL_FIELD_TYPES = sorted([
+    "accounting_policies",
+    "address",
+    "alias",
+    "capital_change_type",
+    "commercial_registration_no",
+    "company_name",
+    "company_no",
+    "country_of_residence",
+    "date",
+    "date_of_birth",
+    "date_of_incorporation",
+    "designation",
+    "director_name",
+    "document_number",
+    "document_type",
+    "email",
+    "expenses",
+    "expiry_date",
+    "financial_period",
+    "id_no",
+    "id_number",
+    "industry_code",
+    "issue_date",
+    "issuing_authority",
+    "legal_form",
+    "licence_no",
+    "mailing_address",
+    "nationality",
+    "nature_of_business",
+    "net_assets",
+    "number_of_issued_shares",
+    "number_of_shares",
+    "ownership_percentage",
+    "parent_names",
+    "passport_no",
+    "person_name",
+    "place_of_birth",
+    "reference_no",
+    "registered_address",
+    "registration_no",
+    "revenue",
+    "role",
+    "share_capital",
+    "share_class",
+    "shareholder_address",
+    "shareholder_name",
+    "status",
+    "tax_id",
+    "total_assets",
+    "total_liabilities",
+    "vat_number",
+    "voting_rights",
+])
+
+# Field types that are actively normalised through the pipeline
 _KYC_FIELD_TYPES = ["person_name", "alias", "company_name", "address"]
-# Additional types preserved as-is by the rules engine
-_ALL_FIELD_TYPES = _KYC_FIELD_TYPES + ["date", "id_number", "nationality", "dob"]
 
 LANGUAGE_OPTIONS: dict[str, str] = {
     "Auto-detect": "",
@@ -197,7 +251,7 @@ with tab_single:
             key="single_text",
         )
     with col2:
-        field_type_single = st.selectbox("Field type", _KYC_FIELD_TYPES, key="single_ft", index=0)
+        field_type_single = st.selectbox("Field type", _ALL_FIELD_TYPES, key="single_ft", index=0)
         lang_label_single = st.selectbox("Language", list(LANGUAGE_OPTIONS.keys()), key="single_lang", index=0)
 
     if st.button("Normalise", type="primary", use_container_width=True, key="btn_single"):

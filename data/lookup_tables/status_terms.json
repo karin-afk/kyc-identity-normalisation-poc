@@ -1,0 +1,350 @@
+{
+  "_note": "Keyed by ISO 639-1 language code. Canonical values: ACTIVE, INACTIVE, DISSOLVED, SUSPENDED, IN_LIQUIDATION, STRUCK_OFF, DORMANT. Matching is case-insensitive.",
+
+  "ar": {
+    "نشط": "ACTIVE",
+    "فعّال": "ACTIVE",
+    "فعال": "ACTIVE",
+    "قائم": "ACTIVE",
+    "منتهي": "DISSOLVED",
+    "ملغى": "DISSOLVED",
+    "محلول": "DISSOLVED",
+    "معلق": "SUSPENDED",
+    "موقف": "SUSPENDED",
+    "تصفية": "IN_LIQUIDATION",
+    "في التصفية": "IN_LIQUIDATION",
+    "تحت التصفية": "IN_LIQUIDATION",
+    "مشطوب": "STRUCK_OFF",
+    "خامل": "DORMANT",
+    "غير نشط": "INACTIVE"
+  },
+
+  "be": {
+    "дзейнічае": "ACTIVE",
+    "ліквідавана": "DISSOLVED",
+    "у ліквідацыі": "IN_LIQUIDATION",
+    "прыпынена": "SUSPENDED",
+    "неактыўны": "INACTIVE"
+  },
+
+  "bg": {
+    "активно": "ACTIVE",
+    "действащо": "ACTIVE",
+    "прекратено": "DISSOLVED",
+    "заличено": "STRUCK_OFF",
+    "в ликвидация": "IN_LIQUIDATION",
+    "спряно": "SUSPENDED",
+    "неактивно": "INACTIVE",
+    "в несъстоятелност": "IN_LIQUIDATION"
+  },
+
+  "da": {
+    "aktiv": "ACTIVE",
+    "normal": "ACTIVE",
+    "opløst": "DISSOLVED",
+    "likvideret": "DISSOLVED",
+    "under likvidation": "IN_LIQUIDATION",
+    "suspenderet": "SUSPENDED",
+    "slettet": "STRUCK_OFF",
+    "hvilende": "DORMANT",
+    "inaktiv": "INACTIVE",
+    "under konkurs": "IN_LIQUIDATION"
+  },
+
+  "de": {
+    "aktiv": "ACTIVE",
+    "eingetragen": "ACTIVE",
+    "aufgelöst": "DISSOLVED",
+    "gelöscht": "STRUCK_OFF",
+    "in Liquidation": "IN_LIQUIDATION",
+    "in Insolvenz": "IN_LIQUIDATION",
+    "insolvent": "IN_LIQUIDATION",
+    "ruhend": "DORMANT",
+    "inaktiv": "INACTIVE",
+    "suspendiert": "SUSPENDED",
+    "ausgetragen": "STRUCK_OFF"
+  },
+
+  "el": {
+    "ενεργή": "ACTIVE",
+    "σε λειτουργία": "ACTIVE",
+    "διαλυθείσα": "DISSOLVED",
+    "υπό εκκαθάριση": "IN_LIQUIDATION",
+    "σε αναστολή": "SUSPENDED",
+    "διαγραμμένη": "STRUCK_OFF",
+    "ανενεργής": "INACTIVE",
+    "σε πτώχευση": "IN_LIQUIDATION"
+  },
+
+  "en": {
+    "Active": "ACTIVE",
+    "Live": "ACTIVE",
+    "Registered": "ACTIVE",
+    "Good Standing": "ACTIVE",
+    "In Good Standing": "ACTIVE",
+    "Inactive": "INACTIVE",
+    "Non-Trading": "INACTIVE",
+    "Dormant": "DORMANT",
+    "Dissolved": "DISSOLVED",
+    "Liquidated": "DISSOLVED",
+    "Wound Up": "DISSOLVED",
+    "Closed": "DISSOLVED",
+    "Suspended": "SUSPENDED",
+    "In Liquidation": "IN_LIQUIDATION",
+    "In Administration": "IN_LIQUIDATION",
+    "In Receivership": "IN_LIQUIDATION",
+    "Under Liquidation": "IN_LIQUIDATION",
+    "Struck Off": "STRUCK_OFF",
+    "Struck-Off": "STRUCK_OFF",
+    "Removed": "STRUCK_OFF",
+    "De-registered": "STRUCK_OFF",
+    "Deregistered": "STRUCK_OFF",
+    "Cancelled": "STRUCK_OFF",
+    "Bankrupt": "IN_LIQUIDATION",
+    "In Bankruptcy": "IN_LIQUIDATION"
+  },
+
+  "es": {
+    "activa": "ACTIVE",
+    "vigente": "ACTIVE",
+    "inscrita": "ACTIVE",
+    "disuelta": "DISSOLVED",
+    "liquidada": "DISSOLVED",
+    "en liquidación": "IN_LIQUIDATION",
+    "en concurso": "IN_LIQUIDATION",
+    "en concurso de acreedores": "IN_LIQUIDATION",
+    "suspendida": "SUSPENDED",
+    "cancelada": "STRUCK_OFF",
+    "baja": "STRUCK_OFF",
+    "inactiva": "INACTIVE",
+    "dormida": "DORMANT"
+  },
+
+  "fa": {
+    "فعال": "ACTIVE",
+    "ثبت‌شده": "ACTIVE",
+    "منحل": "DISSOLVED",
+    "در جریان انحلال": "IN_LIQUIDATION",
+    "معلق": "SUSPENDED",
+    "غیرفعال": "INACTIVE"
+  },
+
+  "fr": {
+    "active": "ACTIVE",
+    "en activité": "ACTIVE",
+    "immatriculée": "ACTIVE",
+    "dissoute": "DISSOLVED",
+    "liquidée": "DISSOLVED",
+    "en liquidation": "IN_LIQUIDATION",
+    "en liquidation judiciaire": "IN_LIQUIDATION",
+    "en redressement judiciaire": "IN_LIQUIDATION",
+    "suspendue": "SUSPENDED",
+    "radiée": "STRUCK_OFF",
+    "cessée": "DISSOLVED",
+    "inactive": "INACTIVE",
+    "en sommeil": "DORMANT"
+  },
+
+  "he": {
+    "פעיל": "ACTIVE",
+    "רשום": "ACTIVE",
+    "מחוק": "STRUCK_OFF",
+    "בפירוק": "IN_LIQUIDATION",
+    "מפורק": "DISSOLVED",
+    "מושעה": "SUSPENDED",
+    "לא פעיל": "INACTIVE"
+  },
+
+  "it": {
+    "attiva": "ACTIVE",
+    "iscritta": "ACTIVE",
+    "in attività": "ACTIVE",
+    "sciolta": "DISSOLVED",
+    "liquidata": "DISSOLVED",
+    "in liquidazione": "IN_LIQUIDATION",
+    "in fallimento": "IN_LIQUIDATION",
+    "in concordato": "IN_LIQUIDATION",
+    "sospesa": "SUSPENDED",
+    "cancellata": "STRUCK_OFF",
+    "inattiva": "INACTIVE",
+    "cessata": "DISSOLVED"
+  },
+
+  "ja": {
+    "現役": "ACTIVE",
+    "活動中": "ACTIVE",
+    "存続": "ACTIVE",
+    "登記中": "ACTIVE",
+    "廃業": "DISSOLVED",
+    "解散": "DISSOLVED",
+    "清算中": "IN_LIQUIDATION",
+    "破産": "IN_LIQUIDATION",
+    "破産手続中": "IN_LIQUIDATION",
+    "民事再生": "IN_LIQUIDATION",
+    "会社更生": "IN_LIQUIDATION",
+    "休眠": "DORMANT",
+    "休業": "INACTIVE",
+    "閉鎖": "DISSOLVED",
+    "登記抹消": "STRUCK_OFF"
+  },
+
+  "ko": {
+    "활동중": "ACTIVE",
+    "정상": "ACTIVE",
+    "등록": "ACTIVE",
+    "해산": "DISSOLVED",
+    "청산중": "IN_LIQUIDATION",
+    "파산": "IN_LIQUIDATION",
+    "회생절차중": "IN_LIQUIDATION",
+    "영업정지": "SUSPENDED",
+    "말소": "STRUCK_OFF",
+    "휴면": "DORMANT",
+    "비활동": "INACTIVE"
+  },
+
+  "nl": {
+    "actief": "ACTIVE",
+    "ingeschreven": "ACTIVE",
+    "opgeheven": "DISSOLVED",
+    "ontbonden": "DISSOLVED",
+    "in liquidatie": "IN_LIQUIDATION",
+    "failliet": "IN_LIQUIDATION",
+    "surseance": "IN_LIQUIDATION",
+    "geschorst": "SUSPENDED",
+    "uitgeschreven": "STRUCK_OFF",
+    "doorgehaald": "STRUCK_OFF",
+    "slapend": "DORMANT",
+    "inactief": "INACTIVE"
+  },
+
+  "no": {
+    "aktiv": "ACTIVE",
+    "registrert": "ACTIVE",
+    "oppløst": "DISSOLVED",
+    "likvidert": "DISSOLVED",
+    "under avvikling": "IN_LIQUIDATION",
+    "konkurs": "IN_LIQUIDATION",
+    "suspendert": "SUSPENDED",
+    "slettet": "STRUCK_OFF",
+    "hvilende": "DORMANT",
+    "inaktiv": "INACTIVE"
+  },
+
+  "pl": {
+    "aktywna": "ACTIVE",
+    "zarejestrowana": "ACTIVE",
+    "rozwiązana": "DISSOLVED",
+    "zlikwidowana": "DISSOLVED",
+    "w likwidacji": "IN_LIQUIDATION",
+    "w upadłości": "IN_LIQUIDATION",
+    "w restrukturyzacji": "IN_LIQUIDATION",
+    "zawieszona": "SUSPENDED",
+    "wykreślona": "STRUCK_OFF",
+    "uśpiona": "DORMANT",
+    "nieaktywna": "INACTIVE"
+  },
+
+  "pt": {
+    "ativa": "ACTIVE",
+    "registada": "ACTIVE",
+    "registrada": "ACTIVE",
+    "dissolvida": "DISSOLVED",
+    "liquidada": "DISSOLVED",
+    "em liquidação": "IN_LIQUIDATION",
+    "em insolvência": "IN_LIQUIDATION",
+    "suspensa": "SUSPENDED",
+    "cancelada": "STRUCK_OFF",
+    "cessada": "DISSOLVED",
+    "inativa": "INACTIVE",
+    "adormecida": "DORMANT"
+  },
+
+  "ru": {
+    "действующий": "ACTIVE",
+    "действующая": "ACTIVE",
+    "активный": "ACTIVE",
+    "зарегистрирован": "ACTIVE",
+    "ликвидировано": "DISSOLVED",
+    "ликвидирован": "DISSOLVED",
+    "в стадии ликвидации": "IN_LIQUIDATION",
+    "в процессе ликвидации": "IN_LIQUIDATION",
+    "банкротство": "IN_LIQUIDATION",
+    "конкурсное производство": "IN_LIQUIDATION",
+    "приостановлено": "SUSPENDED",
+    "приостановлена": "SUSPENDED",
+    "исключён": "STRUCK_OFF",
+    "исключена": "STRUCK_OFF",
+    "недействующий": "INACTIVE",
+    "недействующая": "INACTIVE"
+  },
+
+  "sv": {
+    "aktiv": "ACTIVE",
+    "registrerad": "ACTIVE",
+    "upplöst": "DISSOLVED",
+    "likviderat": "DISSOLVED",
+    "under likvidation": "IN_LIQUIDATION",
+    "i konkurs": "IN_LIQUIDATION",
+    "vilande": "DORMANT",
+    "avregistrerad": "STRUCK_OFF",
+    "inaktiv": "INACTIVE",
+    "suspenderat": "SUSPENDED"
+  },
+
+  "th": {
+    "ดำเนินกิจการ": "ACTIVE",
+    "จดทะเบียน": "ACTIVE",
+    "เลิกกิจการ": "DISSOLVED",
+    "ชำระบัญชี": "IN_LIQUIDATION",
+    "ล้มละลาย": "IN_LIQUIDATION",
+    "ระงับ": "SUSPENDED",
+    "ถูกถอนทะเบียน": "STRUCK_OFF",
+    "ไม่ได้ดำเนินกิจการ": "INACTIVE",
+    "พักการดำเนินกิจการ": "DORMANT"
+  },
+
+  "tr": {
+    "aktif": "ACTIVE",
+    "faal": "ACTIVE",
+    "kayıtlı": "ACTIVE",
+    "tasfiye edilmiş": "DISSOLVED",
+    "kapatılmış": "DISSOLVED",
+    "tasfiye halinde": "IN_LIQUIDATION",
+    "iflas": "IN_LIQUIDATION",
+    "konkordato": "IN_LIQUIDATION",
+    "askıya alınmış": "SUSPENDED",
+    "silinmiş": "STRUCK_OFF",
+    "ticaret sicilinden terkin": "STRUCK_OFF",
+    "pasif": "INACTIVE",
+    "faaliyetsiz": "INACTIVE",
+    "uykuda": "DORMANT"
+  },
+
+  "uk": {
+    "діючий": "ACTIVE",
+    "діюча": "ACTIVE",
+    "зареєстровано": "ACTIVE",
+    "ліквідовано": "DISSOLVED",
+    "в ліквідації": "IN_LIQUIDATION",
+    "банкрутство": "IN_LIQUIDATION",
+    "зупинено": "SUSPENDED",
+    "виключено": "STRUCK_OFF",
+    "недіючий": "INACTIVE"
+  },
+
+  "zh": {
+    "存续": "ACTIVE",
+    "正常": "ACTIVE",
+    "登记": "ACTIVE",
+    "注销": "DISSOLVED",
+    "吊销": "STRUCK_OFF",
+    "撤销": "DISSOLVED",
+    "清算": "IN_LIQUIDATION",
+    "破产": "IN_LIQUIDATION",
+    "破产清算": "IN_LIQUIDATION",
+    "停业": "INACTIVE",
+    "吊销（未注销）": "STRUCK_OFF",
+    "迁出": "DISSOLVED",
+    "注吊销": "STRUCK_OFF"
+  }
+}
