@@ -4,7 +4,7 @@ from app.pipeline.normalisation.calendar_rules import (
     apply_calendar_rules,
     apply_numeric_rules,
 )
-from pipeline.numeric_rules import normalise_all_digits
+from app.pipeline.normalisation.numeric_rules import normalise_all_digits
 from utils.calendar_utils import (
     arabic_indic_to_ascii,
     detect_and_convert_japanese_era,

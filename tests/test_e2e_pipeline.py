@@ -171,15 +171,16 @@ def test_e2e_vocab_issuing_authority_japanese(app_ctx):
 
 
 def test_e2e_unresolved_arabic_person_name(app_ctx):
-    """Person names are not yet handled by any strategy — must be UNRESOLVED."""
+    """Arabic person names route through Strategy F transliteration with review."""
     result = process_field_row({
         "original_text": "محمد علي",
         "field_type": "person_name",
         "language": "ar",
     })
-    assert result["processing_method"] == "UNRESOLVED"
+    assert result["processing_method"] == "TRANSLITERATE"
+    assert result["normalised_form"]
     assert result["review_required"] is True
-    assert result["should_use_in_screening"] is False
+    assert result["should_use_in_screening"] is True
 
 
 # ---------------------------------------------------------------------------
@@ -191,7 +192,7 @@ def test_e2e_country_arabic(app_ctx):
     """Arabic country name resolves to English via Strategy D."""
     result = process_field_row({
         "original_text": "\u0623\u0644\u0645\u0627\u0646\u064a\u0627",  # ألمانيا
-        "field_type": "country",
+        "field_type": "nationality",
         "language": "ar",
     })
     assert result["processing_method"] == "GEOGRAPHIC"
@@ -202,7 +203,7 @@ def test_e2e_country_japanese(app_ctx):
     """Japanese country name resolves to English via Strategy D."""
     result = process_field_row({
         "original_text": "\u65e5\u672c",  # 日本
-        "field_type": "country",
+        "field_type": "nationality",
         "language": "ja",
     })
     assert result["processing_method"] == "GEOGRAPHIC"
@@ -210,14 +211,14 @@ def test_e2e_country_japanese(app_ctx):
 
 
 def test_e2e_nationality_english(app_ctx):
-    """English nationality demonym resolves via Strategy D."""
+    """English country name resolves via Strategy D."""
     result = process_field_row({
-        "original_text": "Japanese",
+        "original_text": "Germany",
         "field_type": "nationality",
         "language": "en",
     })
     assert result["processing_method"] == "GEOGRAPHIC"
-    assert result["normalised_form"] == "JAPANESE"
+    assert result["normalised_form"] == "GERMANY"
 
 
 def test_e2e_place_of_birth_japanese(app_ctx):

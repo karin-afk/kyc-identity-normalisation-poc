@@ -42,8 +42,3 @@ def test_logging_contract_exposes_get_logger() -> None:
 
     logger = get_logger("epic00-contract")
     assert logger is not None
-
-
-def test_src_pipeline_imports_still_work() -> None:
-    from pipeline.pipeline import process_field  # noqa: F401
-    from pipeline.rules_engine import apply_rules  # noqa: F401
