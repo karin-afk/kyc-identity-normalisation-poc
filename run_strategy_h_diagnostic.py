@@ -102,7 +102,7 @@ def main() -> None:
     app = create_app()
 
     with app.app_context():
-        from app.pipeline.normalisation.nmt_translator import apply_nmt
+        from app.pipeline.normalisation.nmt_translator import _call_azure_translator
 
         creds = _credentials_present()
         sdk = _sdk_available()
@@ -122,60 +122,51 @@ def main() -> None:
             print("All tests will SKIP — routing was verified by T6.")
         print()
 
+        endpoint = os.environ.get("AZURE_TRANSLATOR_ENDPOINT", "")
+        key      = os.environ.get("AZURE_TRANSLATOR_KEY", "")
+        region   = os.environ.get("AZURE_TRANSLATOR_REGION", "")
+        target   = os.environ.get("AZURE_TRANSLATOR_TARGET_LANGUAGE", "en")
+
         passed = 0
         skipped = 0
         failed = 0
 
         for tid, description, text, field_type, language, keywords in H_TESTS:
+            if not can_translate:
+                reason = "no SDK" if not sdk else "no credentials"
+                print(f"SKIP  {tid}: {reason} — routing verified by T6; translation quality TBD")
+                skipped += 1
+                continue
+
+            # Call _call_azure_translator directly so exceptions surface
             try:
-                result = apply_nmt(text, field_type, language)
+                translated = _call_azure_translator(
+                    text, target, language, endpoint, key, region
+                )
             except Exception as exc:
-                print(f"FAIL  {tid}: apply_nmt() raised {type(exc).__name__}: {exc}")
+                print(f"FAIL  {tid}: Azure call raised {type(exc).__name__}: {exc}")
                 failed += 1
                 continue
 
-            if result is None:
-                if can_translate:
-                    # Credentials + SDK present but call returned None — unexpected
-                    print(f"FAIL  {tid}: apply_nmt() returned None despite credentials + SDK being available")
-                    print(f"            text={repr(text[:60])}")
-                    failed += 1
-                else:
-                    reason = "no SDK" if not sdk else "no credentials"
-                    print(f"SKIP  {tid}: {reason} — routing verified by T6; translation quality TBD")
-                    skipped += 1
-                continue
-
-            # result is a dict — check structure
-            method = result.get("processing_method", "")
-            normalised = result.get("normalised_form", "")
-
-            structural_ok = (
-                method == "NMT"
-                and isinstance(normalised, str)
-                and len(normalised.strip()) > 0
-            )
-
-            if not structural_ok:
-                print(f"FAIL  {tid}: unexpected result structure: method={method!r} normalised={normalised!r}")
+            if translated is None:
+                print(f"FAIL  {tid}: Azure call returned None (empty response)")
+                print(f"            text={repr(text[:60])}")
                 failed += 1
                 continue
 
-            # Keyword check (only when translation is available and call succeeded)
-            if can_translate and keywords:
-                normalised_lower = normalised.lower()
-                missing = [kw for kw in keywords if kw.lower() not in normalised_lower]
+            # Keyword check
+            if keywords:
+                translated_lower = translated.lower()
+                missing = [kw for kw in keywords if kw.lower() not in translated_lower]
                 if missing:
                     print(
                         f"WARN  {tid}: translated but missing expected keywords {missing}\n"
-                        f"            normalised_form={normalised!r}"
+                        f"            translated={translated!r}"
                     )
-                    # Warn only — NMT phrasing varies; don't hard-fail on keywords
                 else:
-                    print(f"PASS  {tid}: {normalised!r}")
+                    print(f"PASS  {tid}: {translated!r}")
             else:
-                print(f"PASS  {tid}: {normalised!r}")
-
+                print(f"PASS  {tid}: {translated!r}")
             passed += 1
 
         print()

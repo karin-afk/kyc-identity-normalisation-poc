@@ -1,0 +1,2 @@
+1. if environment keys in .env are wrong, do not run the integration diagnostic. Indicate to me that I need to update env keys before you run anything else.
+2. if you need libraries, write them in requirements.txt and install them in the env when you need them.
