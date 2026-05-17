@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import re
+import time
 
 from openai import OpenAI
 
@@ -399,6 +400,20 @@ VALID_LANGUAGES = {
 _LLM_CACHE: dict[str, tuple[str, float, str]] = {}
 
 
+def _is_retryable_llm_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    retryable_markers = [
+        "rate limit",
+        "rate_limit_exceeded",
+        "too many requests",
+        "timed out",
+        "timeout",
+        "connecttimeout",
+        "apitimeouterror",
+    ]
+    return any(marker in message for marker in retryable_markers)
+
+
 def detect_field_type_llm(text: str, language_hint: str = "") -> tuple[str, float, str]:
     """LLM classifier using GPT-4o-mini. Returns (field_type, confidence, language).
 
@@ -439,13 +454,45 @@ def detect_field_type_llm(text: str, language_hint: str = "") -> tuple[str, floa
             },
             source="backend",
         )
-        response = _get_client().chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            temperature=0.0,
-            max_tokens=80,
-            response_format={"type": "json_object"},
-        )
+
+        response = None
+        max_attempts = 5
+        for attempt in range(1, max_attempts + 1):
+            try:
+                response = _get_client().chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=messages,
+                    temperature=0.0,
+                    max_tokens=80,
+                    response_format={"type": "json_object"},
+                )
+                break
+            except Exception as exc:
+                if (not _is_retryable_llm_error(exc)) or attempt == max_attempts:
+                    raise
+
+                sleep_s = min(0.25 * (2 ** (attempt - 1)), 2.0)
+                logger.warning(
+                    "Field type detection transient failure on attempt %s/%s: %s. Retrying in %.2fs",
+                    attempt,
+                    max_attempts,
+                    exc,
+                    sleep_s,
+                )
+                log_event(
+                    "field_detector_retry",
+                    {
+                        "attempt": attempt,
+                        "max_attempts": max_attempts,
+                        "sleep_s": sleep_s,
+                        "error": str(exc),
+                    },
+                    source="backend",
+                )
+                time.sleep(sleep_s)
+
+        if response is None:
+            raise RuntimeError("LLM classifier returned no response after retries")
 
         content = response.choices[0].message.content or "{}"
         log_event("field_detector_raw_response", {"content": content}, source="backend")

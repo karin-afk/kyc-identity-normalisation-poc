@@ -128,7 +128,7 @@ The following `src/` modules are **ALIVE** (imported transitively at Flask runti
 | **rules_engine.py** | src/pipeline/ | router.py → Strategy A | Applies deterministic preserve & numeric rules |
 | **transliteration_engine.py** | src/pipeline/ | Strategy F, G | Core romanization engine (kanji, Arabic, Cyrillic) |
 | **calendar_utils.py** | src/utils/ | Strategy B | Date normalization and parsing |
-| **script_detection.py** | src/utils/ | field_type_detector.py | Detects script families (CJK, Arabic, Latin, etc.) during classification |
+| **script_detection.py** | src/utils/ | transliteration_engine.py | Script-family helpers used by transliteration logic |
 | **language_normalisation_tables.py** | src/config/ | transliteration_engine.py, Strategy G | Language-specific character mapping tables |
 | **rules.py** | src/config/ | rules_engine.py (transitive) | Preserve/normalize field type definitions |
 | **kanji_lookup.py** | src/config/ | transliteration_engine.py | Japanese kanji → romaji lookups (50k+ entries) |
@@ -140,6 +140,12 @@ The following `src/` modules are **ALIVE** (imported transitively at Flask runti
 - **src/evaluation/metrics.py** — Accuracy & coverage metrics
 - **src/evaluation/regression_gate.py** — 138/164 test assertion
 - **src/pipeline/matcher.py** — Result matching logic (used by evaluator)
+- **src/pipeline/pipeline.py** — Legacy processing surface called by evaluator
+- **src/pipeline/analyst_handler.py** — Imported transitively by `src/pipeline/pipeline.py`
+- **src/pipeline/field_classifier.py** — Imported transitively by `src/pipeline/pipeline.py`
+- **src/pipeline/llm_layer.py** — Imported transitively by `src/pipeline/pipeline.py`
+
+**Note:** These modules are used by the CI regression gate (`src/main.py` → `evaluator.py` → `pipeline.py`). Migrating the regression gate to use the Flask-era `route_field()` pipeline is a future cleanup task that would allow archiving these files.
 
 ---
 
@@ -156,7 +162,7 @@ The following `src/` modules are **ALIVE** (imported transitively at Flask runti
 | test_evaluator.py | Unit | Regression gate evaluation |
 | test_data_integrity.py | Integration | Data contract compliance |
 
-**Note:** `test_epic00_data_contracts.py` will be cleaned during Task 4 (remove `test_src_pipeline_imports_still_work()` function, lines 46–48).
+**Note:** Task 4 cleanup completed: `test_epic00_data_contracts.py` no longer contains `test_src_pipeline_imports_still_work()`.
 
 ### Dead Tests (Archived)
 
@@ -176,7 +182,7 @@ The following `src/` modules are **ALIVE** (imported transitively at Flask runti
 
 **Status:** Retired v1 prototype (replaced by Flask production app)  
 **Dependencies:**
-- `src/pipeline/pipeline.py` (pre-Flask orchestrator) — ARCHIVED
+- `src/pipeline/pipeline.py` (pre-Flask orchestrator) — retained for CI regression gate compatibility
 - `src/pipeline/rules_engine.py` (moved to Flask)
 - Other legacy v1 pipeline modules
 
@@ -190,11 +196,7 @@ The following `src/` modules are **ALIVE** (imported transitively at Flask runti
 
 | Module | Reason |
 |--------|--------|
-| `src/pipeline/pipeline.py` | Replaced by router.py + strategy modules |
 | `src/pipeline/ocr_gate.py` | Pre-Flask OCR system; Epic 05 not yet started |
-| `src/pipeline/analyst_handler.py` | Pre-Flask analyst workflow; Epic 09 placeholder |
-| `src/pipeline/field_classifier.py` | Pre-Flask field type classification; replaced by `field_type_detector.py` |
-| `src/pipeline/llm_layer.py` | Pre-Flask LLM integration; moved to Strategy H (NMT) |
 | `src/utils/logging_utils.py` | Replaced by app/utils/logging_utils.py |
 | `src/utils/normalisation.py` | Legacy normalization; split into strategy modules |
 
@@ -361,7 +363,11 @@ kyc-identity-normalisation-poc/
 │   │   ├── rules_engine.py        # Deterministic rules (ALIVE)
 │   │   ├── transliteration_engine.py (ALIVE)
 │   │   ├── matcher.py             # Result matching (CI-LIVE)
-│   │   └── [pipeline.py, ocr_gate.py, analyst_handler.py, ...] (ARCHIVED)
+│   │   ├── pipeline.py            # CI-LIVE (used by evaluator)
+│   │   ├── analyst_handler.py     # CI-LIVE (transitive via pipeline.py)
+│   │   ├── field_classifier.py    # CI-LIVE (transitive via pipeline.py)
+│   │   ├── llm_layer.py           # CI-LIVE (transitive via pipeline.py)
+│   │   └── [ocr_gate.py, ...] (ARCHIVED)
 │   │
 │   ├── utils/
 │   │   ├── calendar_utils.py      # Date normalization (ALIVE)
@@ -425,7 +431,7 @@ kyc-identity-normalisation-poc/
 ### Task 3 — Architecture Documented ✓
 - This document: explains production pipeline, strategy dispatch, why src/ modules survived
 
-### Task 4 — File Moves (Pending)
+### Task 4 — File Moves (Complete ✓)
 - Move archived files to `_archive/`
 - Update test imports in test_epic00_data_contracts.py, test_transliteration.py
 - Verify diagnostic remains at 138/164 ✓
