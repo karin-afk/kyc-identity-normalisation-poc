@@ -1,0 +1,213 @@
+case_id,original_text,language,script,field_type,treatment,transliteration,variants,english,normalised,should_flag_review
+KYC001,محمد علي حسن,ar,Arabic,person_name,TRANSLITERATE,MHMD ALY HSN,,Mhmd Aly Hsn,MHMD ALY HSN,True
+KYC002,عبد الله محمد,ar,Arabic,person_name,TRANSLITERATE,ABDULLAH MHMD,,Abdullah Mhmd,ABDULLAH MHMD,True
+KYC003,شارع الشيخ زايد دبي,ar,Arabic,address,NMT,,,"Sheikh Zayed Road, Dubai","SHEIKH ZAYED ROAD, DUBAI",False
+KYC004,أبو محمد الجولاني,ar,Arabic,alias,NMT,,,Abu Muhammad al-Julani,ABU MUHAMMAD AL JULANI,True
+KYC005,محمد حسن علي,ar,Arabic,person_name,TRANSLITERATE,MHMD HSN ALY,,Mhmd Hsn Aly,MHMD HSN ALY,True
+KYC006,山田 太郎,ja,Kanji,person_name,TRANSLITERATE,YAMADA TARO,TARO YAMADA|YAMADA TAROU,Yamada Taro,YAMADA TARO,True
+KYC007,タナカ ケン,ja,Katakana,person_name,TRANSLITERATE,TANAKA KEN,KEN TANAKA,Tanaka Ken,TANAKA KEN,False
+KYC008,株式会社トヨタ,ja,Kanji,company_name,NMT,,,Toyota KK,KK,False
+KYC009,佐藤 健,ja,Kanji,person_name,TRANSLITERATE,SATO KEN,KEN SATO|SATOU KEN,Sato Ken,SATO KEN,True
+KYC010,とうきょうとしんじゅくく,ja,Hiragana,address,NMT,,,"Shinjuku Ward, Tokyo","SHINJUKU WARD, TOKYO",False
+KYC011,Екатерина Сергеевна Иванова,ru,Cyrillic,person_name,TRANSLITERATE,EKATERINA SERGEYEVNA IVANOVA,EKATERINA SERGEEVNA IVANOVA,Ekaterina Sergeyevna Ivanova,EKATERINA SERGEYEVNA IVANOVA,False
+KYC012,Алексей Смирнов,ru,Cyrillic,person_name,TRANSLITERATE,ALEKSEY SMIRNOV,ALEKSEI SMIRNOV,Aleksey Smirnov,ALEKSEY SMIRNOV,False
+KYC013,Олександр Іваненко,uk,Cyrillic,person_name,TRANSLITERATE,OLEKSANDR IVANENKO,IVANENKO OLEKSANDR,Oleksandr Ivanenko,OLEKSANDR IVANENKO,True
+KYC014,Алексей Смирнов,ru,Cyrillic,person_name,TRANSLITERATE,ALEKSEY SMIRNOV,ALEKSEI SMIRNOV,Aleksey Smirnov,ALEKSEY SMIRNOV,False
+KYC015,ул. Ленина 10 Москва,ru,Cyrillic,address,NMT,,,"10 Lenin Street, Moscow","10 LENIN STREET, MOSCOW",False
+KYC016,王小明,zh,Han,person_name,TRANSLITERATE,WANG XIAOMING,XIAOMING WANG,Wang Xiaoming,WANG XIAOMING,True
+KYC017,李伟,zh,Han,person_name,TRANSLITERATE,LI WEI,WEI LI,Li Wei,LI WEI,True
+KYC018,北京远景科技有限公司,zh,Han,company_name,NMT,,,Beijing Yuanjing Technology Co Ltd,LTD,False
+KYC019,北京市朝阳区建国路88号,zh,Han,address,NMT,,,"No. 88 Jianguo Road, Chaoyang District, Beijing","NO. 88 JIANGUO ROAD, CHAOYANG DISTRICT, BEIJING",False
+KYC020,王伟,zh,Han,person_name,TRANSLITERATE,WANG WEI,WEI WANG,Wang Wei,WANG WEI,True
+KYC021,Γεώργιος Παπαδόπουλος,el,Greek,person_name,TRANSLITERATE,GEORGIOS PAPADOPOULOS,PAPADOPOULOS GEORGIOS,Georgios Papadopoulos,GEORGIOS PAPADOPOULOS,False
+KYC022,Βασίλης Νικολάου,el,Greek,person_name,TRANSLITERATE,VASILIS NIKOLAOU,NIKOLAOU VASILIS,Vasilis Nikolaou,VASILIS NIKOLAOU,False
+KYC023,Λεωφόρος Κηφισίας 10 Αθήνα,el,Greek,address,NMT,,,"10 Kifisias Avenue, Athens","10 KIFISIAS AVENUE, ATHENS",False
+KYC024,Νίκος Παπαδόπουλος,el,Greek,person_name,TRANSLITERATE,NIKOS PAPADOPOULOS,PAPADOPOULOS NIKOS,Nikos Papadopoulos,NIKOS PAPADOPOULOS,False
+KYC025,test.user+aml@gmail.com,en,Latin,email,PRESERVE,,,test.user+aml@gmail.com,test.user+aml@gmail.com,False
+KYC026,563982174,en,Latin,id_number,PRESERVE,,,563982174,563982174,False
+KYC027,john.doe@test.com,en,Latin,email,PRESERVE,,,john.doe@test.com,john.doe@test.com,False
+KYC028,حسن علي محمد,ar,Arabic,person_name,TRANSLITERATE,HSN ALY MHMD,,Hsn Aly Mhmd,HSN ALY MHMD,True
+KYC029,高橋 一郎,ja,Kanji,person_name,TRANSLITERATE,TAKAHASHI ICHIRO,ICHIRO TAKAHASHI,Takahashi Ichiro,TAKAHASHI ICHIRO,True
+KYC030,Дмитрий Иванов,ru,Cyrillic,person_name,TRANSLITERATE,DMITRIY IVANOV,DMITRY IVANOV,Dmitriy Ivanov,DMITRIY IVANOV,False
+IMG001,KUSAKA HIROSHI,en,Latin,person_name,CHARACTER_MAP,KUSAKA HIROSHI,HIROSHI KUSAKA,Kusaka Hiroshi,KUSAKA HIROSHI,False
+IMG002,TH4572902,en,Latin,passport_no,PRESERVE,,,TH4572902,TH4572902,False
+IMG003,TOKYO,en,Latin,city,GEOGRAPHIC,,,TOKYO,TOKYO,False
+IMG004,ЛИТВИНОВ АНДРЕЙ ВЯЧЕСЛАВОВИЧ,ru,Cyrillic,person_name,TRANSLITERATE,LITVINOV ANDREY VYACHESLAVOVICH,ANDREY VYACHESLAVOVICH LITVINOV,Litvinov Andrey Vyacheslavovich,LITVINOV ANDREY VYACHESLAVOVICH,False
+IMG005,ХУТОР ЯНГИТАУ,ru,Cyrillic,city,GEOGRAPHIC,,,YANGITAU KHUTOR,YANGITAU KHUTOR,False
+IMG006,AHMED SAMIR NASR ABDELNASER,en,Latin,person_name,CHARACTER_MAP,AHMED SAMIR NASR ABDELNASER,SAMIR NASR ABDELNASER AHMED,Ahmed Samir Nasr Abdelnaser,AHMED SAMIR NASR ABDELNASER,False
+IMG007,نهاد إبراهيم السيد النجار,ar,Arabic,person_name,TRANSLITERATE,NHAD IBRAHYM ALSYD ALNJAR,,Nhad Ibrahym Alsyd Alnjar,NHAD IBRAHYM ALSYD ALNJAR,True
+IMG008,A20799893,en,Latin,passport_no,PRESERVE,,,A20799893,A20799893,False
+IMG009,GAIMU SAKURA,en,Latin,person_name,CHARACTER_MAP,GAIMU SAKURA,SAKURA GAIMU,Gaimu Sakura,GAIMU SAKURA,False
+IMG010,MJ0991103,en,Latin,passport_no,PRESERVE,,,MJ0991103,MJ0991103,False
+IMG011,GAIMU NATSUKO,en,Latin,person_name,CHARACTER_MAP,GAIMU NATSUKO,NATSUKO GAIMU,Gaimu Natsuko,GAIMU NATSUKO,False
+IMG012,MJ4564879,en,Latin,passport_no,PRESERVE,,,MJ4564879,MJ4564879,False
+IMG013,Λεωφόρος Κηφισίας 30,el,Greek,address,NMT,,,30 Kifisias Avenue,30 KIFISIAS AVENUE,False
+IMG014,ΔΕΗ,el,Greek,company_name,NMT,,,Public Power Corporation,PUBLIC POWER CORPORATION,False
+IMG015,Αθήνα,el,Greek,city,GEOGRAPHIC,,,ATHENS,ATHENS,False
+IMG016,NITOH SHINJI,en,Latin,person_name,CHARACTER_MAP,NITOH SHINJI,SHINJI NITOH,Nitoh Shinji,NITOH SHINJI,False
+IMG017,TR0834772,en,Latin,passport_no,PRESERVE,,,TR0834772,TR0834772,False
+KYC031,خالد عبد الرحمن صالح,ar,Arabic,person_name,TRANSLITERATE,KHLD BD AL-RHMN SALH,,Khld Bd Al-Rhmn Salh,KHLD BD AL RHMN SALH,True
+KYC032,فاطمة الزهراء علي,ar,Arabic,person_name,TRANSLITERATE,FTMH AL-ZHRA ALY,,Ftmh Al-Zhra Aly,FTMH AL ZHRA ALY,True
+KYC033,يوسف عبد العزيز محمود,ar,Arabic,person_name,TRANSLITERATE,YWSF BD AL-AZYZ MHMWD,,Ywsf Bd Al-Azyz Mhmwd,YWSF BD AL AZYZ MHMWD,True
+KYC034,ابن سالم الكعبي,ar,Arabic,person_name,TRANSLITERATE,ABN SALM AL-KABY,,Abn Salm Al-Kaby,ABN SALM AL KABY,True
+KYC035,شارع الملك فيصل المنامة,ar,Arabic,address,NMT,,,"King Faisal Street, Manama","KING FAISAL STREET, MANAMA",False
+KYC036,مدينة الكويت قطعة ٣ شارع ١٢,ar,Arabic,address,NMT,,,"Block 3, Street 12, Kuwait City","BLOCK 3, STREET 12, KUWAIT CITY",False
+KYC037,شركة النور للتجارة المحدودة,ar,Arabic,company_name,NMT,,,Al Noor Trading Ltd,LTD,False
+KYC038,A11357924,en,Latin,passport_no,PRESERVE,,,A11357924,A11357924,False
+KYC039,عبد المجيد الحربي,ar,Arabic,person_name,TRANSLITERATE,BD AL-MJYD AL-HRBY,,Bd Al-Mjyd Al-Hrby,BD AL MJYD AL HRBY,True
+KYC040,مريم حسن يوسف,ar,Arabic,person_name,TRANSLITERATE,MRYM HSN YWSF,,Mrym Hsn Ywsf,MRYM HSN YWSF,True
+KYC041,鈴木 一郎,ja,Kanji,person_name,TRANSLITERATE,SUZUKI ICHIRO,ICHIRO SUZUKI,Suzuki Ichiro,SUZUKI ICHIRO,True
+KYC042,伊藤 恒一,ja,Kanji,person_name,TRANSLITERATE,ITO KOICHI,KOICHI ITO|ITOH KOICHI,Ito Koichi,ITO KOICHI,True
+KYC043,ササキ ミカ,ja,Katakana,person_name,TRANSLITERATE,SASAKI MIKA,MIKA SASAKI,Sasaki Mika,SASAKI MIKA,False
+KYC044,おおさかしきたく,ja,Hiragana,address,NMT,,,"Kita Ward, Osaka","KITA WARD, OSAKA",False
+KYC045,三菱商事株式会社,ja,Kanji,company_name,NMT,,,Mitsubishi Corporation KK,KK,False
+KYC046,中村 翔,ja,Kanji,person_name,TRANSLITERATE,NAKAMURA SHO,SHO NAKAMURA|NAKAMURA SHOU,Nakamura Sho,NAKAMURA SHO,True
+KYC047,渡辺 恒一,ja,Kanji,person_name,TRANSLITERATE,WATANABE KOICHI,KOICHI WATANABE,Watanabe Koichi,WATANABE KOICHI,True
+KYC048,TK9081173,en,Latin,passport_no,PRESERVE,,,TK9081173,TK9081173,False
+KYC049,神奈川,ja,Kanji,city,GEOGRAPHIC,,,KANAGAWA,KANAGAWA,False
+KYC050,オオタ ケンジ,ja,Katakana,person_name,TRANSLITERATE,OOTA KENJI,OTA KENJI|KENJI OOTA|KENJI OTA,Oota Kenji,OOTA KENJI,False
+KYC051,Наталья Викторовна Орлова,ru,Cyrillic,person_name,TRANSLITERATE,NATALYA VIKTOROVNA ORLOVA,NATALIA VIKTOROVNA ORLOVA,Natalya Viktorovna Orlova,NATALYA VIKTOROVNA ORLOVA,False
+KYC052,Сергей Алексеевич Морозов,ru,Cyrillic,person_name,TRANSLITERATE,SERGEY ALEKSEYEVICH MOROZOV,SERGEI ALEKSEEVICH MOROZOV,Sergey Alekseyevich Morozov,SERGEY ALEKSEYEVICH MOROZOV,False
+KYC053,Ірина Миколаївна Шевченко,uk,Cyrillic,person_name,TRANSLITERATE,IRYNA MYKOLAIVNA SHEVCHENKO,SHEVCHENKO IRYNA MYKOLAIVNA,Iryna Mykolaivna Shevchenko,IRYNA MYKOLAIVNA SHEVCHENKO,True
+KYC054,проспект Мира 25 Санкт-Петербург,ru,Cyrillic,address,NMT,,,"25 Mira Avenue, Saint Petersburg","25 MIRA AVENUE, SAINT PETERSBURG",False
+KYC055,ООО Северный Поток,ru,Cyrillic,company_name,NMT,,,Northern Stream LLC,LLC,False
+KYC056,Юлия Смирнова,ru,Cyrillic,person_name,TRANSLITERATE,YULIYA SMIRNOVA,YULIA SMIRNOVA,Yuliya Smirnova,YULIYA SMIRNOVA,False
+KYC057,Андрей Юрьевич Ковалёв,ru,Cyrillic,person_name,TRANSLITERATE,ANDREY YURYEVICH KOVALEV,ANDREI YURIEVICH KOVALYOV,Andrey Yuryevich Kovalev,ANDREY YURYEVICH KOVALEV,False
+KYC058,731945882,en,Latin,id_number,PRESERVE,,,731945882,731945882,False
+KYC059,Євген Коваленко,uk,Cyrillic,person_name,TRANSLITERATE,YEVHEN KOVALENKO,KOVALENKO YEVHEN,Yevhen Kovalenko,YEVHEN KOVALENKO,True
+KYC060,Александр по прозвищу Саша,ru,Cyrillic,alias,NMT,,,"Alexander, nicknamed Sasha","ALEXANDER, NICKNAMED SASHA",True
+KYC061,张伟,zh,Han,person_name,TRANSLITERATE,ZHANG WEI,WEI ZHANG,Zhang Wei,ZHANG WEI,True
+KYC062,陈晓雨,zh,Han,person_name,TRANSLITERATE,CHEN XIAOYU,XIAOYU CHEN,Chen Xiaoyu,CHEN XIAOYU,True
+KYC063,刘德华,zh,Han,person_name,TRANSLITERATE,LIU DEHUA,DEHUA LIU,Liu Dehua,LIU DEHUA,True
+KYC064,上海市浦东新区世纪大道100号,zh,Han,address,NMT,,,"No. 100 Century Avenue, Pudong New Area, Shanghai","NO. 100 CENTURY AVENUE, PUDONG NEW AREA, SHANGHAI",False
+KYC065,深圳市华星电子有限公司,zh,Han,company_name,NMT,,,Shenzhen Huaxing Electronics Co Ltd,LTD,False
+KYC066,周杰伦,zh,Han,person_name,TRANSLITERATE,ZHOU JIELUN,JIELUN ZHOU,Zhou Jielun,ZHOU JIELUN,True
+KYC067,马云,zh,Han,person_name,TRANSLITERATE,MA YUN,YUN MA,Ma Yun,MA YUN,True
+KYC068,EG7743201,en,Latin,passport_no,PRESERVE,,,EG7743201,EG7743201,False
+KYC069,广州市天河区体育东路18号,zh,Han,address,NMT,,,"No. 18 Tiyu East Road, Tianhe District, Guangzhou","NO. 18 TIYU EAST ROAD, TIANHE DISTRICT, GUANGZHOU",False
+KYC070,王强又名王小强,zh,Han,alias,NMT,,,"Wang Qiang, also known as Wang Xiaoqiang","WANG QIANG, ALSO KNOWN AS WANG XIAOQIANG",True
+KYC071,Αλέξανδρος Γεωργίου,el,Greek,person_name,TRANSLITERATE,ALEXANDROS GEORGIOU,GEORGIOU ALEXANDROS,Alexandros Georgiou,ALEXANDROS GEORGIOU,False
+KYC072,Ευάγγελος Παπαγεωργίου,el,Greek,person_name,TRANSLITERATE,EVANGELOS PAPAGEORGIOU,PAPAGEORGIOU EVANGELOS,Evangelos Papageorgiou,EVANGELOS PAPAGEORGIOU,False
+KYC073,Οδός Σταδίου 15 Αθήνα,el,Greek,address,NMT,,,"15 Stadiou Street, Athens","15 STADIOU STREET, ATHENS",False
+KYC074,Ανώνυμη Εταιρεία Ενεργειακής Ανάπτυξης,el,Greek,company_name,NMT,,,Energy Development SA,SA,False
+KYC075,Χρήστος Βασιλείου,el,Greek,person_name,TRANSLITERATE,CHRISTOS VASILEIOU,VASILEIOU CHRISTOS,Christos Vasileiou,CHRISTOS VASILEIOU,False
+KYC076,Μιχάλης Ιωάννου,el,Greek,person_name,TRANSLITERATE,MICHALIS IOANNOU,IOANNOU MICHALIS,Michalis Ioannou,MICHALIS IOANNOU,False
+KYC077,Θεσσαλονίκη,el,Greek,city,GEOGRAPHIC,,,THESSALONIKI,THESSALONIKI,False
+KYC078,AN4591182,en,Latin,passport_no,PRESERVE,,,AN4591182,AN4591182,False
+KYC079,Γιάννης Νικολόπουλος,el,Greek,person_name,TRANSLITERATE,GIANNIS NIKOLOPOULOS,NIKOLOPOULOS GIANNIS,Giannis Nikolopoulos,GIANNIS NIKOLOPOULOS,False
+KYC080,γνωστός ως Νίκος,el,Greek,alias,NMT,,,Known as Nikos,KNOWN AS NIKOS,True
+KYC081,王小明,zh,Han,person_name,TRANSLITERATE,WANG XIAOMING,XIAOMING WANG,Wang Xiaoming,WANG XIAOMING,True
+KYC082,王小明,zh,Han,person_name,TRANSLITERATE,WANG XIAOMING,XIAOMING WANG,Wang Xiaoming,WANG XIAOMING,True
+KYC083,陳志強,zh,Han,person_name,TRANSLITERATE,CHEN ZHIQIANG,ZHIQIANG CHEN,Chen Zhiqiang,CHEN ZHIQIANG,True
+KYC084,陈志强,zh,Han,person_name,TRANSLITERATE,CHEN ZHIQIANG,ZHIQIANG CHEN,Chen Zhiqiang,CHEN ZHIQIANG,True
+KYC085,林美玲,zh,Han,person_name,TRANSLITERATE,LIN MEILING,MEILING LIN,Lin Meiling,LIN MEILING,True
+KYC086,林美玲,zh,Han,person_name,TRANSLITERATE,LIN MEILING,MEILING LIN,Lin Meiling,LIN MEILING,True
+KYC087,張偉,zh,Han,person_name,TRANSLITERATE,ZHANG WEI,WEI ZHANG,Zhang Wei,ZHANG WEI,True
+KYC088,张伟,zh,Han,person_name,TRANSLITERATE,ZHANG WEI,WEI ZHANG,Zhang Wei,ZHANG WEI,True
+KYC089,台北市信義區松仁路100號,zh,Han,address,NMT,,,"No. 100 Songren Road, Xinyi District, Taipei","NO. 100 SONGREN ROAD, XINYI DISTRICT, TAIPEI",False
+KYC090,北京市海淀区中关村大街27号,zh,Han,address,NMT,,,"No. 27 Zhongguancun Street, Haidian District, Beijing","NO. 27 ZHONGGUANCUN STREET, HAIDIAN DISTRICT, BEIJING",False
+KYC091,台灣積體電路製造股份有限公司,zh,Han,company_name,NMT,,,Taiwan Semiconductor Manufacturing Co Ltd,CO LTD,False
+KYC092,腾讯科技有限公司,zh,Han,company_name,NMT,,,Tencent Technology Co Ltd,LTD,False
+KYC093,吳宗憲,zh,Han,person_name,TRANSLITERATE,WU ZONGXIAN,ZONGXIAN WU,Wu Zongxian,WU ZONGXIAN,True
+KYC094,吴宗宪,zh,Han,person_name,TRANSLITERATE,WU ZONGXIAN,ZONGXIAN WU,Wu Zongxian,WU ZONGXIAN,True
+KYC095,李國強,zh,Han,person_name,TRANSLITERATE,LI GUOQIANG,GUOQIANG LI,Li Guoqiang,LI GUOQIANG,True
+AR001,محمد علي حسن,ar,Arabic,person_name,TRANSLITERATE,MHMD ALY HSN,,Mhmd Aly Hsn,MHMD ALY HSN,True
+AR002,عبد الله محمد,ar,Arabic,person_name,TRANSLITERATE,ABDULLAH MHMD,,Abdullah Mhmd,ABDULLAH MHMD,True
+AR003,أبو محمد الجولاني,ar,Arabic,alias,NMT,,,Abu Muhammad al-Julani,ABU MUHAMMAD AL JULANI,True
+AR004,شارع الشيخ زايد دبي,ar,Arabic,address,NMT,,,"Sheikh Zayed Road, Dubai","SHEIKH ZAYED ROAD, DUBAI",False
+AR005,أحمد سمير عبد الناصر,ar,Arabic,person_name,TRANSLITERATE,AHMD SMYR BD AL-NASR,,Ahmd Smyr Bd Al-Nasr,AHMD SMYR BD AL NASR,True
+AR006,فاطمة الزهراء,ar,Arabic,person_name,TRANSLITERATE,FTMH AL-ZHRA,,Ftmh Al-Zhra,FTMH AL ZHRA,True
+AR007,عمر خالد البشير,ar,Arabic,person_name,TRANSLITERATE,AMR KHLD AL-BSHYR,,Amr Khld Al-Bshyr,AMR KHLD AL BSHYR,True
+AR008,رنا حسين الحسن,ar,Arabic,person_name,TRANSLITERATE,RNA HSYN AL-HSN,,Rna Hsyn Al-Hsn,RNA HSYN AL HSN,True
+AR009,علي حسن الكريم,ar,Arabic,person_name,TRANSLITERATE,ALY HSN AL-KRYM,,Aly Hsn Al-Krym,ALY HSN AL KRYM,True
+AR010,شارع محمد الخامس الرباط,ar,Arabic,address,NMT,,,"Mohammed V Street, Rabat","MOHAMMED V STREET, RABAT",False
+AR011,شركة أرامكو السعودية,ar,Arabic,company_name,NMT,,,Saudi Aramco,SAUDI ARAMCO,False
+AR012,نهاد إبراهيم السيد النجار,ar,Arabic,person_name,TRANSLITERATE,NHAD IBRAHYM ALSYD ALNJAR,,Nhad Ibrahym Alsyd Alnjar,NHAD IBRAHYM ALSYD ALNJAR,True
+AR013,سلمى بنت عبد العزيز,ar,Arabic,person_name,TRANSLITERATE,SLMY BNT BD AL-AZYZ,,Slmy Bnt Bd Al-Azyz,SLMY BNT BD AL AZYZ,True
+AR014,محمد بن راشد آل مكتوم,ar,Arabic,person_name,TRANSLITERATE,MHMD BN RASHD AL MKTWM,,Mhmd BN Rashd Al Mktwm,MHMD BN RASHD AL MKTWM,True
+AR015,AB1234567,en,Latin,passport_no,PRESERVE,,,AB1234567,AB1234567,False
+AR016,حسن علي محمد,ar,Arabic,person_name,TRANSLITERATE,HSN ALY MHMD,,Hsn Aly Mhmd,HSN ALY MHMD,True
+AR017,أبو بكر البغدادي,ar,Arabic,alias,NMT,,,Abu Bakr al-Baghdadi,ABU BAKR AL BAGHDADI,True
+AR018,يوسف عبد الرحمن الكويتي,ar,Arabic,person_name,TRANSLITERATE,YWSF BD AL-RHMN AL-KWYTY,,Ywsf Bd Al-Rhmn Al-Kwyty,YWSF BD AL RHMN AL KWYTY,True
+AR019,حي العليا الرياض,ar,Arabic,address,NMT,,,"Al Olaya District, Riyadh","AL OLAYA DISTRICT, RIYADH",False
+AR020,معمر محمد القذافي,ar,Arabic,person_name,TRANSLITERATE,MAMR MHMD AL-QDDAFY,,Mamr Mhmd Al-Qddafy,MAMR MHMD AL QDDAFY,True
+JA001,山田 太郎,ja,Kanji,person_name,TRANSLITERATE,YAMADA TARO,TARO YAMADA|YAMADA TAROU,Yamada Taro,YAMADA TARO,True
+JA002,タナカ ケン,ja,Katakana,person_name,TRANSLITERATE,TANAKA KEN,KEN TANAKA,Tanaka Ken,TANAKA KEN,False
+JA003,佐藤 健,ja,Kanji,person_name,TRANSLITERATE,SATO KEN,KEN SATO|SATOU KEN,Sato Ken,SATO KEN,True
+JA004,鈴木 一郎,ja,Kanji,person_name,TRANSLITERATE,SUZUKI ICHIRO,ICHIRO SUZUKI,Suzuki Ichiro,SUZUKI ICHIRO,True
+JA005,高橋 一郎,ja,Kanji,person_name,TRANSLITERATE,TAKAHASHI ICHIRO,ICHIRO TAKAHASHI,Takahashi Ichiro,TAKAHASHI ICHIRO,True
+JA006,とうきょうとしんじゅくく,ja,Hiragana,address,NMT,,,"Shinjuku Ward, Tokyo","SHINJUKU WARD, TOKYO",False
+JA007,株式会社トヨタ,ja,Kanji,company_name,NMT,,,Toyota KK,KK,False
+JA008,中村 美咲,ja,Kanji,person_name,TRANSLITERATE,NAKAMURA MISAKI,MISAKI NAKAMURA,Nakamura Misaki,NAKAMURA MISAKI,True
+JA009,伊藤 誠,ja,Kanji,person_name,TRANSLITERATE,ITO MAKOTO,MAKOTO ITO|ITOH MAKOTO,Ito Makoto,ITO MAKOTO,True
+JA010,渡辺 洋,ja,Kanji,person_name,TRANSLITERATE,WATANABE HIROSHI,HIROSHI WATANABE,Watanabe Hiroshi,WATANABE HIROSHI,True
+JA011,KUSAKA HIROSHI,en,Latin,person_name,CHARACTER_MAP,KUSAKA HIROSHI,HIROSHI KUSAKA,Kusaka Hiroshi,KUSAKA HIROSHI,False
+JA012,TH4572902,en,Latin,passport_no,PRESERVE,,,TH4572902,TH4572902,False
+JA013,東京都渋谷区道玄坂,ja,Kanji,address,NMT,,,"Dogenzaka, Shibuya Ward, Tokyo","DOGENZAKA, SHIBUYA WARD, TOKYO",False
+JA014,小林 さくら,ja,Kanji,person_name,TRANSLITERATE,KOBAYASHI SAKURA,SAKURA KOBAYASHI,Kobayashi Sakura,KOBAYASHI SAKURA,True
+JA015,ソニー株式会社,ja,Kanji,company_name,NMT,,,Sony KK,KK,False
+JA016,松本 亮,ja,Kanji,person_name,TRANSLITERATE,MATSUMOTO RYO,RYO MATSUMOTO|MATSUMOTO RYOU,Matsumoto Ryo,MATSUMOTO RYO,True
+JA017,石田 英二,ja,Kanji,person_name,TRANSLITERATE,ISHIDA EIJI,EIJI ISHIDA,Ishida Eiji,ISHIDA EIJI,True
+JA018,木村 花子,ja,Kanji,person_name,TRANSLITERATE,KIMURA HANAKO,HANAKO KIMURA,Kimura Hanako,KIMURA HANAKO,True
+JA019,橋本 大輝,ja,Kanji,person_name,TRANSLITERATE,HASHIMOTO DAIKI,DAIKI HASHIMOTO,Hashimoto Daiki,HASHIMOTO DAIKI,True
+JA020,NITOH SHINJI,en,Latin,person_name,CHARACTER_MAP,NITOH SHINJI,SHINJI NITOH,Nitoh Shinji,NITOH SHINJI,False
+RU001,Екатерина Сергеевна Иванова,ru,Cyrillic,person_name,TRANSLITERATE,EKATERINA SERGEYEVNA IVANOVA,EKATERINA SERGEEVNA IVANOVA,Ekaterina Sergeyevna Ivanova,EKATERINA SERGEYEVNA IVANOVA,False
+RU002,Алексей Смирнов,ru,Cyrillic,person_name,TRANSLITERATE,ALEKSEY SMIRNOV,ALEKSEI SMIRNOV,Aleksey Smirnov,ALEKSEY SMIRNOV,False
+RU003,Олександр Іваненко,uk,Cyrillic,person_name,TRANSLITERATE,OLEKSANDR IVANENKO,IVANENKO OLEKSANDR,Oleksandr Ivanenko,OLEKSANDR IVANENKO,True
+RU004,Дмитрий Иванов,ru,Cyrillic,person_name,TRANSLITERATE,DMITRIY IVANOV,DMITRY IVANOV,Dmitriy Ivanov,DMITRIY IVANOV,False
+RU005,Наталья Петрова,ru,Cyrillic,person_name,TRANSLITERATE,NATALYA PETROVA,NATALIA PETROVA,Natalya Petrova,NATALYA PETROVA,False
+RU006,ул. Ленина 10 Москва,ru,Cyrillic,address,NMT,,,"10 Lenin Street, Moscow","10 LENIN STREET, MOSCOW",False
+RU007,Юрий Гагарин,ru,Cyrillic,person_name,TRANSLITERATE,YURIY GAGARIN,YURI GAGARIN,Yuriy Gagarin,YURIY GAGARIN,False
+RU008,Анастасия Волкова,ru,Cyrillic,person_name,TRANSLITERATE,ANASTASIYA VOLKOVA,ANASTASIA VOLKOVA,Anastasiya Volkova,ANASTASIYA VOLKOVA,False
+RU009,Литвинов Андрей Вячеславович,ru,Cyrillic,person_name,TRANSLITERATE,LITVINOV ANDREY VYACHESLAVOVICH,ANDREY VYACHESLAVOVICH LITVINOV,Litvinov Andrey Vyacheslavovich,LITVINOV ANDREY VYACHESLAVOVICH,False
+RU010,Сергей Медведев,ru,Cyrillic,person_name,TRANSLITERATE,SERGEY MEDVEDEV,SERGEI MEDVEDEV,Sergey Medvedev,SERGEY MEDVEDEV,False
+RU011,пр. Невский 20 Санкт-Петербург,ru,Cyrillic,address,NMT,,,"20 Nevsky Avenue, Saint Petersburg","20 NEVSKY AVENUE, SAINT PETERSBURG",False
+RU012,Публичное акционерное общество Сбербанк,ru,Cyrillic,company_name,NMT,,,Sberbank PJSC,PJSC,False
+RU013,Василь Кравченко,ru,Cyrillic,person_name,TRANSLITERATE,VASILIY KRAVCHENKO,VASILI KRAVCHENKO,Vasiliy Kravchenko,VASILIY KRAVCHENKO,False
+RU014,Владимир Путин,ru,Cyrillic,person_name,TRANSLITERATE,VLADIMIR PUTIN,PUTIN VLADIMIR,Vladimir Putin,VLADIMIR PUTIN,False
+RU015,720345891,en,Latin,id_number,PRESERVE,,,720345891,720345891,False
+RU016,Михаил Захаров,ru,Cyrillic,person_name,TRANSLITERATE,MIKHAIL ZAKHAROV,MICHAIL ZAKHAROV,Mikhail Zakharov,MIKHAIL ZAKHAROV,False
+RU017,Татьяна Соколова,ru,Cyrillic,person_name,TRANSLITERATE,TATYANA SOKOLOVA,TATIANA SOKOLOVA,Tatyana Sokolova,TATYANA SOKOLOVA,False
+RU018,Ірина Шевченко,uk,Cyrillic,person_name,TRANSLITERATE,IRYNA SHEVCHENKO,SHEVCHENKO IRYNA,Iryna Shevchenko,IRYNA SHEVCHENKO,True
+RU019,Николай Попов,ru,Cyrillic,person_name,TRANSLITERATE,NIKOLAY POPOV,NIKOLAI POPOV,Nikolay Popov,NIKOLAY POPOV,False
+RU020,Алексей Смирнов,ru,Cyrillic,person_name,TRANSLITERATE,ALEKSEY SMIRNOV,ALEKSEI SMIRNOV,Aleksey Smirnov,ALEKSEY SMIRNOV,False
+ZH001,王小明,zh,Han,person_name,TRANSLITERATE,WANG XIAOMING,XIAOMING WANG,Wang Xiaoming,WANG XIAOMING,True
+ZH002,李伟,zh,Han,person_name,TRANSLITERATE,LI WEI,WEI LI,Li Wei,LI WEI,True
+ZH003,张伟,zh,Han,person_name,TRANSLITERATE,ZHANG WEI,WEI ZHANG,Zhang Wei,ZHANG WEI,True
+ZH004,陈志强,zh,Han,person_name,TRANSLITERATE,CHEN ZHIQIANG,ZHIQIANG CHEN,Chen Zhiqiang,CHEN ZHIQIANG,True
+ZH005,北京远景科技有限公司,zh,Han,company_name,NMT,,,Beijing Yuanjing Technology Co Ltd,LTD,False
+ZH006,北京市朝阳区建国路88号,zh,Han,address,NMT,,,"No. 88 Jianguo Road, Chaoyang District, Beijing","NO. 88 JIANGUO ROAD, CHAOYANG DISTRICT, BEIJING",False
+ZH007,刘洋,zh,Han,person_name,TRANSLITERATE,LIU YANG,YANG LIU,Liu Yang,LIU YANG,True
+ZH008,陳建志,zh,Han,person_name,TRANSLITERATE,CHEN JIANZHI,JIANZHI CHEN,Chen Jianzhi,CHEN JIANZHI,True
+ZH009,吴敏,zh,Han,person_name,TRANSLITERATE,WU MIN,MIN WU,Wu Min,WU MIN,True
+ZH010,黃志明,zh,Han,person_name,TRANSLITERATE,HUANG ZHIMING,ZHIMING HUANG,Huang Zhiming,HUANG ZHIMING,True
+ZH011,腾讯控股有限公司,zh,Han,company_name,NMT,,,Tencent Holdings Ltd,LTD,False
+ZH012,赵雷,zh,Han,person_name,TRANSLITERATE,ZHAO LEI,LEI ZHAO,Zhao Lei,ZHAO LEI,True
+ZH013,上海市浦东新区陆家嘴金融贸易区,zh,Han,address,NMT,,,"Lujiazui Finance and Trade Zone, Pudong New Area, Shanghai","LUJIAZUI FINANCE AND TRADE ZONE, PUDONG NEW AREA, SHANGHAI",False
+ZH014,孙悟空,zh,Han,person_name,TRANSLITERATE,SUN WUKONG,WUKONG SUN,Sun Wukong,SUN WUKONG,True
+ZH015,E12345678,en,Latin,passport_no,PRESERVE,,,E12345678,E12345678,False
+ZH016,周杰伦,zh,Han,person_name,TRANSLITERATE,ZHOU JIELUN,JIELUN ZHOU,Zhou Jielun,ZHOU JIELUN,True
+ZH017,马云,zh,Han,person_name,TRANSLITERATE,MA YUN,YUN MA,Ma Yun,MA YUN,True
+ZH018,王伟,zh,Han,person_name,TRANSLITERATE,WANG WEI,WEI WANG,Wang Wei,WANG WEI,True
+ZH019,中国工商银行股份有限公司,zh,Han,company_name,NMT,,,Industrial and Commercial Bank of China Co Ltd,CO LTD,False
+ZH020,广东省深圳市南山区科技园,zh,Han,address,NMT,,,"Science Park, Nanshan District, Shenzhen, Guangdong","SCIENCE PARK, NANSHAN DISTRICT, SHENZHEN, GUANGDONG",False
+EL001,Γεώργιος Παπαδόπουλος,el,Greek,person_name,TRANSLITERATE,GEORGIOS PAPADOPOULOS,PAPADOPOULOS GEORGIOS,Georgios Papadopoulos,GEORGIOS PAPADOPOULOS,False
+EL002,Βασίλης Νικολάου,el,Greek,person_name,TRANSLITERATE,VASILIS NIKOLAOU,NIKOLAOU VASILIS,Vasilis Nikolaou,VASILIS NIKOLAOU,False
+EL003,Λεωφόρος Κηφισίας 10 Αθήνα,el,Greek,address,NMT,,,"10 Kifisias Avenue, Athens","10 KIFISIAS AVENUE, ATHENS",False
+EL004,Νίκος Παπαδόπουλος,el,Greek,person_name,TRANSLITERATE,NIKOS PAPADOPOULOS,PAPADOPOULOS NIKOS,Nikos Papadopoulos,NIKOS PAPADOPOULOS,False
+EL005,test.user+aml@gmail.com,en,Latin,email,PRESERVE,,,test.user+aml@gmail.com,test.user+aml@gmail.com,False
+EL006,Ελένη Κωνσταντίνου,el,Greek,person_name,TRANSLITERATE,ELENI KONSTANTINOU,KONSTANTINOU ELENI,Eleni Konstantinou,ELENI KONSTANTINOU,False
+EL007,Αθήνα,el,Greek,city,GEOGRAPHIC,,,ATHENS,ATHENS,False
+EL008,Δημήτρης Αλεξίου,el,Greek,person_name,TRANSLITERATE,DIMITRIS ALEXIOU,ALEXIOU DIMITRIS,Dimitris Alexiou,DIMITRIS ALEXIOU,False
+EL009,Λεωφόρος Κηφισίας 30,el,Greek,address,NMT,,,30 Kifisias Avenue,30 KIFISIAS AVENUE,False
+EL010,ΔΕΗ,el,Greek,company_name,NMT,,,Public Power Corporation,PUBLIC POWER CORPORATION,False
+EL011,Κωνσταντίνος Παπαναστασίου,el,Greek,person_name,TRANSLITERATE,KONSTANTINOS PAPANASTASIOU,PAPANASTASIOU KONSTANTINOS,Konstantinos Papanastasiou,KONSTANTINOS PAPANASTASIOU,False
+EL012,Ανδρέας Γεωργίου,el,Greek,person_name,TRANSLITERATE,ANDREAS GEORGIOU,GEORGIOU ANDREAS,Andreas Georgiou,ANDREAS GEORGIOU,False
+EL013,Εθνική Τράπεζα της Ελλάδος Ανώνυμη Εταιρεία,el,Greek,company_name,NMT,,,National Bank of Greece SA,SA,False
+EL014,Μαρία Παπαδάκη,el,Greek,person_name,TRANSLITERATE,MARIA PAPADAKI,PAPADAKI MARIA,Maria Papadaki,MARIA PAPADAKI,False
+EL015,Πλατεία Συντάγματος Αθήνα,el,Greek,address,NMT,,,"Syntagma Square, Athens","SYNTAGMA SQUARE, ATHENS",False
+EL016,Χρήστος Αντωνίου,el,Greek,person_name,TRANSLITERATE,CHRISTOS ANTONIOU,ANTONIOU CHRISTOS,Christos Antoniou,CHRISTOS ANTONIOU,False
+EL017,Σοφία Θεοδώρου,el,Greek,person_name,TRANSLITERATE,SOFIA THEODOROU,THEODOROU SOFIA,Sofia Theodorou,SOFIA THEODOROU,False
+EL018,AK1234567,en,Latin,passport_no,PRESERVE,,,AK1234567,AK1234567,False
+EL019,Θεόδωρος Μητσοτάκης,el,Greek,person_name,TRANSLITERATE,THEODOROS MITSOTAKIS,MITSOTAKIS THEODOROS,Theodoros Mitsotakis,THEODOROS MITSOTAKIS,False
+EL020,Ιωάννης Παπαγεωργίου,el,Greek,person_name,TRANSLITERATE,IOANNIS PAPAGEORGIOU,PAPAGEORGIOU IOANNIS,Ioannis Papageorgiou,IOANNIS PAPAGEORGIOU,False
