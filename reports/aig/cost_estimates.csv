@@ -1,0 +1,4 @@
+method,avg_cost_per_field_usd,fields_in_sample,total_cost_usd
+FREE_DETERMINISTIC,0.0,1150,0.0
+CLASSIFIER,5.988e-07,1206,0.0007221
+NMT,0.0003358929,56,0.01881

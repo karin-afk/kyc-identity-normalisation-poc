@@ -1,0 +1,27 @@
+test_id,description,field_type,language,expected,actual,failure_category
+B.1,Thai Buddhist Era date,date_of_birth,fa,2025-05-08,2568/5/8,classifier_edge_case
+B.6,Minguo (Taiwan ROC) date,date_of_birth,fa,2025-05-08,114/5/8,classifier_edge_case
+B.11,Arabic-Indic digits,phone_number,ar,٠١٢٣٤٥٦٧٨٩,0123456789,classifier_edge_case
+G.2,German ß,unknown,unknown,STRASSE,,classifier_edge_case
+E.1,Short ambiguous string,unknown,unknown,SA,,phase_2_scope
+E.3,Number that looks like a date,unknown,unknown,2025-05-08,,phase_2_scope
+B.29,French space thousands separator,unknown,unknown,12500,,classifier_edge_case
+B.30,Russian space thousands separator,unknown,unknown,12500,,classifier_edge_case
+B.36,Spoken-style Han digits in phone,id_number,zh,13800138000,一三八〇〇一三八〇〇〇,classifier_edge_case
+E.4,Japanese company with KK suffix,company_name,ja,MITSUBISHI SHOJI KK,KK,phase_2_scope
+E.5,Korean company with Jusikhoesa suffix,company_name,ko,SAMSUNG ELECTRONICS CO LTD,CO LTD,phase_2_scope
+E.6,Greek company with Α.Ε. suffix,company_name,el,NATIONAL BANK OF GREECE SA,SA,phase_2_scope
+E.7,Russian company with PAO prefix (not suffix),company_name,ru,GAZPROM PJSC,PAO GAZPROM,phase_2_scope
+E.8,Arabic company with sharika prefix,company_name,ar,AL NOOR TRADING CO LTD,SHRKH AL- NWR LLTJARH AL- MHDWDH,phase_2_scope
+E.9,Mexican company with multi-word legal form,company_name,es,GRUPO BIMBO SAB DE CV,SAB DE CV,phase_2_scope
+E.10,Japanese brand-name override,company_name,ja,NTT CORPORATION,KK,phase_2_scope
+E.11,Italian company with SpA suffix,company_name,it,FERRARI SPA,SPA,phase_2_scope
+H.7,Arabic invoice prose with date and amount,free_text,ar,DUE DATE 2026-09-05 AMOUNT 12500 QAR,"MATURITY DATE 05/09/2026 AND THE AMOUNT IS 12,500 RIYALS",phase_2_scope
+H.8,Japanese invoice prose with Kanji numerals,free_text,ja,DUE DATE 2026-09-05 AMOUNT 5000 JPY,"THE PAYMENT DEADLINE IS SEPTEMBER 5, 2026, AND THE AMOUNT IS 5,000 YEN.",genuine_bug
+H.9,Traditional Chinese invoice prose,free_text,zh,PAYMENT DATE 2026-09-05 AMOUNT 5000 TWD,"THE PAYMENT DATE IS SEPTEMBER 5, 2026, AND THE AMOUNT IS NT$5,000.",genuine_bug
+H.10,Russian invoice prose,free_text,ru,DUE DATE 2026-09-05 AMOUNT 12500 RUB,"PAYMENT DEADLINE: 05.09.2026, AMOUNT: 12 500 RUBLES.",genuine_bug
+H.11,German invoice prose,free_text,de,DUE DATE 2026-09-05 AMOUNT 12500 EUR,"PAYMENT TERM: 05.09.2026, AMOUNT: 12.500 EUR",genuine_bug
+H.12,Korean invoice prose,free_text,ko,DUE DATE 2026-09-05 AMOUNT 12500 KRW,"PAYMENT DEADLINE: 2026/09/05, AMOUNT: 12,500 KRW",genuine_bug
+E.12,Arabic-Indic with embedded Latin O,id_number,ar,,O12345678,phase_2_scope
+E.13,Mixed Latin letters and full-width digits,id_number,en,,I2345B8,phase_2_scope
+E.15,Greek iota and omicron in alphanumeric reference,reference_no,el,,REF-Ι23O5,phase_2_scope
